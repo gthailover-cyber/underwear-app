@@ -369,27 +369,27 @@ const App: React.FC = () => {
                 UNDERWEAR<span className="text-red-600">LIVE</span>
               </h1>
             </div>
-            <div className="flex items-center gap-2 sm:gap-4">
+            <div className="flex items-center gap-1">
               
               {/* Wallet Display Button */}
               <button 
                 onClick={() => setIsWalletOpen(true)}
-                className="flex items-center gap-1.5 bg-gray-800/50 backdrop-blur border border-yellow-500/30 rounded-full pl-2 pr-3 py-1.5 hover:bg-gray-700 transition-colors active:scale-95"
+                className="flex items-center gap-1 mr-1 bg-gray-800/50 backdrop-blur border border-yellow-500/30 rounded-full pl-2 pr-2.5 py-1 hover:bg-gray-700 transition-colors active:scale-95"
               >
-                <Coins size={14} className="text-yellow-400 fill-yellow-400" />
+                <Coins size={13} className="text-yellow-400 fill-yellow-400" />
                 <span className="text-xs font-bold text-yellow-400 leading-none pt-0.5">{walletBalance.toLocaleString()}</span>
               </button>
 
               <button 
                 onClick={() => setActiveTab('messages')}
-                className="hover:bg-gray-800 p-1.5 rounded-full transition-colors relative"
+                className="hover:bg-gray-800 p-2 rounded-full transition-colors relative"
               >
-                <MessageCircle size={22} className="text-gray-300" />
-                <span className="absolute top-0 right-0 w-2 h-2 bg-red-500 rounded-full border border-black"></span>
+                <MessageCircle size={20} className="text-gray-300" />
+                <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full border border-black"></span>
               </button>
-              <button className="relative hover:bg-gray-800 p-1.5 rounded-full transition-colors">
-                <Bell size={22} className="text-gray-300" />
-                <span className="absolute top-0 right-0 w-2 h-2 bg-red-500 rounded-full"></span>
+              <button className="relative hover:bg-gray-800 p-2 rounded-full transition-colors">
+                <Bell size={20} className="text-gray-300" />
+                <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full"></span>
               </button>
             </div>
           </header>
