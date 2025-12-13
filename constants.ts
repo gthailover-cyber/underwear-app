@@ -1,0 +1,393 @@
+
+import { Streamer, Product, Language, UserProfile, MessagePreview, ChatMessage } from './types';
+
+export const TRANSLATIONS = {
+  en: {
+    menuTitle: 'Menu',
+    myAddress: 'My Address',
+    myPayment: 'My Payment',
+    myWallet: 'My Wallet',
+    logout: 'Log Out',
+    home: 'Home',
+    discover: 'Discover',
+    cart: 'Cart',
+    profile: 'Profile',
+    liveNow: 'Live Now',
+    viewAll: 'View All',
+    follow: 'FOLLOW',
+    watching: 'watching',
+    saySomething: 'Say something...',
+    shopItems: 'Shop Items',
+    buyNow: 'BUY NOW',
+    stock: 'Stock',
+    products: 'Products',
+    memberSince: 'Member since 2024',
+    tags: ['All', 'Hot 🔥', 'New Arrival', 'Sale', 'Briefs', 'Boxers', 'Jockstraps'],
+    // Wallet Translations
+    wallet: 'Wallet',
+    currentBalance: 'Current Balance',
+    topUp: 'Top Up',
+    coins: 'Coins',
+    selectAmount: 'Select Amount',
+    paymentMethod: 'Payment Method',
+    creditDebit: 'Credit / Debit Card',
+    truemoney: 'TrueMoney Wallet',
+    payNow: 'Pay Now',
+    processing: 'Processing...',
+    paymentSuccess: 'Payment Successful!',
+    exchangeRate: '1 Baht = 1 Coin',
+    // Discover Translations
+    featured: 'Featured',
+    trendingNow: 'Trending Now',
+    hotLive: 'Hot Live 🔥',
+    recommended: 'Recommended Lives',
+    shopCollection: 'Watch Live',
+    categories: {
+      new: 'New Live',
+      sale: 'Flash Sale',
+      bundle: 'Big Lot',
+      premium: 'Premium'
+    },
+    // Cart Translations
+    myCart: 'My Cart',
+    items: 'items',
+    subtotal: 'Subtotal',
+    shipping: 'Shipping',
+    total: 'Total',
+    checkout: 'CHECKOUT',
+    emptyCart: 'Your cart is empty',
+    startShopping: 'Start Shopping',
+    free: 'Free',
+    remove: 'Remove',
+    // Profile Translations
+    editProfile: 'Edit Profile',
+    editGallery: 'Edit Gallery',
+    editGalleryTitle: 'Manage Gallery',
+    uploadImage: 'Upload Image',
+    age: 'Age',
+    height: 'Height',
+    weight: 'Weight',
+    favorites: 'My Preferences',
+    gallery: 'My Gallery',
+    location: 'Location',
+    aboutMe: 'About Me',
+    cm: 'cm',
+    kg: 'kg',
+    years: 'y/o',
+    save: 'Save',
+    cancel: 'Cancel',
+    username: 'Username',
+    changeCover: 'Change Cover',
+    changeAvatar: 'Change Avatar',
+    addTag: 'Add Tag',
+    enterTagPlaceholder: 'Ex. Briefs, Jockstrap...',
+    // Messages
+    messages: 'Messages',
+    searchMessages: 'Search messages...',
+    noMessages: 'No messages yet',
+    typeMessage: 'Type a message...',
+    watchLive: 'Watch Live'
+  },
+  th: {
+    menuTitle: 'เมนู',
+    myAddress: 'ที่อยู่ของฉัน',
+    myPayment: 'ช่องทางชำระเงิน',
+    myWallet: 'กระเป๋าตังค์',
+    logout: 'ออกจากระบบ',
+    home: 'หน้าหลัก',
+    discover: 'ค้นหา',
+    cart: 'ตะกร้า',
+    profile: 'โปรไฟล์',
+    liveNow: 'ไลฟ์สดตอนนี้',
+    viewAll: 'ดูทั้งหมด',
+    follow: 'ติดตาม',
+    watching: 'คนดู',
+    saySomething: 'แสดงความคิดเห็น...',
+    shopItems: 'รายการสินค้า',
+    buyNow: 'ซื้อเลย',
+    stock: 'คงเหลือ',
+    products: 'สินค้า',
+    memberSince: 'สมาชิกปี 2024',
+    tags: ['ทั้งหมด', 'มาแรง 🔥', 'สินค้าใหม่', 'ลดราคา', 'กางเกงใน', 'บ็อกเซอร์', 'จ็อกสแตรป'],
+    // Wallet Translations
+    wallet: 'กระเป๋าเงิน',
+    currentBalance: 'ยอดเงินคงเหลือ',
+    topUp: 'เติมเงิน',
+    coins: 'เหรียญ',
+    selectAmount: 'เลือกจำนวนเงิน',
+    paymentMethod: 'ช่องทางชำระเงิน',
+    creditDebit: 'บัตรเครดิต / เดบิต',
+    truemoney: 'ทรูมันนี่ วอลเล็ท',
+    payNow: 'ชำระเงิน',
+    processing: 'กำลังดำเนินการ...',
+    paymentSuccess: 'เติมเงินสำเร็จ!',
+    exchangeRate: '1 บาท = 1 เหรียญ',
+    // Discover Translations
+    featured: 'แนะนำ',
+    trendingNow: 'กำลังมาแรง',
+    hotLive: 'ไลฟ์สุดฮอต 🔥',
+    recommended: 'ไลฟ์แนะนำสำหรับคุณ',
+    shopCollection: 'ดูไลฟ์สด',
+    categories: {
+      new: 'ไลฟ์ใหม่',
+      sale: 'ลดโหด',
+      bundle: 'เหมาลัง',
+      premium: 'พรีเมียม'
+    },
+    // Cart Translations
+    myCart: 'ตะกร้าของฉัน',
+    items: 'รายการ',
+    subtotal: 'รวมค่าสินค้า',
+    shipping: 'ค่าจัดส่ง',
+    total: 'ยอดรวมทั้งสิ้น',
+    checkout: 'ชำระเงิน',
+    emptyCart: 'ตะกร้าของคุณว่างเปล่า',
+    startShopping: 'เริ่มช้อปปิ้ง',
+    free: 'ฟรี',
+    remove: 'ลบรายการ',
+    // Profile Translations
+    editProfile: 'แก้ไขโปรไฟล์',
+    editGallery: 'แก้ไขแกลเลอรี่',
+    editGalleryTitle: 'จัดการแกลเลอรี่',
+    uploadImage: 'อัปโหลดรูปภาพ',
+    age: 'อายุ',
+    height: 'ส่วนสูง',
+    weight: 'น้ำหนัก',
+    favorites: 'สไตล์ที่ชอบ',
+    gallery: 'แกลเลอรี่ของฉัน',
+    location: 'สถานที่',
+    aboutMe: 'เกี่ยวกับฉัน',
+    cm: 'ซม.',
+    kg: 'กก.',
+    years: 'ปี',
+    save: 'บันทึก',
+    cancel: 'ยกเลิก',
+    username: 'ชื่อผู้ใช้',
+    changeCover: 'เปลี่ยนปก',
+    changeAvatar: 'เปลี่ยนรูป',
+    addTag: 'เพิ่ม',
+    enterTagPlaceholder: 'เช่น บ็อกเซอร์, ขาสั้น...',
+    // Messages
+    messages: 'ข้อความ',
+    searchMessages: 'ค้นหาข้อความ...',
+    noMessages: 'ยังไม่มีข้อความ',
+    typeMessage: 'พิมพ์ข้อความ...',
+    watchLive: 'ดูไลฟ์สด'
+  }
+};
+
+export const MOCK_PRODUCTS: Product[] = [
+  {
+    id: 'p1',
+    name: 'Classic Boxer Briefs (Black)',
+    price: 350,
+    image: 'https://picsum.photos/200/200?random=101',
+    stock: 50
+  },
+  {
+    id: 'p2',
+    name: 'Seamless Trunks (Red)',
+    price: 450,
+    image: 'https://picsum.photos/200/200?random=102',
+    stock: 20
+  },
+  {
+    id: 'p3',
+    name: 'Cotton Briefs Pack (White)',
+    price: 990,
+    image: 'https://picsum.photos/200/200?random=103',
+    stock: 15
+  },
+  {
+    id: 'p4',
+    name: 'Sport Performance Jockstrap',
+    price: 590,
+    image: 'https://picsum.photos/200/200?random=104',
+    stock: 10
+  }
+];
+
+export const MOCK_STREAMERS: Streamer[] = [
+  {
+    id: 's1',
+    name: 'Jason Model',
+    title: 'Sale! Boxer Briefs 50% Off 🔥',
+    viewerCount: 1540,
+    coverImage: 'https://picsum.photos/400/700?random=1',
+    itemCount: 12,
+    products: MOCK_PRODUCTS
+  },
+  {
+    id: 's2',
+    name: 'Top Form Men',
+    title: 'New Collection Arrival 🕶️',
+    viewerCount: 890,
+    coverImage: 'https://picsum.photos/400/700?random=2',
+    itemCount: 8,
+    products: [MOCK_PRODUCTS[0], MOCK_PRODUCTS[2]]
+  },
+  {
+    id: 's3',
+    name: 'Guy Next Door',
+    title: 'ล้างสต็อก หมดแล้วหมดเลย 📦',
+    viewerCount: 3200,
+    coverImage: 'https://picsum.photos/400/700?random=3',
+    itemCount: 5,
+    products: [MOCK_PRODUCTS[1], MOCK_PRODUCTS[3]]
+  },
+  {
+    id: 's4',
+    name: 'Fitness Addict',
+    title: 'Sport Underwear for Gym 💪',
+    viewerCount: 560,
+    coverImage: 'https://picsum.photos/400/700?random=4',
+    itemCount: 20,
+    products: MOCK_PRODUCTS
+  }
+];
+
+export const INITIAL_COMMENTS = [
+  { id: 'c1', username: 'System', message: 'Welcome to the live room!', isSystem: true },
+  { id: 'c2', username: 'User123', message: 'ราคาเท่าไหร่ครับ?' },
+  { id: 'c3', username: 'TonyStark', message: 'Looking good!' },
+  { id: 'c4', username: 'BKK_Boy', message: 'มีสีแดงไหมครับ?' },
+];
+
+export const MOCK_STORIES = [
+  {
+    id: 'story1',
+    username: 'Jason M.',
+    avatar: 'https://picsum.photos/200/200?random=1',
+    image: 'https://images.unsplash.com/photo-1517836357463-d25dfeac3438?w=400&q=80',
+    isLive: true
+  },
+  {
+    id: 'story2',
+    username: 'Gym Rat',
+    avatar: 'https://picsum.photos/200/200?random=2',
+    image: 'https://images.unsplash.com/photo-1581009146145-b5ef050c2e1e?w=400&q=80',
+    isLive: false
+  },
+  {
+    id: 'story3',
+    username: 'BKK Boy',
+    avatar: 'https://picsum.photos/200/200?random=3',
+    image: 'https://images.unsplash.com/photo-1504194921103-f8b80cadd5e4?w=400&q=80',
+    isLive: false
+  },
+  {
+    id: 'story4',
+    username: 'Underwear King',
+    avatar: 'https://picsum.photos/200/200?random=4',
+    image: 'https://images.unsplash.com/photo-1552160793-cbaf2bd5cf7f?w=400&q=80',
+    isLive: true
+  },
+  {
+    id: 'story5',
+    username: 'Max Power',
+    avatar: 'https://picsum.photos/200/200?random=5',
+    image: 'https://images.unsplash.com/photo-1550993510-06f6e52c8033?w=400&q=80',
+    isLive: false
+  }
+];
+
+export const DISCOVER_TAGS = [
+  '#Sexy', '#GymWear', '#Cotton100%', '#LimitedEdition', '#ThaiBrand', '#ModelLive'
+];
+
+export const MOCK_USER_PROFILE: UserProfile = {
+  username: 'JASON STATHAM',
+  avatar: 'https://picsum.photos/200/200?random=99',
+  coverImage: 'https://images.unsplash.com/photo-1517836357463-d25dfeac3438?w=800&q=80',
+  age: 28,
+  height: 182,
+  weight: 78,
+  location: 'Bangkok, Thailand',
+  bio: 'Fitness enthusiast & Underwear collector. Love gym, swimming and outdoor activities. Check out my collection!',
+  favorites: ['Boxer Briefs', 'Jockstraps', 'Trunks', 'Sports Wear'],
+  gallery: [
+    'https://picsum.photos/300/400?random=10',
+    'https://picsum.photos/300/400?random=11',
+    'https://picsum.photos/300/400?random=12',
+    'https://picsum.photos/300/400?random=13',
+    'https://picsum.photos/300/400?random=14',
+    'https://picsum.photos/300/400?random=15',
+    'https://picsum.photos/300/400?random=16',
+    'https://picsum.photos/300/400?random=17',
+    'https://picsum.photos/300/400?random=18',
+  ]
+};
+
+export const MOCK_MESSAGES: MessagePreview[] = [
+  {
+    id: 'm1',
+    userId: 'u1',
+    username: 'Jason Model',
+    avatar: 'https://picsum.photos/200/200?random=1',
+    lastMessage: 'ขอบคุณที่สั่งซื้อสินค้าครับ จะรีบจัดส่งให้วันนี้เลย!',
+    time: '10:30',
+    unread: 2,
+    isOnline: true,
+    isVerified: true
+  },
+  {
+    id: 'm2',
+    userId: 'u2',
+    username: 'Underwear King',
+    avatar: 'https://picsum.photos/200/200?random=4',
+    lastMessage: 'รุ่นใหม่มาแล้วนะครับ สนใจรับเพิ่มไหม?',
+    time: 'Yesterday',
+    unread: 0,
+    isOnline: false,
+    isVerified: true
+  },
+  {
+    id: 'm3',
+    userId: 'u3',
+    username: 'Customer Support',
+    avatar: 'https://picsum.photos/200/200?random=50',
+    lastMessage: 'Your refund request has been processed.',
+    time: 'Mon',
+    unread: 1,
+    isOnline: true
+  },
+  {
+    id: 'm4',
+    userId: 'u4',
+    username: 'Top Form Men',
+    avatar: 'https://picsum.photos/200/200?random=2',
+    lastMessage: '👍👍',
+    time: 'Sun',
+    unread: 0,
+    isOnline: false
+  },
+  {
+    id: 'm5',
+    userId: 'u5',
+    username: 'Gym Bro Shop',
+    avatar: 'https://picsum.photos/200/200?random=8',
+    lastMessage: 'มีไซส์ XL สีดำเหลือ 2 ตัวครับ',
+    time: 'Last Week',
+    unread: 0,
+    isOnline: true
+  }
+];
+
+export const MOCK_CHAT_HISTORY: ChatMessage[] = [
+  { id: '1', senderId: 'u1', text: 'สวัสดีครับ สนใจกางเกงในรุ่น Classic Boxer Briefs ครับ', type: 'text', timestamp: '10:00', read: true },
+  { id: '2', senderId: 'me', text: 'สวัสดีครับผม รุ่นนี้มีของพร้อมส่งครับ', type: 'text', timestamp: '10:02', read: true },
+  { id: '3', senderId: 'me', text: 'รับสีดำ ไซส์ M ใช่ไหมครับ?', type: 'text', timestamp: '10:02', read: true },
+  { id: '4', senderId: 'u1', text: 'ใช่ครับ', type: 'text', timestamp: '10:05', read: true },
+  { 
+    id: '5', 
+    senderId: 'me', 
+    type: 'live_share', 
+    timestamp: '10:06', 
+    read: true,
+    sharedStreamerId: 's1',
+    sharedStreamer: MOCK_STREAMERS[0]
+  },
+  { id: '6', senderId: 'me', text: 'ตอนนี้ผมกำลังไลฟ์สดอยู่พอดี เข้ามาดูสินค้าจริงในไลฟ์ก่อนได้นะครับ', type: 'text', timestamp: '10:06', read: true },
+  { id: '7', senderId: 'u1', text: 'โอเคครับ เดี๋ยวเข้าไปดูครับ', type: 'text', timestamp: '10:08', read: true },
+  { id: '8', senderId: 'me', text: 'ขอบคุณที่สั่งซื้อสินค้าครับ จะรีบจัดส่งให้วันนี้เลย!', type: 'text', timestamp: '10:30', read: false },
+];
