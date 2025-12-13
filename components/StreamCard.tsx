@@ -1,5 +1,6 @@
+
 import React from 'react';
-import { User, Package } from 'lucide-react';
+import { User, Package, Gavel } from 'lucide-react';
 import { Streamer } from '../types';
 
 interface StreamCardProps {
@@ -51,10 +52,17 @@ const StreamCard: React.FC<StreamCardProps> = ({ streamer, onPress }) => {
           {streamer.title}
         </h3>
 
-        <div className="inline-flex items-center bg-yellow-500/90 text-black px-2 py-0.5 rounded text-[10px] font-bold">
-          <Package size={10} className="mr-1" />
-          {streamer.itemCount} Products
-        </div>
+        {streamer.isAuction ? (
+          <div className="inline-flex items-center bg-gradient-to-r from-red-600 to-red-500 text-white px-2 py-0.5 rounded text-[10px] font-bold shadow-lg shadow-red-900/40">
+            <Gavel size={10} className="mr-1" />
+            Bid: ฿{(streamer.currentBid || streamer.auctionStartingPrice || 0).toLocaleString()}
+          </div>
+        ) : (
+          <div className="inline-flex items-center bg-yellow-500/90 text-black px-2 py-0.5 rounded text-[10px] font-bold">
+            <Package size={10} className="mr-1" />
+            {streamer.itemCount} Products
+          </div>
+        )}
       </div>
     </div>
   );

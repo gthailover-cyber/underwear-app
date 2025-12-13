@@ -1,9 +1,13 @@
 
 import React, { useState } from 'react';
-import { MessageCircle, Bell, Menu, Plus, Home, Compass, ShoppingCart, User, MapPin, CreditCard, Wallet, LogOut, ChevronRight, X, Globe, Coins, ArrowLeft } from 'lucide-react';
+import { MessageCircle, Bell, Menu, Plus, Home, Compass, ShoppingCart, User, MapPin, CreditCard, Wallet, LogOut, ChevronRight, X, Globe, Coins, ArrowLeft, Package } from 'lucide-react';
 import StreamCard from './components/StreamCard';
 import LiveRoom from './components/LiveRoom';
 import WalletModal from './components/WalletModal';
+import LiveSelectionModal from './components/LiveSelectionModal';
+import LiveProductSelectionModal from './components/LiveProductSelectionModal';
+import LiveAuctionSetupModal from './components/LiveAuctionSetupModal';
+import CountdownOverlay from './components/CountdownOverlay';
 import Discover from './components/Discover';
 import Cart from './components/Cart';
 import Profile from './components/Profile';
@@ -11,23 +15,38 @@ import EditProfile from './components/EditProfile';
 import EditGallery from './components/EditGallery';
 import Messages from './components/Messages';
 import ChatDetail from './components/ChatDetail';
+import MyProducts from './components/MyProducts';
 import { MOCK_STREAMERS, TRANSLATIONS, MOCK_PRODUCTS, MOCK_USER_PROFILE } from './constants';
-import { Streamer, Language, CartItem, UserProfile, MessagePreview } from './types';
+import { Streamer, Language, CartItem, UserProfile, MessagePreview, Product } from './types';
 
 const App: React.FC = () => {
+  // Data State
+  const [streamers, setStreamers] = useState<Streamer[]>(MOCK_STREAMERS);
+  const [myProducts, setMyProducts] = useState<Product[]>(MOCK_PRODUCTS);
+  
+  // UI State
   const [currentStreamer, setCurrentStreamer] = useState<Streamer | null>(null);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [language, setLanguage] = useState<Language>('th');
-  const [activeTab, setActiveTab] = useState<'home' | 'discover' | 'cart' | 'profile' | 'all_live' | 'messages'>('home');
+  const [activeTab, setActiveTab] = useState<'home' | 'discover' | 'cart' | 'profile' | 'all_live' | 'messages' | 'my_products'>('home');
   const [selectedChatUser, setSelectedChatUser] = useState<MessagePreview | null>(null);
   
+  // Modal State
+  const [isWalletOpen, setIsWalletOpen] = useState(false);
+  const [isLiveSelectionOpen, setIsLiveSelectionOpen] = useState(false);
+  const [isProductSelectionOpen, setIsProductSelectionOpen] = useState(false);
+  const [isAuctionSetupOpen, setIsAuctionSetupOpen] = useState(false);
+  
+  // Countdown State
+  const [isCountdownActive, setIsCountdownActive] = useState(false);
+  const [countdownValue, setCountdownValue] = useState(5);
+
   // User Profile State
   const [userProfile, setUserProfile] = useState<UserProfile>(MOCK_USER_PROFILE);
   const [isEditingProfile, setIsEditingProfile] = useState(false);
   const [isEditingGallery, setIsEditingGallery] = useState(false);
 
   // Wallet State
-  const [isWalletOpen, setIsWalletOpen] = useState(false);
   const [walletBalance, setWalletBalance] = useState(150); // Default balance
 
   // Cart State (Initialize with some mock items for demo)
@@ -50,6 +69,10 @@ const App: React.FC = () => {
     setWalletBalance(prev => prev + amount);
   };
 
+  const handleUseCoins = (amount: number) => {
+    setWalletBalance(prev => Math.max(0, prev - amount));
+  };
+
   const handleSaveProfile = (updatedProfile: UserProfile) => {
     setUserProfile(updatedProfile);
     setIsEditingProfile(false);
@@ -58,6 +81,68 @@ const App: React.FC = () => {
   const handleSaveGallery = (newGallery: string[]) => {
     setUserProfile(prev => ({ ...prev, gallery: newGallery }));
     setIsEditingGallery(false);
+  };
+
+  const handlePlusClick = () => {
+    setIsLiveSelectionOpen(true);
+  };
+
+  const handleLiveTypeSelect = (type: 'selling' | 'auction') => {
+    // If selling, user must select products first
+    if (type === 'selling') {
+       setIsLiveSelectionOpen(false);
+       setIsProductSelectionOpen(true);
+    } else {
+       // Auction Setup
+       setIsLiveSelectionOpen(false);
+       setIsAuctionSetupOpen(true);
+    }
+  };
+
+  const handleProductSelectionConfirm = (selectedProducts: Product[]) => {
+    setIsProductSelectionOpen(false);
+    startCountdownAndLive(selectedProducts, false);
+  };
+
+  const handleAuctionSetupConfirm = (durationMs: number, startingPrice: number) => {
+    setIsAuctionSetupOpen(false);
+    startCountdownAndLive([], true, { durationMs, startingPrice });
+  };
+
+  const startCountdownAndLive = (liveProducts: Product[], isAuction: boolean, auctionData?: { durationMs: number, startingPrice: number }) => {
+     setIsCountdownActive(true);
+     setCountdownValue(5);
+     
+     let count = 5;
+     const timer = setInterval(() => {
+        count--;
+        if (count > 0) {
+           setCountdownValue(count);
+        } else {
+           clearInterval(timer);
+           setIsCountdownActive(false);
+           
+           // Actually start live
+           const myStream: Streamer = {
+              id: 'live-host-' + Date.now(),
+              name: userProfile.username,
+              title: isAuction ? `Auction Started! 🔨 Start: ฿${auctionData?.startingPrice}` : 'Flash Sale! My Collection 🔥',
+              viewerCount: 0,
+              coverImage: userProfile.coverImage,
+              itemCount: liveProducts.length,
+              products: liveProducts.length > 0 ? liveProducts : myProducts, // Fallback products or empty
+              isAuction: isAuction,
+              auctionEndTime: isAuction && auctionData ? Date.now() + auctionData.durationMs : undefined,
+              auctionStartingPrice: isAuction && auctionData ? auctionData.startingPrice : undefined
+           };
+           setCurrentStreamer(myStream);
+        }
+     }, 1000);
+  };
+
+  const handleAddProductRedirect = () => {
+    setIsProductSelectionOpen(false);
+    setActiveTab('my_products');
   };
 
   // Cart Logic
@@ -79,12 +164,12 @@ const App: React.FC = () => {
     const total = cartItems.reduce((acc, item) => acc + (item.price * item.quantity), 0);
     
     if (walletBalance >= total) {
-      // Success Logic (Mock)
-      alert(`Checkout Successful! -${total} Coins`);
       setWalletBalance(prev => prev - total);
       setCartItems([]); // Clear Cart
     } else {
-      // Insufficient Funds
+      // Insufficient Funds handled by simple check here, but Cart.tsx handles UI
+      // In a real app we would validate before showing success in Cart
+      // For this demo, Cart handles the Success view, we just update data.
       alert('Insufficient Balance. Please Top Up.');
       setIsWalletOpen(true);
     }
@@ -94,12 +179,16 @@ const App: React.FC = () => {
     { id: 'address', icon: MapPin, label: t.myAddress },
     { id: 'payment', icon: CreditCard, label: t.myPayment },
     { id: 'wallet', icon: Wallet, label: t.myWallet },
+    { id: 'my_products', icon: Package, label: t.myProducts },
   ];
 
   const handleMenuClick = (id: string) => {
     if (id === 'wallet') {
       setIsWalletOpen(true);
-      setIsMenuOpen(false); // Close menu when opening wallet
+      setIsMenuOpen(false); 
+    } else if (id === 'my_products') {
+      setActiveTab('my_products');
+      setIsMenuOpen(false);
     }
   };
 
@@ -182,6 +271,15 @@ const App: React.FC = () => {
             onEditGallery={() => setIsEditingGallery(true)}
           />
         );
+      case 'my_products':
+        return (
+            <MyProducts 
+                language={language}
+                onBack={() => setActiveTab('home')}
+                products={myProducts}
+                setProducts={setMyProducts}
+            />
+        );
       case 'all_live':
         return (
           <div className="pb-24 animate-fade-in">
@@ -203,11 +301,10 @@ const App: React.FC = () => {
 
              {/* Full Grid */}
              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 px-2">
-               {/* Displaying Mock Data (Doubled to simulate more content) */}
-               {[...MOCK_STREAMERS, ...MOCK_STREAMERS].map((streamer, index) => (
+               {streamers.map((streamer, index) => (
                  <StreamCard 
                    key={`${streamer.id}-${index}`} 
-                   streamer={{...streamer, id: `${streamer.id}-${index}`}} // Unique ID for key
+                   streamer={streamer}
                    onPress={handleOpenStream} 
                  />
                ))}
@@ -245,7 +342,7 @@ const App: React.FC = () => {
             </div>
 
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 pb-10">
-              {MOCK_STREAMERS.map(streamer => (
+              {streamers.map(streamer => (
                 <StreamCard 
                   key={streamer.id} 
                   streamer={streamer} 
@@ -351,12 +448,44 @@ const App: React.FC = () => {
         language={language}
       />
 
+      {/* --- Live Selection Modal --- */}
+      <LiveSelectionModal
+        isOpen={isLiveSelectionOpen}
+        onClose={() => setIsLiveSelectionOpen(false)}
+        onSelect={handleLiveTypeSelect}
+        language={language}
+      />
+
+      {/* --- Product Selection Modal --- */}
+      <LiveProductSelectionModal
+        isOpen={isProductSelectionOpen}
+        onClose={() => setIsProductSelectionOpen(false)}
+        products={myProducts}
+        onConfirm={handleProductSelectionConfirm}
+        onAddProductRedirect={handleAddProductRedirect}
+        language={language}
+      />
+
+      {/* --- Auction Setup Modal --- */}
+      <LiveAuctionSetupModal
+        isOpen={isAuctionSetupOpen}
+        onClose={() => setIsAuctionSetupOpen(false)}
+        onConfirm={handleAuctionSetupConfirm}
+        language={language}
+      />
+
+      {/* --- Countdown Overlay --- */}
+      <CountdownOverlay 
+        count={countdownValue} 
+        isActive={isCountdownActive} 
+        language={language} 
+      />
 
       {/* --- Main View --- */}
       <div className={`transition-all duration-300 ${currentStreamer ? 'scale-95 opacity-0 pointer-events-none hidden' : 'scale-100 opacity-100'}`}>
         
         {/* Fixed Header */}
-        {activeTab !== 'messages' && activeTab !== 'all_live' && (
+        {activeTab !== 'messages' && activeTab !== 'all_live' && activeTab !== 'my_products' && (
           <header className="fixed top-0 left-0 right-0 z-40 bg-black/80 backdrop-blur-md px-4 h-16 flex items-center justify-between border-b border-gray-800 shadow-lg shadow-black/50">
             <div className="flex items-center gap-3">
               <button 
@@ -396,12 +525,12 @@ const App: React.FC = () => {
         )}
 
         {/* Main Scrollable Content */}
-        <main className={`${(activeTab === 'messages' || activeTab === 'all_live') ? 'pt-0 p-0 h-screen overflow-hidden' : 'pt-20 p-4 pb-24 h-screen overflow-y-auto no-scrollbar'} max-w-5xl mx-auto`}>
+        <main className={`${(activeTab === 'messages' || activeTab === 'all_live' || activeTab === 'my_products') ? 'pt-0 p-0 h-screen overflow-hidden' : 'pt-20 p-4 pb-24 h-screen overflow-y-auto no-scrollbar'} max-w-5xl mx-auto`}>
           {renderContent()}
         </main>
         
         {/* Fixed Bottom Nav */}
-        {(activeTab !== 'messages') && (
+        {(activeTab !== 'messages') && (activeTab !== 'my_products') && (
           <nav className="fixed bottom-0 left-0 right-0 bg-black/90 backdrop-blur border-t border-gray-800 py-3 px-6 flex justify-between items-center z-40 md:hidden pb-safe shadow-[0_-5px_10px_rgba(0,0,0,0.5)]">
              <button 
                onClick={() => setActiveTab('home')}
@@ -419,7 +548,11 @@ const App: React.FC = () => {
                <span className="text-[10px] font-medium">{t.discover}</span>
              </button>
              
-             <div className="w-12 h-12 bg-red-600 rounded-full -mt-8 flex items-center justify-center border-4 border-black shadow-lg shadow-red-900/50 cursor-pointer hover:bg-red-700 transition-colors">
+             {/* Center Plus Button - Opens Live Selection */}
+             <div 
+               className="w-12 h-12 bg-red-600 rounded-full -mt-8 flex items-center justify-center border-4 border-black shadow-lg shadow-red-900/50 cursor-pointer hover:bg-red-700 transition-colors active:scale-95"
+               onClick={handlePlusClick}
+             >
                 <Plus size={24} color="white" />
              </div>
              
@@ -453,6 +586,9 @@ const App: React.FC = () => {
           streamer={currentStreamer} 
           onClose={handleCloseStream}
           language={language}
+          walletBalance={walletBalance}
+          onUseCoins={handleUseCoins}
+          onOpenWallet={() => setIsWalletOpen(true)}
         />
       )}
     </div>

@@ -1,5 +1,6 @@
-import React from 'react';
-import { Minus, Plus, Trash2, ShoppingBag, ArrowRight, ShieldCheck } from 'lucide-react';
+
+import React, { useState } from 'react';
+import { Minus, Plus, Trash2, ShoppingBag, ArrowRight, ShieldCheck, CheckCircle, Receipt } from 'lucide-react';
 import { CartItem, Language } from '../types';
 import { TRANSLATIONS } from '../constants';
 
@@ -20,10 +21,46 @@ const Cart: React.FC<CartProps> = ({
   onCheckout,
   onGoShopping
 }) => {
+  const [isSuccess, setIsSuccess] = useState(false);
+  
   const t = TRANSLATIONS[language];
   const subtotal = items.reduce((acc, item) => acc + (item.price * item.quantity), 0);
   const shipping = 0; // Free shipping logic can be added here
   const total = subtotal + shipping;
+
+  const handleCheckoutProcess = () => {
+      // Show success animation first, then trigger parent checkout logic
+      setIsSuccess(true);
+      setTimeout(() => {
+          setIsSuccess(false);
+          onCheckout();
+      }, 2500);
+  };
+
+  if (isSuccess) {
+      return (
+          <div className="flex flex-col items-center justify-center h-[70vh] animate-fade-in text-center px-6">
+              <div className="w-24 h-24 bg-green-500 rounded-full flex items-center justify-center mb-6 shadow-lg shadow-green-500/30 animate-float">
+                  <CheckCircle size={48} className="text-white" />
+              </div>
+              <h2 className="text-2xl font-athletic text-white mb-2 tracking-wide">Payment Successful!</h2>
+              <p className="text-gray-400 mb-8 text-sm">Thank you for your purchase.</p>
+              
+              <div className="bg-gray-800 rounded-xl p-6 w-full max-w-xs border border-gray-700 relative">
+                  <div className="absolute top-0 left-1/2 transform -translate-x-1/2 -mt-3 w-6 h-6 bg-black rounded-full border-b border-gray-700"></div>
+                  <div className="flex justify-between items-center mb-4">
+                      <span className="text-gray-400 text-xs uppercase">Order ID</span>
+                      <span className="text-white font-mono text-sm">#ORDER-{Math.floor(Math.random()*10000)}</span>
+                  </div>
+                  <div className="border-t border-dashed border-gray-600 my-4"></div>
+                  <div className="flex justify-between items-center">
+                      <span className="text-gray-300 font-bold">Total Paid</span>
+                      <span className="text-yellow-400 font-bold text-xl">฿{total.toLocaleString()}</span>
+                  </div>
+              </div>
+          </div>
+      );
+  }
 
   if (items.length === 0) {
     return (
@@ -76,8 +113,8 @@ const Cart: React.FC<CartProps> = ({
                    </button>
                 </div>
                 <div className="flex gap-2 mt-1">
-                   <span className="text-[10px] bg-gray-700 px-1.5 py-0.5 rounded text-gray-300">Size: M</span>
-                   <span className="text-[10px] bg-gray-700 px-1.5 py-0.5 rounded text-gray-300">Color: Black</span>
+                   <span className="text-gray-400 text-[10px] bg-gray-900 px-2 py-0.5 rounded border border-gray-700">Size: M</span>
+                   <span className="text-gray-400 text-[10px] bg-gray-900 px-2 py-0.5 rounded border border-gray-700">Color: Black</span>
                 </div>
               </div>
 
@@ -133,7 +170,7 @@ const Cart: React.FC<CartProps> = ({
         </div>
 
         <button 
-          onClick={onCheckout}
+          onClick={handleCheckoutProcess}
           className="w-full bg-gradient-to-r from-red-700 to-red-600 text-white py-4 rounded-xl font-bold text-lg shadow-lg shadow-red-900/50 hover:from-red-600 hover:to-red-500 active:scale-95 transition-all flex items-center justify-center gap-2"
         >
           {t.checkout} <ArrowRight size={20} />

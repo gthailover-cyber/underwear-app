@@ -7,6 +7,10 @@ export interface Product {
   price: number;
   image: string;
   stock: number;
+  sold?: number;     // Added: Number of items sold
+  colors?: string[]; // Array of hex codes or color names
+  sizes?: string[];  // Array of size codes (S, M, L, XL)
+  description?: string;
 }
 
 export interface CartItem extends Product {
@@ -20,6 +24,7 @@ export interface Comment {
   username: string;
   message: string;
   isSystem?: boolean;
+  avatar?: string; // Added avatar field
 }
 
 export interface Streamer {
@@ -28,8 +33,15 @@ export interface Streamer {
   title: string;
   viewerCount: number;
   coverImage: string;
+  youtubeId?: string; // Added for 100% Free Live Streaming via YouTube Embed
+  videoUrl?: string; // Added for Direct MP4 Streaming (Professional & Reliable)
   itemCount: number;
   products: Product[];
+  isAuction?: boolean; // New flag for Auction mode
+  auctionEndTime?: number; // Timestamp for auction end
+  auctionStartingPrice?: number; // Starting price for auction
+  currentBid?: number; // Added: Current highest bid
+  topBidder?: string; // Added: Username of the current top bidder
 }
 
 export interface UserProfile {

@@ -7,6 +7,7 @@ export const TRANSLATIONS = {
     myAddress: 'My Address',
     myPayment: 'My Payment',
     myWallet: 'My Wallet',
+    myProducts: 'My Products',
     logout: 'Log Out',
     home: 'Home',
     discover: 'Discover',
@@ -20,6 +21,8 @@ export const TRANSLATIONS = {
     shopItems: 'Shop Items',
     buyNow: 'BUY NOW',
     stock: 'Stock',
+    sold: 'Sold',
+    remaining: 'Remaining',
     products: 'Products',
     memberSince: 'Member since 2024',
     tags: ['All', 'Hot 🔥', 'New Arrival', 'Sale', 'Briefs', 'Boxers', 'Jockstraps'],
@@ -86,65 +89,112 @@ export const TRANSLATIONS = {
     searchMessages: 'Search messages...',
     noMessages: 'No messages yet',
     typeMessage: 'Type a message...',
-    watchLive: 'Watch Live'
+    watchLive: 'Watch Live',
+    // End Live
+    endLiveTitle: 'End Live Stream?',
+    endLiveDesc: 'Are you sure you want to stop streaming?',
+    confirmEnd: 'End Now',
+    // Live Selection
+    liveSelectionTitle: 'Select Live Type',
+    liveSelling: 'Live Selling',
+    liveSellingDesc: 'Sell products directly to viewers',
+    liveAuction: 'Live Auction',
+    liveAuctionDesc: 'Bid and win rare items',
+    // My Products
+    addProduct: 'Add Product',
+    editProduct: 'Edit Product',
+    productName: 'Product Name',
+    price: 'Price',
+    description: 'Description',
+    colors: 'Colors',
+    sizes: 'Sizes',
+    deleteConfirm: 'Delete this product?',
+    manageStock: 'Manage Stock',
+    // Live Product Selection
+    selectProductsTitle: 'Select Products for Live',
+    noProductsFound: 'No Products Found',
+    pleaseAddProduct: 'You need to add products before starting a live sale.',
+    goToAddProduct: 'Go to Add Product',
+    startLive: 'Start Live',
+    selected: 'Selected',
+    readyToLive: 'Ready to Live',
+    startingIn: 'Starting in',
+    // Auction Setup
+    auctionSetupTitle: 'Auction Setup',
+    duration: 'Duration',
+    startingPrice: 'Starting Price',
+    startAuction: 'Start Auction',
+    min: 'min',
+    hour: 'hour',
+    hours: 'hours',
+    // Auction UI
+    currentBid: 'Current Bid',
+    topBidder: 'Top Bidder',
+    placeBid: 'PLACE BID',
+    yourBid: 'Your Bid',
+    bidSuccess: 'Bid Placed!',
+    bidTooLow: 'Bid too low'
   },
   th: {
     menuTitle: 'เมนู',
     myAddress: 'ที่อยู่ของฉัน',
-    myPayment: 'ช่องทางชำระเงิน',
-    myWallet: 'กระเป๋าตังค์',
+    myPayment: 'ช่องทางการชำระเงิน',
+    myWallet: 'กระเป๋าเงิน',
+    myProducts: 'สินค้าของฉัน',
     logout: 'ออกจากระบบ',
     home: 'หน้าหลัก',
-    discover: 'ค้นหา',
-    cart: 'ตะกร้า',
+    discover: 'ค้นพบ',
+    cart: 'รถเข็น',
     profile: 'โปรไฟล์',
-    liveNow: 'ไลฟ์สดตอนนี้',
+    liveNow: 'ไลฟ์สด',
     viewAll: 'ดูทั้งหมด',
     follow: 'ติดตาม',
     watching: 'คนดู',
-    saySomething: 'แสดงความคิดเห็น...',
-    shopItems: 'รายการสินค้า',
+    saySomething: 'พูดคุย...',
+    shopItems: 'สินค้าในร้าน',
     buyNow: 'ซื้อเลย',
     stock: 'คงเหลือ',
+    sold: 'ขายแล้ว',
+    remaining: 'เหลือ',
     products: 'สินค้า',
-    memberSince: 'สมาชิกปี 2024',
+    memberSince: 'สมาชิกตั้งแต่ 2024',
     tags: ['ทั้งหมด', 'มาแรง 🔥', 'สินค้าใหม่', 'ลดราคา', 'กางเกงใน', 'บ็อกเซอร์', 'จ็อกสแตรป'],
     // Wallet Translations
     wallet: 'กระเป๋าเงิน',
     currentBalance: 'ยอดเงินคงเหลือ',
     topUp: 'เติมเงิน',
     coins: 'เหรียญ',
-    selectAmount: 'เลือกจำนวนเงิน',
+    selectAmount: 'เลือกจำนวน',
     paymentMethod: 'ช่องทางชำระเงิน',
     creditDebit: 'บัตรเครดิต / เดบิต',
     truemoney: 'ทรูมันนี่ วอลเล็ท',
     payNow: 'ชำระเงิน',
     processing: 'กำลังดำเนินการ...',
-    paymentSuccess: 'เติมเงินสำเร็จ!',
+    paymentSuccess: 'ชำระเงินสำเร็จ!',
     exchangeRate: '1 บาท = 1 เหรียญ',
     // Discover Translations
     featured: 'แนะนำ',
     trendingNow: 'กำลังมาแรง',
-    hotLive: 'ไลฟ์สุดฮอต 🔥',
-    recommended: 'ไลฟ์แนะนำสำหรับคุณ',
-    shopCollection: 'ดูไลฟ์สด',
+    hotLive: 'ไลฟ์ยอดฮิต 🔥',
+    recommended: 'ไลฟ์แนะนำ',
+    shopCollection: 'ชมไลฟ์',
     categories: {
       new: 'ไลฟ์ใหม่',
-      sale: 'ลดโหด',
-      bundle: 'เหมาลัง',
+      sale: 'ลดกระหน่ำ',
+      bundle: 'เหมาโหล',
       premium: 'พรีเมียม'
     },
     // Cart Translations
-    myCart: 'ตะกร้าของฉัน',
+    myCart: 'รถเข็นของฉัน',
     items: 'รายการ',
-    subtotal: 'รวมค่าสินค้า',
+    subtotal: 'ยอดรวมสินค้า',
     shipping: 'ค่าจัดส่ง',
     total: 'ยอดรวมทั้งสิ้น',
     checkout: 'ชำระเงิน',
-    emptyCart: 'ตะกร้าของคุณว่างเปล่า',
+    emptyCart: 'ไม่มีสินค้าในรถเข็น',
     startShopping: 'เริ่มช้อปปิ้ง',
     free: 'ฟรี',
-    remove: 'ลบรายการ',
+    remove: 'ลบ',
     // Profile Translations
     editProfile: 'แก้ไขโปรไฟล์',
     editGallery: 'แก้ไขแกลเลอรี่',
@@ -153,9 +203,9 @@ export const TRANSLATIONS = {
     age: 'อายุ',
     height: 'ส่วนสูง',
     weight: 'น้ำหนัก',
-    favorites: 'สไตล์ที่ชอบ',
+    favorites: 'ความชอบ',
     gallery: 'แกลเลอรี่ของฉัน',
-    location: 'สถานที่',
+    location: 'ที่อยู่',
     aboutMe: 'เกี่ยวกับฉัน',
     cm: 'ซม.',
     kg: 'กก.',
@@ -163,16 +213,60 @@ export const TRANSLATIONS = {
     save: 'บันทึก',
     cancel: 'ยกเลิก',
     username: 'ชื่อผู้ใช้',
-    changeCover: 'เปลี่ยนปก',
-    changeAvatar: 'เปลี่ยนรูป',
-    addTag: 'เพิ่ม',
-    enterTagPlaceholder: 'เช่น บ็อกเซอร์, ขาสั้น...',
+    changeCover: 'เปลี่ยนรูปปก',
+    changeAvatar: 'เปลี่ยนรูปโปรไฟล์',
+    addTag: 'เพิ่มแท็ก',
+    enterTagPlaceholder: 'เช่น บ็อกเซอร์, จ็อกสแตรป...',
     // Messages
     messages: 'ข้อความ',
     searchMessages: 'ค้นหาข้อความ...',
-    noMessages: 'ยังไม่มีข้อความ',
+    noMessages: 'ไม่มีข้อความ',
     typeMessage: 'พิมพ์ข้อความ...',
-    watchLive: 'ดูไลฟ์สด'
+    watchLive: 'ดูไลฟ์',
+    // End Live
+    endLiveTitle: 'จบการไลฟ์?',
+    endLiveDesc: 'คุณแน่ใจหรือไม่ว่าต้องการหยุดการถ่ายทอดสด?',
+    confirmEnd: 'จบตอนนี้',
+    // Live Selection
+    liveSelectionTitle: 'เลือกประเภทการไลฟ์',
+    liveSelling: 'ไลฟ์ขายของ',
+    liveSellingDesc: 'ขายสินค้าให้กับผู้ชมโดยตรง',
+    liveAuction: 'ไลฟ์ประมูล',
+    liveAuctionDesc: 'ประมูลสินค้าแรร์ไอเทม',
+    // My Products
+    addProduct: 'เพิ่มสินค้า',
+    editProduct: 'แก้ไขสินค้า',
+    productName: 'ชื่อสินค้า',
+    price: 'ราคา',
+    description: 'รายละเอียด',
+    colors: 'สี',
+    sizes: 'ไซส์',
+    deleteConfirm: 'ต้องการลบสินค้านี้ใช่ไหม?',
+    manageStock: 'จัดการสต็อก',
+    // Live Product Selection
+    selectProductsTitle: 'เลือกสินค้าสำหรับไลฟ์',
+    noProductsFound: 'ไม่พบสินค้า',
+    pleaseAddProduct: 'คุณต้องเพิ่มสินค้าก่อนเริ่มไลฟ์ขายของ',
+    goToAddProduct: 'ไปที่เพิ่มสินค้า',
+    startLive: 'เริ่มไลฟ์',
+    selected: 'เลือกแล้ว',
+    readyToLive: 'เตรียมพร้อมไลฟ์',
+    startingIn: 'เริ่มใน',
+    // Auction Setup
+    auctionSetupTitle: 'ตั้งค่าการประมูล',
+    duration: 'ระยะเวลา',
+    startingPrice: 'ราคาเริ่มต้น',
+    startAuction: 'เริ่มประมูล',
+    min: 'นาที',
+    hour: 'ชั่วโมง',
+    hours: 'ชั่วโมง',
+    // Auction UI
+    currentBid: 'ราคาปัจจุบัน',
+    topBidder: 'ผู้ประมูลสูงสุด',
+    placeBid: 'เสนอราคา',
+    yourBid: 'ราคาของคุณ',
+    bidSuccess: 'เสนอราคาสำเร็จ!',
+    bidTooLow: 'ราคาต่ำเกินไป'
   }
 };
 
@@ -182,31 +276,45 @@ export const MOCK_PRODUCTS: Product[] = [
     name: 'Classic Boxer Briefs (Black)',
     price: 350,
     image: 'https://picsum.photos/200/200?random=101',
-    stock: 50
+    stock: 50,
+    sold: 12,
+    colors: ['#000000', '#FFFFFF', '#808080'],
+    sizes: ['M', 'L', 'XL']
   },
   {
     id: 'p2',
     name: 'Seamless Trunks (Red)',
     price: 450,
     image: 'https://picsum.photos/200/200?random=102',
-    stock: 20
+    stock: 20,
+    sold: 5,
+    colors: ['#FF0000', '#000000'],
+    sizes: ['S', 'M']
   },
   {
     id: 'p3',
     name: 'Cotton Briefs Pack (White)',
     price: 990,
     image: 'https://picsum.photos/200/200?random=103',
-    stock: 15
+    stock: 15,
+    sold: 8,
+    colors: ['#FFFFFF'],
+    sizes: ['L', 'XL', 'XXL']
   },
   {
     id: 'p4',
     name: 'Sport Performance Jockstrap',
     price: 590,
     image: 'https://picsum.photos/200/200?random=104',
-    stock: 10
+    stock: 10,
+    sold: 2,
+    colors: ['#0000FF', '#FFFF00'],
+    sizes: ['M', 'L']
   }
 ];
 
+// Using Mixkit free stock videos for professional demo quality
+// These are direct MP4 links that work reliably
 export const MOCK_STREAMERS: Streamer[] = [
   {
     id: 's1',
@@ -214,6 +322,7 @@ export const MOCK_STREAMERS: Streamer[] = [
     title: 'Sale! Boxer Briefs 50% Off 🔥',
     viewerCount: 1540,
     coverImage: 'https://picsum.photos/400/700?random=1',
+    videoUrl: 'https://assets.mixkit.co/videos/preview/mixkit-man-exercising-with-gym-ropes-209-large.mp4',
     itemCount: 12,
     products: MOCK_PRODUCTS
   },
@@ -223,6 +332,7 @@ export const MOCK_STREAMERS: Streamer[] = [
     title: 'New Collection Arrival 🕶️',
     viewerCount: 890,
     coverImage: 'https://picsum.photos/400/700?random=2',
+    videoUrl: 'https://assets.mixkit.co/videos/preview/mixkit-young-man-training-on-the-bars-in-the-gym-23588-large.mp4',
     itemCount: 8,
     products: [MOCK_PRODUCTS[0], MOCK_PRODUCTS[2]]
   },
@@ -232,6 +342,7 @@ export const MOCK_STREAMERS: Streamer[] = [
     title: 'ล้างสต็อก หมดแล้วหมดเลย 📦',
     viewerCount: 3200,
     coverImage: 'https://picsum.photos/400/700?random=3',
+    videoUrl: 'https://assets.mixkit.co/videos/preview/mixkit-man-doing-push-ups-in-gym-23616-large.mp4',
     itemCount: 5,
     products: [MOCK_PRODUCTS[1], MOCK_PRODUCTS[3]]
   },
@@ -241,16 +352,24 @@ export const MOCK_STREAMERS: Streamer[] = [
     title: 'Sport Underwear for Gym 💪',
     viewerCount: 560,
     coverImage: 'https://picsum.photos/400/700?random=4',
+    videoUrl: 'https://assets.mixkit.co/videos/preview/mixkit-athletic-man-working-out-with-heavy-ropes-23267-large.mp4',
     itemCount: 20,
-    products: MOCK_PRODUCTS
+    products: MOCK_PRODUCTS,
+    isAuction: true,
+    auctionEndTime: Date.now() + 3600000,
+    auctionStartingPrice: 500,
+    currentBid: 650,
+    topBidder: 'GymRat99'
   }
 ];
 
 export const INITIAL_COMMENTS = [
-  { id: 'c1', username: 'System', message: 'Welcome to the live room!', isSystem: true },
-  { id: 'c2', username: 'User123', message: 'ราคาเท่าไหร่ครับ?' },
-  { id: 'c3', username: 'TonyStark', message: 'Looking good!' },
-  { id: 'c4', username: 'BKK_Boy', message: 'มีสีแดงไหมครับ?' },
+  { id: 'c1', username: 'System', message: 'Welcome to the live room!', isSystem: true, avatar: '' },
+  { id: 'c2', username: 'User123', message: 'ราคาเท่าไหร่ครับ?', avatar: 'https://picsum.photos/200/200?random=50' },
+  { id: 'c3', username: 'TonyStark', message: 'Looking good!', avatar: 'https://picsum.photos/200/200?random=51' },
+  { id: 'c4', username: 'BKK_Boy', message: 'มีสีแดงไหมครับ?', avatar: 'https://picsum.photos/200/200?random=52' },
+  { id: 'c5', username: 'Sarah_Jane', message: 'Fabulous!', avatar: 'https://picsum.photos/200/200?random=53' },
+  { id: 'c6', username: 'Mike_T', message: 'Can I see the back?', avatar: 'https://picsum.photos/200/200?random=54' },
 ];
 
 export const MOCK_STORIES = [
