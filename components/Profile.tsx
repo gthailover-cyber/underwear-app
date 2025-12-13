@@ -1,5 +1,6 @@
+
 import React from 'react';
-import { MapPin, Edit3, Grid, Settings } from 'lucide-react';
+import { MapPin, Pencil, Grid, Settings } from 'lucide-react';
 import { UserProfile, Language } from '../types';
 import { TRANSLATIONS } from '../constants';
 
@@ -50,7 +51,7 @@ const Profile: React.FC<ProfileProps> = ({ language, user, onEdit, onEditGallery
             onClick={onEdit}
             className="mt-4 px-6 py-2 bg-gray-800 border border-gray-700 rounded-full text-sm font-bold text-white flex items-center gap-2 hover:bg-gray-700 transition-colors"
           >
-            <Edit3 size={14} />
+            <Pencil size={14} />
             {t.editProfile}
           </button>
         </div>

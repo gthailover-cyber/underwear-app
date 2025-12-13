@@ -1,6 +1,6 @@
 
 import React, { useState, useRef, useEffect } from 'react';
-import { ArrowLeft, Phone, Video, MoreVertical, Send, Plus, Image as ImageIcon, Smile, Play, ArrowRight } from 'lucide-react';
+import { ArrowLeft, Phone, Video, MoreVertical, Send, Plus, Smile, Play, ArrowRight } from 'lucide-react';
 import { MessagePreview, ChatMessage, Language, Streamer } from '../types';
 import { TRANSLATIONS, MOCK_CHAT_HISTORY } from '../constants';
 
