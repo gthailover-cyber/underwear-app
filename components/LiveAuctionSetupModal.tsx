@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { X, Clock, Timer, Gavel } from 'lucide-react';
-import { Language } from '../types';
+import { Language, Product } from '../types';
 import { TRANSLATIONS } from '../constants';
 
 interface LiveAuctionSetupModalProps {
@@ -9,6 +9,7 @@ interface LiveAuctionSetupModalProps {
   onClose: () => void;
   onConfirm: (durationMs: number, startingPrice: number) => void;
   language: Language;
+  product?: Product | null; // Added product prop
 }
 
 const DURATIONS = [
@@ -18,7 +19,7 @@ const DURATIONS = [
   { label: '2 hours', value: 120 * 60 * 1000 },
 ];
 
-const LiveAuctionSetupModal: React.FC<LiveAuctionSetupModalProps> = ({ isOpen, onClose, onConfirm, language }) => {
+const LiveAuctionSetupModal: React.FC<LiveAuctionSetupModalProps> = ({ isOpen, onClose, onConfirm, language, product }) => {
   const t = TRANSLATIONS[language];
   const [selectedDuration, setSelectedDuration] = useState<number>(DURATIONS[0].value);
   const [startingPrice, setStartingPrice] = useState<string>('');
@@ -47,8 +48,20 @@ const LiveAuctionSetupModal: React.FC<LiveAuctionSetupModalProps> = ({ isOpen, o
           </button>
         </div>
 
-        <div className="p-6 space-y-8">
+        <div className="p-6 space-y-6">
            
+           {/* Selected Product Preview */}
+           {product && (
+               <div className="bg-gray-800 rounded-xl p-3 flex gap-3 border border-gray-700">
+                   <img src={product.image} className="w-16 h-16 rounded-lg object-cover bg-gray-900" />
+                   <div className="flex-1 min-w-0 flex flex-col justify-center">
+                       <span className="text-xs text-yellow-500 font-bold uppercase tracking-wider mb-1">Auction Item</span>
+                       <h3 className="text-white font-medium text-sm truncate">{product.name}</h3>
+                       <p className="text-gray-500 text-xs">Original Price: ฿{product.price}</p>
+                   </div>
+               </div>
+           )}
+
            {/* Duration Selector */}
            <div>
               <label className="text-xs font-bold text-gray-500 uppercase ml-1 mb-3 block flex items-center gap-1">

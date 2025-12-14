@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { X, CheckCircle, Package, Plus, Video } from 'lucide-react';
+import { X, CheckCircle, Package, Plus, Video, Circle } from 'lucide-react';
 import { Language, Product } from '../types';
 import { TRANSLATIONS } from '../constants';
 
@@ -11,6 +11,7 @@ interface LiveProductSelectionModalProps {
   onConfirm: (selectedProducts: Product[]) => void;
   onAddProductRedirect: () => void;
   language: Language;
+  selectionMode?: 'multiple' | 'single';
 }
 
 const LiveProductSelectionModal: React.FC<LiveProductSelectionModalProps> = ({
@@ -19,7 +20,8 @@ const LiveProductSelectionModal: React.FC<LiveProductSelectionModalProps> = ({
   products,
   onConfirm,
   onAddProductRedirect,
-  language
+  language,
+  selectionMode = 'multiple'
 }) => {
   const t = TRANSLATIONS[language];
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -27,13 +29,25 @@ const LiveProductSelectionModal: React.FC<LiveProductSelectionModalProps> = ({
   if (!isOpen) return null;
 
   const toggleSelection = (id: string) => {
-    const newSelection = new Set(selectedIds);
-    if (newSelection.has(id)) {
-      newSelection.delete(id);
+    if (selectionMode === 'single') {
+        // Single mode: Replace selection
+        const newSelection = new Set<string>();
+        if (selectedIds.has(id)) {
+            // Deselect if already selected (optional, but good UX)
+        } else {
+            newSelection.add(id);
+        }
+        setSelectedIds(newSelection);
     } else {
-      newSelection.add(id);
+        // Multiple mode: Toggle
+        const newSelection = new Set(selectedIds);
+        if (newSelection.has(id)) {
+          newSelection.delete(id);
+        } else {
+          newSelection.add(id);
+        }
+        setSelectedIds(newSelection);
     }
-    setSelectedIds(newSelection);
   };
 
   const handleConfirm = () => {
@@ -50,8 +64,12 @@ const LiveProductSelectionModal: React.FC<LiveProductSelectionModalProps> = ({
         {/* Header */}
         <div className="p-5 border-b border-gray-800 flex items-center justify-between">
           <div>
-            <h2 className="text-xl font-athletic text-white tracking-wide">{t.selectProductsTitle}</h2>
-            <p className="text-xs text-gray-400 mt-1">{selectedIds.size} {t.selected}</p>
+            <h2 className="text-xl font-athletic text-white tracking-wide">
+                {selectionMode === 'single' ? 'Select 1 Item for Auction' : t.selectProductsTitle}
+            </h2>
+            <p className="text-xs text-gray-400 mt-1">
+                {selectedIds.size} {t.selected}
+            </p>
           </div>
           <button onClick={onClose} className="p-2 hover:bg-gray-800 rounded-full text-gray-400 hover:text-white">
             <X size={20} />
@@ -92,10 +110,15 @@ const LiveProductSelectionModal: React.FC<LiveProductSelectionModalProps> = ({
                         : 'bg-gray-800 border-gray-700 hover:border-gray-600'
                     }`}
                   >
-                    <div className={`w-5 h-5 rounded-md border flex items-center justify-center flex-shrink-0 transition-colors ${
-                      isSelected ? 'bg-red-600 border-red-600' : 'border-gray-500'
+                    <div className={`w-5 h-5 rounded-full border flex items-center justify-center flex-shrink-0 transition-colors ${
+                      isSelected 
+                        ? 'bg-red-600 border-red-600' 
+                        : 'border-gray-500'
                     }`}>
-                      {isSelected && <CheckCircle size={14} className="text-white" />}
+                      {isSelected 
+                        ? <CheckCircle size={14} className="text-white" />
+                        : selectionMode === 'single' && <Circle size={14} className="text-transparent" />
+                      }
                     </div>
                     
                     <img src={product.image} className="w-12 h-12 rounded-lg object-cover bg-gray-700" alt={product.name} />
@@ -128,7 +151,9 @@ const LiveProductSelectionModal: React.FC<LiveProductSelectionModalProps> = ({
                    : 'bg-gray-800 text-gray-500 cursor-not-allowed'
                }`}
              >
-               <Video size={20} /> {t.startLive} {selectedIds.size > 0 ? `(${selectedIds.size})` : ''}
+               {selectionMode === 'single' ? 'Continue to Setup' : (
+                   <><Video size={20} /> {t.startLive} {selectedIds.size > 0 ? `(${selectedIds.size})` : ''}</>
+               )}
              </button>
           </div>
         )}

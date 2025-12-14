@@ -42,8 +42,12 @@ const StreamCard: React.FC<StreamCardProps> = ({ streamer, onPress }) => {
       {/* Bottom Content */}
       <div className="absolute bottom-0 left-0 right-0 p-3">
         <div className="flex items-center space-x-2 mb-1">
-          <div className="w-6 h-6 rounded-full bg-gray-300 overflow-hidden border border-white">
-            <img src={streamer.coverImage} alt="avatar" className="w-full h-full object-cover" />
+          <div className="relative">
+            <div className="w-6 h-6 rounded-full bg-gray-300 overflow-hidden border border-white">
+              <img src={streamer.coverImage} alt="avatar" className="w-full h-full object-cover" />
+            </div>
+            {/* Online Indicator for Streamer (Always online when live) */}
+            <div className="absolute bottom-0 right-0 w-2 h-2 bg-green-500 border border-black rounded-full"></div>
           </div>
           <span className="text-xs font-semibold text-gray-200 truncate">{streamer.name}</span>
         </div>

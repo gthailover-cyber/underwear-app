@@ -1,6 +1,11 @@
 
 export type Language = 'en' | 'th';
 
+// New: User Roles
+export type UserRole = 'model' | 'organizer' | 'supporter';
+
+export type ApplicationStatus = 'none' | 'pending' | 'approved' | 'rejected';
+
 export interface Product {
   id: string;
   name: string;
@@ -48,6 +53,8 @@ export interface UserProfile {
   username: string;
   avatar: string;
   coverImage: string;
+  role: UserRole; // Added: User Role
+  modelApplicationStatus?: ApplicationStatus; // Added: Application Status
   age: number;
   height: number;
   weight: number;
@@ -55,6 +62,17 @@ export interface UserProfile {
   bio: string;
   favorites: string[]; // Favorite underwear types
   gallery: string[];
+  followers: number; // Added
+  following: number; // Added
+}
+
+export interface Person {
+  id: string;
+  username: string;
+  avatar: string;
+  isOnline: boolean;
+  followers?: number;
+  role?: UserRole; // Added role to Person
 }
 
 export interface MessagePreview {
@@ -81,4 +99,43 @@ export interface ChatMessage {
   // For Live Share
   sharedStreamerId?: string; 
   sharedStreamer?: Streamer; // In a real app, you'd fetch this by ID
+  // For Group Chat
+  senderName?: string;
+  senderAvatar?: string;
+}
+
+// Group Chat Types
+export interface ChatRoom {
+  id: string;
+  name: string;
+  image: string;
+  type: 'public' | 'private';
+  hostId: string; // ID of the organizer
+  hostName: string;
+  members: number;
+  lastMessage?: string;
+  lastMessageTime?: string;
+}
+
+// Order Types
+export type OrderStatus = 'pending' | 'shipping' | 'delivered' | 'cancelled';
+
+export interface OrderTimeline {
+  id: string;
+  title: string;
+  description: string;
+  date: string;
+  time: string;
+  isCompleted: boolean;
+  isCurrent: boolean;
+}
+
+export interface Order {
+  id: string;
+  items: CartItem[];
+  totalPrice: number;
+  status: OrderStatus;
+  date: string;
+  trackingNumber?: string;
+  timeline?: OrderTimeline[];
 }

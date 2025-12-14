@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Heart, X, Send, ShoppingBag, User, StopCircle, Timer, Minus, Plus, Gavel, Gift, Coins, ChevronRight, Wallet, Sparkles, History } from 'lucide-react';
-import { Streamer, Comment, Language } from '../types';
+import { Heart, X, Send, ShoppingBag, User, StopCircle, Timer, Minus, Plus, Gavel, Gift, Coins, ChevronRight, Wallet, Sparkles, History, Check, Crown } from 'lucide-react';
+import { Streamer, Comment, Language, Product, CartItem } from '../types';
 import { INITIAL_COMMENTS, TRANSLATIONS } from '../constants';
 import { socketService } from '../services/socket';
 
@@ -12,6 +12,7 @@ interface LiveRoomProps {
   walletBalance: number;
   onUseCoins: (amount: number) => void;
   onOpenWallet: () => void;
+  onAddToCart: (item: CartItem) => void;
 }
 
 interface GiftLogItem {
@@ -34,7 +35,7 @@ const GIFTS = [
   { id: 6, name: 'Rocket', price: 1000, icon: '🚀', color: 'from-red-600 to-orange-600' },
 ];
 
-const LiveRoom: React.FC<LiveRoomProps> = ({ streamer, onClose, language, walletBalance, onUseCoins, onOpenWallet }) => {
+const LiveRoom: React.FC<LiveRoomProps> = ({ streamer, onClose, language, walletBalance, onUseCoins, onOpenWallet, onAddToCart }) => {
   const [comments, setComments] = useState<Comment[]>(INITIAL_COMMENTS);
   const [inputMessage, setInputMessage] = useState('');
   const [heartCount, setHeartCount] = useState(0);
@@ -46,6 +47,10 @@ const LiveRoom: React.FC<LiveRoomProps> = ({ streamer, onClose, language, wallet
   const [showConfirmEnd, setShowConfirmEnd] = useState(false);
   const [videoError, setVideoError] = useState(false);
   
+  // Product Variant Selection State
+  const [selectedProductForPurchase, setSelectedProductForPurchase] = useState<Product | null>(null);
+  const [purchaseConfig, setPurchaseConfig] = useState<{ color: string; size: string; quantity: number }>({ color: '', size: '', quantity: 1 });
+
   // Gift Animation & Log State
   const [giftAnimation, setGiftAnimation] = useState<{ id: number; icon: string; name: string; sender: string; color: string } | null>(null);
   const [floatingPopups, setFloatingPopups] = useState<{ id: number; text: string; icon: string; }[]>([]);
@@ -71,6 +76,14 @@ const LiveRoom: React.FC<LiveRoomProps> = ({ streamer, onClose, language, wallet
   const isHost = streamer.id.startsWith('live-host');
 
   const t = TRANSLATIONS[language];
+
+  // Helper to generate a consistent avatar for a bidder
+  const getBidderAvatar = (username: string) => {
+    if (username === '-' || !username) return '';
+    return `https://picsum.photos/seed/${username}/200`;
+  };
+
+  const topBidderAvatar = getBidderAvatar(topBidder);
 
   // Initialize myBidAmount when currentHighestBid changes
   useEffect(() => {
@@ -335,6 +348,47 @@ const LiveRoom: React.FC<LiveRoomProps> = ({ streamer, onClose, language, wallet
     }
   };
 
+  // Buy Now Logic - Step 1: Open Selection Sheet
+  const handleBuyClick = (product: Product) => {
+     setSelectedProductForPurchase(product);
+     setPurchaseConfig({
+       color: product.colors && product.colors.length > 0 ? product.colors[0] : '',
+       size: product.sizes && product.sizes.length > 0 ? product.sizes[0] : '',
+       quantity: 1
+     });
+     // Close product list
+     setShowProducts(false);
+  };
+
+  // Buy Now Logic - Step 2: Confirm Purchase (Direct or Cart)
+  const handleConfirmPurchase = (action: 'buy_now' | 'add_to_cart') => {
+      if (!selectedProductForPurchase) return;
+
+      const totalCost = selectedProductForPurchase.price * purchaseConfig.quantity;
+
+      if (action === 'buy_now') {
+          if (walletBalance >= totalCost) {
+             onUseCoins(totalCost);
+             alert(`Successfully purchased ${purchaseConfig.quantity}x ${selectedProductForPurchase.name}!`);
+             setSelectedProductForPurchase(null); // Close sheet
+          } else {
+             alert('Insufficient coins!');
+             onOpenWallet();
+          }
+      } else {
+          // Add to Cart
+          const cartItem: CartItem = {
+             ...selectedProductForPurchase,
+             quantity: purchaseConfig.quantity,
+             color: purchaseConfig.color,
+             size: purchaseConfig.size
+          };
+          onAddToCart(cartItem);
+          alert('Added to Cart!');
+          setSelectedProductForPurchase(null);
+      }
+  };
+
   const isInsufficientFunds = myBidAmount > walletBalance;
 
   return (
@@ -546,7 +600,7 @@ const LiveRoom: React.FC<LiveRoomProps> = ({ streamer, onClose, language, wallet
             </div>
         </div>
 
-        {/* --- NEW: Host Auction Stats (Bottom Right) --- */}
+        {/* --- NEW: Host Auction Stats (Bottom Right - Enhanced with Avatar) --- */}
         {isHost && streamer.isAuction && (
            <div className="absolute bottom-24 right-4 z-30 flex flex-col items-end gap-2 pointer-events-none">
               
@@ -561,14 +615,35 @@ const LiveRoom: React.FC<LiveRoomProps> = ({ streamer, onClose, language, wallet
                   </div>
               </div>
 
-              {/* Highest Bid */}
-              <div className="flex items-center gap-2 bg-black/60 backdrop-blur-md rounded-xl p-2 pr-3 border border-yellow-500/50 shadow-lg">
-                  <div className="w-8 h-8 rounded-full bg-yellow-500 flex items-center justify-center shadow-lg shadow-yellow-600/50">
-                      <Gavel size={16} className="text-black" />
+              {/* Highest Bid & User Profile */}
+              <div className="flex flex-col bg-black/70 backdrop-blur-xl rounded-2xl border border-yellow-500/50 shadow-2xl overflow-hidden min-w-[160px]">
+                  {/* Header/Price */}
+                  <div className="bg-gradient-to-r from-yellow-600/20 to-transparent p-3 flex justify-between items-center border-b border-white/5">
+                      <div className="flex flex-col">
+                         <span className="text-[9px] text-yellow-200 uppercase font-bold tracking-wider mb-0.5">Current Highest</span>
+                         <span className="text-2xl font-black font-athletic text-yellow-400 leading-none tracking-wide text-shadow">฿{currentHighestBid.toLocaleString()}</span>
+                      </div>
+                      <div className="w-8 h-8 rounded-full bg-yellow-500 flex items-center justify-center shadow-lg shadow-yellow-600/50 animate-bounce-slow">
+                          <Crown size={16} className="text-black fill-black" />
+                      </div>
                   </div>
-                  <div className="flex flex-col items-end">
-                      <span className="text-[9px] text-yellow-200 uppercase font-bold leading-none mb-0.5">Highest Bid</span>
-                      <span className="text-xl font-black font-athletic text-yellow-400 leading-none tracking-wide">฿{currentHighestBid.toLocaleString()}</span>
+                  
+                  {/* User Profile */}
+                  <div className="p-2 flex items-center gap-2 bg-black/40">
+                      {topBidder !== '-' ? (
+                        <>
+                          <div className="relative">
+                            <img src={topBidderAvatar} className="w-8 h-8 rounded-full border-2 border-yellow-500 object-cover" alt={topBidder} />
+                            <div className="absolute -bottom-1 -right-1 bg-yellow-500 text-black text-[8px] font-bold px-1 rounded-full border border-black">TOP</div>
+                          </div>
+                          <div className="flex flex-col">
+                             <span className="text-[10px] text-gray-400 leading-none mb-0.5">Bidder</span>
+                             <span className="text-xs font-bold text-white leading-none truncate max-w-[80px]">{topBidder}</span>
+                          </div>
+                        </>
+                      ) : (
+                        <span className="text-xs text-gray-500 font-medium italic w-full text-center py-1">Waiting for bids...</span>
+                      )}
                   </div>
               </div>
            </div>
@@ -706,9 +781,18 @@ const LiveRoom: React.FC<LiveRoomProps> = ({ streamer, onClose, language, wallet
                              <span className="text-xl font-black font-athletic text-white leading-none">฿{currentHighestBid.toLocaleString()}</span>
                         </div>
                     </div>
-                    <div className="text-right">
-                        <span className="text-[10px] text-gray-400 block">{t.topBidder}</span>
-                        <span className="text-xs font-bold text-white bg-white/10 px-2 py-0.5 rounded-full">{topBidder}</span>
+                    
+                    {/* Viewer Control Panel: Top Bidder Display */}
+                    <div className="flex flex-col items-end">
+                        <span className="text-[10px] text-gray-400 block mb-1">{t.topBidder}</span>
+                        {topBidder !== '-' ? (
+                            <div className="flex items-center gap-2 bg-black/40 rounded-full pl-1 pr-3 py-0.5 border border-white/10">
+                                <img src={topBidderAvatar} className="w-5 h-5 rounded-full border border-yellow-500 object-cover" />
+                                <span className="text-xs font-bold text-yellow-400 truncate max-w-[80px]">{topBidder}</span>
+                            </div>
+                        ) : (
+                            <span className="text-xs font-bold text-gray-500 bg-white/5 px-2 py-0.5 rounded-full">-</span>
+                        )}
                     </div>
                 </div>
 
@@ -884,7 +968,7 @@ const LiveRoom: React.FC<LiveRoomProps> = ({ streamer, onClose, language, wallet
         {showProducts && !streamer.isAuction && (
           <div className="absolute inset-0 z-30 flex flex-col justify-end bg-black/60 backdrop-blur-sm animate-fade-in">
              <div 
-               className="bg-gray-900 rounded-t-3xl border-t border-gray-700 h-[60%] flex flex-col shadow-2xl"
+               className="bg-gray-900 rounded-t-3xl border-t border-gray-700 h-[70%] flex flex-col shadow-2xl"
                onClick={(e) => e.stopPropagation()}
              >
                 <div className="flex items-center justify-between p-4 border-b border-gray-800">
@@ -897,7 +981,7 @@ const LiveRoom: React.FC<LiveRoomProps> = ({ streamer, onClose, language, wallet
                   </button>
                 </div>
 
-                <div className="flex-1 overflow-y-auto p-4 space-y-3 no-scrollbar">
+                <div className="flex-1 overflow-y-auto p-4 space-y-3 no-scrollbar pb-10">
                   {streamer.products.map((p) => (
                     <div key={p.id} className="flex bg-gray-800 rounded-lg p-2 gap-3 border border-gray-700">
                       <img src={p.image} className="w-20 h-20 object-cover rounded-md bg-gray-700" />
@@ -921,7 +1005,10 @@ const LiveRoom: React.FC<LiveRoomProps> = ({ streamer, onClose, language, wallet
                         ) : (
                           <div className="flex items-center justify-between mt-2">
                             <span className="text-yellow-400 font-bold">฿{p.price}</span>
-                            <button className="bg-red-600 text-white text-xs px-3 py-1.5 rounded font-bold hover:bg-red-700 active:scale-95 transition-all">
+                            <button 
+                                onClick={() => handleBuyClick(p)}
+                                className="bg-red-600 text-white text-xs px-3 py-1.5 rounded font-bold hover:bg-red-700 active:scale-95 transition-all"
+                            >
                               {t.buyNow}
                             </button>
                           </div>
@@ -930,6 +1017,113 @@ const LiveRoom: React.FC<LiveRoomProps> = ({ streamer, onClose, language, wallet
                     </div>
                   ))}
                 </div>
+             </div>
+          </div>
+        )}
+
+        {/* --- Product Variant Selection Sheet --- */}
+        {selectedProductForPurchase && (
+          <div className="absolute inset-0 z-40 flex flex-col justify-end bg-black/60 backdrop-blur-sm animate-fade-in">
+             <div className="bg-gray-900 rounded-t-3xl border-t border-gray-700 flex flex-col shadow-2xl animate-slide-up max-h-[85%]">
+                 
+                 {/* Header */}
+                 <div className="p-4 border-b border-gray-800 flex gap-4">
+                     <img src={selectedProductForPurchase.image} className="w-24 h-24 rounded-lg object-cover bg-gray-800" />
+                     <div className="flex-1">
+                        <div className="flex justify-between items-start">
+                           <span className="text-xl font-bold text-yellow-400">฿{selectedProductForPurchase.price.toLocaleString()}</span>
+                           <button onClick={() => setSelectedProductForPurchase(null)} className="text-gray-400"><X size={20}/></button>
+                        </div>
+                        <span className="text-xs text-gray-500 block mb-1">Stock: {selectedProductForPurchase.stock}</span>
+                        <h4 className="text-sm font-medium text-white line-clamp-2">{selectedProductForPurchase.name}</h4>
+                     </div>
+                 </div>
+
+                 {/* Options Scrollable */}
+                 <div className="p-6 space-y-6 overflow-y-auto no-scrollbar">
+                     
+                     {/* Colors */}
+                     {selectedProductForPurchase.colors && selectedProductForPurchase.colors.length > 0 && (
+                       <div>
+                         <label className="text-xs font-bold text-gray-400 uppercase mb-2 block">Color</label>
+                         <div className="flex flex-wrap gap-3">
+                           {selectedProductForPurchase.colors.map(color => (
+                             <button
+                               key={color}
+                               onClick={() => setPurchaseConfig(prev => ({ ...prev, color }))}
+                               className={`w-10 h-10 rounded-full border-2 relative transition-transform ${
+                                 purchaseConfig.color === color ? 'border-red-600 scale-110' : 'border-gray-700 hover:border-gray-500'
+                               }`}
+                               style={{ backgroundColor: color }}
+                             >
+                               {purchaseConfig.color === color && <Check size={16} className={`absolute inset-0 m-auto ${['#FFFFFF', '#FFFF00'].includes(color) ? 'text-black' : 'text-white'}`} />}
+                             </button>
+                           ))}
+                         </div>
+                       </div>
+                     )}
+
+                     {/* Sizes */}
+                     {selectedProductForPurchase.sizes && selectedProductForPurchase.sizes.length > 0 && (
+                       <div>
+                         <label className="text-xs font-bold text-gray-400 uppercase mb-2 block">Size</label>
+                         <div className="flex flex-wrap gap-2">
+                           {selectedProductForPurchase.sizes.map(size => (
+                             <button
+                               key={size}
+                               onClick={() => setPurchaseConfig(prev => ({ ...prev, size }))}
+                               className={`px-4 py-2 rounded-lg font-bold text-sm transition-all border ${
+                                 purchaseConfig.size === size 
+                                   ? 'bg-red-600 border-red-600 text-white' 
+                                   : 'bg-gray-800 border-gray-700 text-gray-300 hover:border-gray-500'
+                               }`}
+                             >
+                               {size}
+                             </button>
+                           ))}
+                         </div>
+                       </div>
+                     )}
+
+                     {/* Quantity */}
+                     <div>
+                       <div className="flex justify-between items-center mb-2">
+                          <label className="text-xs font-bold text-gray-400 uppercase">Quantity</label>
+                          <span className="text-xs text-gray-500">{selectedProductForPurchase.stock} available</span>
+                       </div>
+                       <div className="flex items-center gap-4 bg-gray-800 rounded-xl p-2 w-fit border border-gray-700">
+                          <button 
+                            onClick={() => setPurchaseConfig(prev => ({ ...prev, quantity: Math.max(1, prev.quantity - 1) }))}
+                            className="w-8 h-8 flex items-center justify-center bg-gray-700 rounded-lg hover:bg-gray-600 text-white"
+                          >
+                            <Minus size={16} />
+                          </button>
+                          <span className="w-8 text-center font-bold text-white text-lg">{purchaseConfig.quantity}</span>
+                          <button 
+                            onClick={() => setPurchaseConfig(prev => ({ ...prev, quantity: Math.min(selectedProductForPurchase.stock, prev.quantity + 1) }))}
+                            className="w-8 h-8 flex items-center justify-center bg-gray-700 rounded-lg hover:bg-gray-600 text-white"
+                          >
+                            <Plus size={16} />
+                          </button>
+                       </div>
+                     </div>
+                 </div>
+
+                 {/* Action Buttons */}
+                 <div className="p-4 border-t border-gray-800 flex gap-3 bg-gray-900 pb-8">
+                     <button 
+                       onClick={() => handleConfirmPurchase('add_to_cart')}
+                       className="flex-1 py-3 rounded-xl bg-gray-800 text-white font-bold border border-gray-600 hover:bg-gray-700 transition-colors flex items-center justify-center gap-2"
+                     >
+                       <ShoppingBag size={18} /> Add to Cart
+                     </button>
+                     <button 
+                       onClick={() => handleConfirmPurchase('buy_now')}
+                       className="flex-1 py-3 rounded-xl bg-red-600 text-white font-bold hover:bg-red-700 shadow-lg shadow-red-900/40 transition-colors"
+                     >
+                       Buy Now
+                     </button>
+                 </div>
              </div>
           </div>
         )}
