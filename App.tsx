@@ -29,7 +29,7 @@ import MyAddress from './components/MyAddress';
 import MyPayment from './components/MyPayment';
 import MyOrders from './components/MyOrders';
 import ModelApplicationModal from './components/ModelApplicationModal';
-import UpdatePasswordModal from './components/UpdatePasswordModal'; // New Import
+import UpdatePasswordModal from './components/UpdatePasswordModal'; 
 import { MOCK_STREAMERS, TRANSLATIONS, MOCK_PRODUCTS, MOCK_USER_PROFILE, MOCK_CHAT_ROOMS, MOCK_PEOPLE } from './constants';
 import { Streamer, Language, CartItem, UserProfile, MessagePreview, Product, Person, ChatRoom } from './types';
 
@@ -37,7 +37,7 @@ const App: React.FC = () => {
   // Auth State
   const [session, setSession] = useState<Session | null>(null);
   const [loadingSession, setLoadingSession] = useState(true);
-  const [isUpdatePasswordOpen, setIsUpdatePasswordOpen] = useState(false); // New State for recovery flow
+  const [isUpdatePasswordOpen, setIsUpdatePasswordOpen] = useState(false); 
 
   // Data State
   const [streamers, setStreamers] = useState<Streamer[]>(MOCK_STREAMERS);
@@ -93,7 +93,7 @@ const App: React.FC = () => {
 
   // --- SUPABASE INTEGRATION: Auth & Data ---
   useEffect(() => {
-    // 1. Check Session
+    // 1. Check Session & Handle Recovery Link
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setLoadingSession(false);
@@ -103,11 +103,11 @@ const App: React.FC = () => {
           setUserProfile(prev => ({
               ...prev,
               username: session.user.email?.split('@')[0] || prev.username,
-              // role: 'supporter' // default role from mock is fine
           }));
       }
     });
 
+    // 2. Auth State Listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       setSession(session);
       if (session?.user?.email) {
@@ -123,7 +123,14 @@ const App: React.FC = () => {
       }
     });
 
-    // 2. Fetch Rooms
+    // 3. Fallback: Manually check URL hash for recovery params
+    // This catches cases where the event might be missed or handled too quickly
+    const hash = window.location.hash;
+    if (hash && hash.includes('type=recovery')) {
+       setIsUpdatePasswordOpen(true);
+    }
+
+    // 4. Fetch Rooms
     const fetchRooms = async () => {
       try {
         const { data, error } = await supabase
@@ -148,8 +155,8 @@ const App: React.FC = () => {
             coverImage: room.cover_image || 'https://picsum.photos/400/700?random=db',
             videoUrl: room.video_url,
             youtubeId: room.youtube_id,
-            itemCount: 5, // Placeholder as we handle products separately
-            products: MOCK_PRODUCTS, // Fallback to mocks for now
+            itemCount: 5,
+            products: MOCK_PRODUCTS,
             isAuction: room.is_auction,
             auctionEndTime: room.auction_end_time ? Number(room.auction_end_time) : undefined,
             auctionStartingPrice: room.auction_starting_price,
