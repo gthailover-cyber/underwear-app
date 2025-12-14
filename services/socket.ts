@@ -1,161 +1,158 @@
 
-import { io, Socket } from 'socket.io-client';
+import { supabase } from '../lib/supabaseClient';
+import { RealtimeChannel } from '@supabase/supabase-js';
 
-// Toggle this to true if you have a real local backend running on port 3001
-const USE_REAL_SERVER = false; 
-const SERVER_URL = 'http://localhost:3001';
-
-class SocketService {
-  private socket: Socket | null = null;
-  private mockListeners: { [key: string]: Function[] } = {};
-  private mockInterval: number | null = null;
+class SupabaseService {
+  private channel: RealtimeChannel | null = null;
+  private listeners: { [key: string]: Function[] } = {};
   private currentRoomId: string | null = null;
+  private userId: string = 'user-id-placeholder'; // In real app, get from auth context
+
+  constructor() {
+    // Check if user is logged in
+    supabase.auth.getUser().then(({ data }) => {
+      if (data.user) {
+        this.userId = data.user.id;
+      }
+    });
+  }
 
   connect() {
-    if (USE_REAL_SERVER) {
-      this.socket = io(SERVER_URL);
-      console.log('Connecting to real socket server...');
-    } else {
-      console.log('Mock Socket Connected');
-      // Only start generating mock events if we are in a room
-    }
+    console.log('Supabase Realtime Initialized');
   }
 
   disconnect() {
-    if (this.socket) {
-      this.socket.disconnect();
-    }
     this.leaveRoom();
-    this.mockListeners = {};
   }
 
   joinRoom(roomId: string) {
-    if (this.socket) {
-      this.socket.emit('join_room', roomId);
-    } else {
-      console.log(`[Socket] Joined Room: ${roomId}`);
-      this.currentRoomId = roomId;
-      this.startMockEvents();
+    if (this.channel) {
+      this.leaveRoom();
     }
+
+    this.currentRoomId = roomId;
+    console.log(`[Supabase] Joining Room: ${roomId}`);
+
+    // Subscribe to the specific room's messages
+    this.channel = supabase
+      .channel(`room:${roomId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'messages',
+          filter: `room_id=eq.${roomId}`
+        },
+        (payload) => {
+          this.handleNewMessage(payload.new);
+        }
+      )
+      .on('broadcast', { event: 'heart' }, (payload) => {
+         this.triggerEvent('new_heart', payload.payload);
+      })
+      .on('broadcast', { event: 'bid' }, (payload) => {
+         this.triggerEvent('bid_update', payload.payload);
+      })
+      .subscribe((status) => {
+        if (status === 'SUBSCRIBED') {
+           // Track presence (viewers) - Simplified for this demo
+           this.triggerEvent('viewer_update', { count: Math.floor(Math.random() * 500) + 100 }); 
+        }
+      });
   }
 
   leaveRoom() {
-    if (this.socket && this.currentRoomId) {
-      this.socket.emit('leave_room', this.currentRoomId);
-    } else {
-      console.log(`[Socket] Left Room: ${this.currentRoomId}`);
+    if (this.channel) {
+      supabase.removeChannel(this.channel);
+      this.channel = null;
       this.currentRoomId = null;
-      if (this.mockInterval) {
-        clearInterval(this.mockInterval);
-        this.mockInterval = null;
-      }
     }
   }
 
-  // Subscribe to an event (e.g., 'new_comment')
+  // --- Handlers ---
+
+  private handleNewMessage(newRecord: any) {
+    // Convert Supabase DB record to App ChatMessage/Comment format
+    const comment = {
+      id: newRecord.id,
+      username: 'User', // Needs Join with Profiles in real app, using placeholder
+      message: newRecord.content,
+      isSystem: newRecord.type === 'system',
+      avatar: 'https://picsum.photos/200/200' // Placeholder
+    };
+    
+    // Trigger 'new_comment' event for the frontend
+    this.triggerEvent('new_comment', comment);
+  }
+
+  // --- Public Methods for Frontend ---
+
   on(event: string, callback: Function) {
-    if (this.socket) {
-      this.socket.on(event, (data) => callback(data));
-    } else {
-      if (!this.mockListeners[event]) {
-        this.mockListeners[event] = [];
-      }
-      this.mockListeners[event].push(callback);
+    if (!this.listeners[event]) {
+      this.listeners[event] = [];
     }
+    this.listeners[event].push(callback);
   }
 
-  // Unsubscribe
   off(event: string) {
-    if (this.socket) {
-      this.socket.off(event);
-    } else {
-      delete this.mockListeners[event];
+    delete this.listeners[event];
+  }
+
+  async emit(event: string, data: any) {
+    if (!this.currentRoomId) return;
+
+    // 1. Send Comment / Message
+    if (event === 'send_comment') {
+      // Optimistic update handled by UI usually, but we insert to DB here
+      const { error } = await supabase.from('messages').insert({
+        room_id: this.currentRoomId,
+        sender_id: this.userId, // Requires Auth
+        content: data.message,
+        type: 'text'
+      });
+      
+      if (error) {
+          console.error("Error sending message:", error);
+          // If no auth, fallback to mock for demo purposes so app doesn't crash
+          this.triggerEvent('new_comment', {
+              id: Date.now().toString(),
+              username: 'Me (Guest)',
+              message: data.message,
+              isSystem: false,
+              avatar: 'https://picsum.photos/200/200'
+          });
+      }
+    }
+
+    // 2. Send Heart (Ephemeral/Broadcast - No DB save needed for animation)
+    if (event === 'send_heart') {
+       this.channel?.send({
+          type: 'broadcast',
+          event: 'heart',
+          payload: { count: 1 }
+       });
+       // Trigger local immediately
+       this.triggerEvent('new_heart', { count: 1 });
+    }
+
+    // 3. Place Bid
+    if (event === 'place_bid') {
+        // In real app: Call RPC 'place_bid'
+        this.channel?.send({
+            type: 'broadcast',
+            event: 'bid',
+            payload: { newBid: data.amount, bidder: 'Me' }
+        });
+        this.triggerEvent('bid_update', { newBid: data.amount, bidder: 'Me' });
     }
   }
 
-  // Send data to server (e.g., 'send_message')
-  emit(event: string, data: any) {
-    if (this.socket) {
-      this.socket.emit(event, data);
-    } else {
-      // Mock server behavior
-      
-      if (event === 'send_comment') {
-        // Broadcast to self immediately
-        this.triggerMockEvent('new_comment', {
-          id: Date.now().toString(),
-          username: 'Me', // In real app, get from user profile
-          message: data.message,
-          isSystem: false,
-          avatar: 'https://picsum.photos/200/200?random=999' // Mock avatar for self
-        });
-      }
-      
-      if (event === 'send_heart') {
-        // Broadcast heart
-        this.triggerMockEvent('new_heart', { count: 1 });
-      }
-
-      if (event === 'place_bid') {
-        // Simulate successful bid
-        console.log(`[Socket] Bid placed: ${data.amount}`);
-        this.triggerMockEvent('bid_update', {
-          newBid: data.amount,
-          bidder: 'Me' // You represent the current user
-        });
-      }
+  private triggerEvent(event: string, data: any) {
+    if (this.listeners[event]) {
+      this.listeners[event].forEach(cb => cb(data));
     }
-  }
-
-  // --- Mock Helpers ---
-  private triggerMockEvent(event: string, data: any) {
-    if (this.mockListeners[event]) {
-      this.mockListeners[event].forEach(cb => cb(data));
-    }
-  }
-
-  private startMockEvents() {
-    if (this.mockInterval) clearInterval(this.mockInterval);
-
-    // Simulate other users chatting and sending hearts specifically for this room
-    this.mockInterval = window.setInterval(() => {
-      if (!this.currentRoomId) return;
-
-      // Random Hearts
-      if (Math.random() > 0.6) {
-        this.triggerMockEvent('new_heart', { count: Math.floor(Math.random() * 5) + 1 });
-      }
-
-      // Random Comments
-      if (Math.random() > 0.85) {
-        const randomUsers = [
-           { name: 'User_007', avatar: 'https://picsum.photos/200/200?random=201' },
-           { name: 'BoyThai', avatar: 'https://picsum.photos/200/200?random=202' },
-           { name: 'GymRat99', avatar: 'https://picsum.photos/200/200?random=203' },
-           { name: 'Jeffy', avatar: 'https://picsum.photos/200/200?random=204' },
-           { name: 'Davikah', avatar: 'https://picsum.photos/200/200?random=205' }
-        ];
-        const randomMsgs = ['Cf ดำ', 'ขอตารางไซส์หน่อย', 'เท่มากครับ', 'หัวใจรัวๆ ❤️', 'ราคาเท่าไหร่?', 'ส่งฟรีไหม?'];
-        
-        const user = randomUsers[Math.floor(Math.random() * randomUsers.length)];
-
-        this.triggerMockEvent('new_comment', {
-          id: Date.now().toString(),
-          username: user.name,
-          message: randomMsgs[Math.floor(Math.random() * randomMsgs.length)],
-          isSystem: false,
-          avatar: user.avatar
-        });
-      }
-      
-      // Update Viewer Count
-      if (Math.random() > 0.5) {
-         this.triggerMockEvent('viewer_update', { 
-            count: Math.floor(Math.random() * 200) + 1000 
-         });
-      }
-    }, 1500);
   }
 }
 
-export const socketService = new SocketService();
+export const socketService = new SupabaseService();

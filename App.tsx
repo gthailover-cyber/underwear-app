@@ -1,6 +1,9 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { MessageCircle, Bell, Menu, Plus, Home, Compass, ShoppingCart, User, Users, MapPin, CreditCard, Wallet, LogOut, ChevronRight, X, Globe, Coins, ArrowLeft, Package, ShoppingBag, Box, LayoutDashboard, Shield, List, UserCog, Video, MessageSquare, BicepsFlexed, Crown, Star, Clock, LockKeyhole } from 'lucide-react';
+import { supabase } from './lib/supabaseClient';
+import { Session } from '@supabase/supabase-js';
+import AuthPage from './components/AuthPage';
 import StreamCard from './components/StreamCard';
 import LiveRoom from './components/LiveRoom';
 import WalletModal from './components/WalletModal';
@@ -25,11 +28,17 @@ import MyProducts from './components/MyProducts';
 import MyAddress from './components/MyAddress';
 import MyPayment from './components/MyPayment';
 import MyOrders from './components/MyOrders';
-import ModelApplicationModal from './components/ModelApplicationModal'; // New Import
+import ModelApplicationModal from './components/ModelApplicationModal';
+import UpdatePasswordModal from './components/UpdatePasswordModal'; // New Import
 import { MOCK_STREAMERS, TRANSLATIONS, MOCK_PRODUCTS, MOCK_USER_PROFILE, MOCK_CHAT_ROOMS, MOCK_PEOPLE } from './constants';
 import { Streamer, Language, CartItem, UserProfile, MessagePreview, Product, Person, ChatRoom } from './types';
 
 const App: React.FC = () => {
+  // Auth State
+  const [session, setSession] = useState<Session | null>(null);
+  const [loadingSession, setLoadingSession] = useState(true);
+  const [isUpdatePasswordOpen, setIsUpdatePasswordOpen] = useState(false); // New State for recovery flow
+
   // Data State
   const [streamers, setStreamers] = useState<Streamer[]>(MOCK_STREAMERS);
   const [myProducts, setMyProducts] = useState<Product[]>(MOCK_PRODUCTS);
@@ -56,7 +65,7 @@ const App: React.FC = () => {
   const [isAuctionSetupOpen, setIsAuctionSetupOpen] = useState(false);
   const [isUpgradeModalOpen, setIsUpgradeModalOpen] = useState(false);
   const [isCreateRoomOpen, setIsCreateRoomOpen] = useState(false); 
-  const [isModelApplicationOpen, setIsModelApplicationOpen] = useState(false); // New State
+  const [isModelApplicationOpen, setIsModelApplicationOpen] = useState(false);
   
   // Live Setup State
   const [selectionMode, setSelectionMode] = useState<'multiple' | 'single'>('multiple');
@@ -81,6 +90,90 @@ const App: React.FC = () => {
   ]);
 
   const t = TRANSLATIONS[language];
+
+  // --- SUPABASE INTEGRATION: Auth & Data ---
+  useEffect(() => {
+    // 1. Check Session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      setLoadingSession(false);
+      
+      // If user exists, update local profile (simple mock integration)
+      if (session?.user?.email) {
+          setUserProfile(prev => ({
+              ...prev,
+              username: session.user.email?.split('@')[0] || prev.username,
+              // role: 'supporter' // default role from mock is fine
+          }));
+      }
+    });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      setSession(session);
+      if (session?.user?.email) {
+        setUserProfile(prev => ({
+            ...prev,
+            username: session.user.email?.split('@')[0] || prev.username,
+        }));
+      }
+
+      // Handle Password Recovery Event
+      if (event === 'PASSWORD_RECOVERY') {
+         setIsUpdatePasswordOpen(true);
+      }
+    });
+
+    // 2. Fetch Rooms
+    const fetchRooms = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('rooms')
+          .select(`
+            *,
+            profiles:host_id (username, avatar)
+          `)
+          .order('created_at', { ascending: false });
+
+        if (error) {
+          console.error('Error fetching rooms:', error);
+          return;
+        }
+
+        if (data && data.length > 0) {
+          const dbStreamers: Streamer[] = data.map((room: any) => ({
+            id: room.id,
+            name: room.profiles?.username || 'Unknown Host',
+            title: room.title,
+            viewerCount: room.viewer_count || 0,
+            coverImage: room.cover_image || 'https://picsum.photos/400/700?random=db',
+            videoUrl: room.video_url,
+            youtubeId: room.youtube_id,
+            itemCount: 5, // Placeholder as we handle products separately
+            products: MOCK_PRODUCTS, // Fallback to mocks for now
+            isAuction: room.is_auction,
+            auctionEndTime: room.auction_end_time ? Number(room.auction_end_time) : undefined,
+            auctionStartingPrice: room.auction_starting_price,
+            currentBid: room.current_bid,
+            topBidder: room.top_bidder_name
+          }));
+          
+          setStreamers(dbStreamers);
+        }
+      } catch (err) {
+        console.error('Unexpected error fetching rooms:', err);
+      }
+    };
+
+    fetchRooms();
+
+    return () => subscription.unsubscribe();
+
+  }, []);
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    setIsMenuOpen(false);
+  };
 
   const handleOpenStream = (streamer: Streamer) => {
     setCurrentStreamer(streamer);
@@ -581,17 +674,22 @@ const App: React.FC = () => {
                 </div>
             </div>
 
-            {/* Sub-tab Content with padding-top to account for fixed tabs (Header 64px + Tabs ~60px = 124px, simplified to padding top relative to container) */}
+            {/* Sub-tab Content with padding-top to account for fixed tabs */}
             <div className="pt-[60px] pb-20 animate-fade-in">
                 {homeTab === 'live' && (
                     <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 px-2">
-                    {streamers.map(streamer => (
+                    {streamers.length > 0 ? streamers.map(streamer => (
                         <StreamCard 
                         key={streamer.id} 
                         streamer={streamer} 
                         onPress={handleOpenStream} 
                         />
-                    ))}
+                    )) : (
+                        <div className="col-span-full flex flex-col items-center justify-center py-20 text-gray-500">
+                            <Video size={48} className="mb-4 opacity-30" />
+                            <p>No live streams found</p>
+                        </div>
+                    )}
                     </div>
                 )}
 
@@ -678,6 +776,16 @@ const App: React.FC = () => {
         );
     }
   };
+
+  // If loading session state, show loader (or just blank screen briefly)
+  if (loadingSession) {
+      return <div className="min-h-screen bg-black flex items-center justify-center"><div className="w-8 h-8 border-4 border-red-600 border-t-transparent rounded-full animate-spin"></div></div>;
+  }
+
+  // FORCE LOGIN: If no session, show AuthPage
+  if (!session) {
+    return <AuthPage language={language} onLanguageChange={setLanguage} />;
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-black via-gray-900 to-gray-800 text-white font-sans selection:bg-red-500 selection:text-white overflow-hidden">
@@ -830,7 +938,7 @@ const App: React.FC = () => {
           </div>
 
           <div className="p-6 border-t border-gray-800 bg-black/20">
-            <button className="w-full flex items-center gap-3 px-4 py-3 rounded-xl bg-red-600/10 text-red-500 hover:bg-red-600 hover:text-white transition-all font-bold">
+            <button onClick={handleLogout} className="w-full flex items-center gap-3 px-4 py-3 rounded-xl bg-red-600/10 text-red-500 hover:bg-red-600 hover:text-white transition-all font-bold">
               <LogOut size={20} /><span>{t.logout}</span>
             </button>
             <p className="text-center text-[10px] text-gray-600 mt-4 uppercase tracking-widest">Version 1.0.2</p>
@@ -859,6 +967,13 @@ const App: React.FC = () => {
         isOpen={isModelApplicationOpen}
         onClose={() => setIsModelApplicationOpen(false)}
         onSubmit={handleSubmitModelApplication}
+        language={language}
+      />
+
+      {/* NEW: Update Password Modal (Triggered by Recovery Link) */}
+      <UpdatePasswordModal 
+        isOpen={isUpdatePasswordOpen}
+        onClose={() => setIsUpdatePasswordOpen(false)}
         language={language}
       />
 
