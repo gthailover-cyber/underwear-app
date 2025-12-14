@@ -15,6 +15,28 @@ interface ProfileProps {
 const Profile: React.FC<ProfileProps> = ({ language, user, onEdit, onEditGallery, onUpgrade }) => {
   const t = TRANSLATIONS[language];
 
+  // Helper to render stats to ensure consistency
+  const renderPhysicalStats = (bgColor: string = 'bg-gray-900') => (
+    <div className={`${bgColor} border-y border-gray-800 py-4 px-6 mb-4`}>
+       <div className="flex justify-between items-center max-w-sm mx-auto">
+          <div className="text-center">
+             <span className="text-[10px] text-gray-500 uppercase tracking-widest block mb-1">{t.height}</span>
+             <span className="text-xl font-bold text-white font-athletic">{user.height > 0 ? user.height : '-'} <span className="text-xs text-gray-400 font-sans">{t.cm}</span></span>
+          </div>
+          <div className="w-px h-8 bg-gray-800"></div>
+          <div className="text-center">
+             <span className="text-[10px] text-gray-500 uppercase tracking-widest block mb-1">{t.weight}</span>
+             <span className="text-xl font-bold text-white font-athletic">{user.weight > 0 ? user.weight : '-'} <span className="text-xs text-gray-400 font-sans">{t.kg}</span></span>
+          </div>
+          <div className="w-px h-8 bg-gray-800"></div>
+          <div className="text-center">
+             <span className="text-[10px] text-gray-500 uppercase tracking-widest block mb-1">{t.age}</span>
+             <span className="text-xl font-bold text-white font-athletic">{user.age > 0 ? user.age : '-'} <span className="text-xs text-gray-400 font-sans">{t.years}</span></span>
+          </div>
+       </div>
+    </div>
+  );
+
   // --- RENDER: MODEL PROFILE (PROFESSIONAL LOOK) ---
   if (user.role === 'model') {
     return (
@@ -66,24 +88,7 @@ const Profile: React.FC<ProfileProps> = ({ language, user, onEdit, onEditGallery
         </div>
 
         {/* Pro Stats Bar (Agency Style) */}
-        <div className="bg-gray-900 border-y border-gray-800 py-4 px-6">
-           <div className="flex justify-between items-center max-w-sm mx-auto">
-              <div className="text-center">
-                 <span className="text-[10px] text-gray-500 uppercase tracking-widest block mb-1">Height</span>
-                 <span className="text-xl font-bold text-white font-athletic">{user.height} <span className="text-xs text-gray-400 font-sans">cm</span></span>
-              </div>
-              <div className="w-px h-8 bg-gray-800"></div>
-              <div className="text-center">
-                 <span className="text-[10px] text-gray-500 uppercase tracking-widest block mb-1">Weight</span>
-                 <span className="text-xl font-bold text-white font-athletic">{user.weight} <span className="text-xs text-gray-400 font-sans">kg</span></span>
-              </div>
-              <div className="w-px h-8 bg-gray-800"></div>
-              <div className="text-center">
-                 <span className="text-[10px] text-gray-500 uppercase tracking-widest block mb-1">Age</span>
-                 <span className="text-xl font-bold text-white font-athletic">{user.age}</span>
-              </div>
-           </div>
-        </div>
+        {renderPhysicalStats('bg-gray-900')}
 
         {/* Social Stats for Model */}
         <div className="flex items-center justify-around px-10 py-4 bg-black border-b border-gray-900">
@@ -223,6 +228,9 @@ const Profile: React.FC<ProfileProps> = ({ language, user, onEdit, onEditGallery
             </div>
         </div>
 
+        {/* Physical Stats for Organizer (Requested) */}
+        {renderPhysicalStats('bg-gray-800/30 border-gray-700/50')}
+
         {/* Bio */}
         <div className="px-6 mb-8">
            <h3 className="text-yellow-500 text-xs font-bold uppercase mb-2 ml-1">About Organizer</h3>
@@ -286,6 +294,9 @@ const Profile: React.FC<ProfileProps> = ({ language, user, onEdit, onEditGallery
               <span className="text-[10px] text-gray-500 uppercase tracking-wider">Followers</span>
            </div>
        </div>
+
+       {/* Physical Stats for Supporter (Requested) */}
+       {renderPhysicalStats('bg-gray-900')}
 
        {/* Action Buttons */}
        <div className="flex gap-3 px-6 mb-6">

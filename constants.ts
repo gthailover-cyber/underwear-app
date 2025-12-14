@@ -1,6 +1,14 @@
 
 import { Streamer, Product, Language, UserProfile, MessagePreview, ChatMessage, Person, Order, ChatRoom, UserRole } from './types';
 
+// Theme-matched default images
+export const DEFAULT_IMAGES = {
+  // Dark grey background with Red text, matching the app theme
+  AVATAR: 'https://ui-avatars.com/api/?name=New+User&background=111827&color=dc2626&size=256&bold=true&length=1',
+  // Abstract dark geometric/sporty background
+  COVER: 'https://images.unsplash.com/photo-1614850523060-8da1d56ae167?w=1200&q=80'
+};
+
 export const TRANSLATIONS = {
   en: {
     // Auth
@@ -137,6 +145,8 @@ export const TRANSLATIONS = {
     remove: 'Remove',
     // Profile Translations
     editProfile: 'Edit Profile',
+    personalInfo: 'Personal Information',
+    physicalStats: 'Physical Stats',
     editGallery: 'Edit Gallery',
     editGalleryTitle: 'Manage Gallery',
     uploadImage: 'Upload Image',
@@ -150,7 +160,8 @@ export const TRANSLATIONS = {
     cm: 'cm',
     kg: 'kg',
     years: 'y/o',
-    save: 'Save',
+    save: 'Save Changes',
+    saving: 'Saving...',
     cancel: 'Cancel',
     username: 'Username',
     changeCover: 'Change Cover',
@@ -387,6 +398,8 @@ export const TRANSLATIONS = {
     remove: 'ลบ',
     // Profile Translations
     editProfile: 'แก้ไขโปรไฟล์',
+    personalInfo: 'ข้อมูลส่วนตัว',
+    physicalStats: 'สัดส่วนร่างกาย',
     editGallery: 'แก้ไขแกลเลอรี่',
     editGalleryTitle: 'จัดการแกลเลอรี่',
     uploadImage: 'อัปโหลดรูปภาพ',
@@ -400,7 +413,8 @@ export const TRANSLATIONS = {
     cm: 'ซม.',
     kg: 'กก.',
     years: 'ปี',
-    save: 'บันทึก',
+    save: 'บันทึกการแก้ไข',
+    saving: 'กำลังบันทึก...',
     cancel: 'ยกเลิก',
     username: 'ชื่อผู้ใช้',
     changeCover: 'เปลี่ยนรูปปก',
@@ -737,30 +751,20 @@ export const DISCOVER_TAGS = [
 ];
 
 export const MOCK_USER_PROFILE: UserProfile = {
-  username: 'JASON STATHAM',
-  avatar: 'https://picsum.photos/200/200?random=99',
-  coverImage: 'https://images.unsplash.com/photo-1517836357463-d25dfeac3438?w=800&q=80',
-  role: 'supporter', // Default Role
-  modelApplicationStatus: 'none', // Initial status
-  age: 28,
-  height: 182,
-  weight: 78,
+  username: 'New User',
+  avatar: DEFAULT_IMAGES.AVATAR,
+  coverImage: DEFAULT_IMAGES.COVER,
+  role: 'supporter', 
+  modelApplicationStatus: 'none', 
+  age: 20,
+  height: 175,
+  weight: 70,
   location: 'Bangkok, Thailand',
-  bio: 'Fitness enthusiast & Underwear collector. Love gym, swimming and outdoor activities. Check out my collection!',
-  favorites: ['Boxer Briefs', 'Jockstraps', 'Trunks', 'Sports Wear'],
-  gallery: [
-    'https://picsum.photos/300/400?random=10',
-    'https://picsum.photos/300/400?random=11',
-    'https://picsum.photos/300/400?random=12',
-    'https://picsum.photos/300/400?random=13',
-    'https://picsum.photos/300/400?random=14',
-    'https://picsum.photos/300/400?random=15',
-    'https://picsum.photos/300/400?random=16',
-    'https://picsum.photos/300/400?random=17',
-    'https://picsum.photos/300/400?random=18',
-  ],
-  followers: 12500,
-  following: 342,
+  bio: 'Just a fan of cool underwear and fitness.',
+  favorites: ['Boxer Briefs'],
+  gallery: [],
+  followers: 0,
+  following: 0,
 };
 
 export const MOCK_MESSAGES: MessagePreview[] = [

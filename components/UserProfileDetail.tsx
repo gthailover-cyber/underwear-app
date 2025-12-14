@@ -59,6 +59,28 @@ const UserProfileDetail: React.FC<UserProfileDetailProps> = ({ language, person,
       if (lightboxIndex !== null) setLightboxIndex((prev) => (prev! - 1 + profile.gallery.length) % profile.gallery.length);
   };
 
+  // Helper to render stats
+  const renderPhysicalStats = (bgColor: string = 'bg-gray-900') => (
+    <div className={`${bgColor} border-y border-gray-800 py-4 px-6 mb-4`}>
+       <div className="flex justify-between items-center max-w-sm mx-auto">
+          <div className="text-center">
+             <span className="text-[10px] text-gray-500 uppercase tracking-widest block mb-1">{t.height}</span>
+             <span className="text-xl font-bold text-white font-athletic">{profile.height > 0 ? profile.height : '-'} <span className="text-xs text-gray-400 font-sans">{t.cm}</span></span>
+          </div>
+          <div className="w-px h-8 bg-gray-800"></div>
+          <div className="text-center">
+             <span className="text-[10px] text-gray-500 uppercase tracking-widest block mb-1">{t.weight}</span>
+             <span className="text-xl font-bold text-white font-athletic">{profile.weight > 0 ? profile.weight : '-'} <span className="text-xs text-gray-400 font-sans">{t.kg}</span></span>
+          </div>
+          <div className="w-px h-8 bg-gray-800"></div>
+          <div className="text-center">
+             <span className="text-[10px] text-gray-500 uppercase tracking-widest block mb-1">{t.age}</span>
+             <span className="text-xl font-bold text-white font-athletic">{profile.age > 0 ? profile.age : '-'} <span className="text-xs text-gray-400 font-sans">{t.years}</span></span>
+          </div>
+       </div>
+    </div>
+  );
+
   // --- MODEL VIEW ---
   if (profile.role === 'model') {
       return (
@@ -105,12 +127,17 @@ const UserProfileDetail: React.FC<UserProfileDetailProps> = ({ language, person,
                     <button className="flex-1 bg-red-600 hover:bg-red-700 text-white h-14 rounded-2xl font-bold text-lg shadow-lg shadow-red-900/50 flex items-center justify-center gap-2 transition-all active:scale-95"><UserPlus size={20} /> {t.follow}</button>
                     <button onClick={onChat} className="flex-1 bg-white hover:bg-gray-200 text-black h-14 rounded-2xl font-bold text-lg shadow-lg flex items-center justify-center gap-2 transition-all active:scale-95"><MessageCircle size={20} /> Chat</button>
                 </div>
-                {/* Stats */}
+                
+                {/* Physical Stats for Model */}
+                {renderPhysicalStats('bg-black border-gray-900')}
+
+                {/* Social Stats */}
                 <div className="flex items-center justify-around px-6 mb-6">
                     <div className="text-center"><span className="text-2xl font-bold text-white font-athletic">{profile.followers.toLocaleString()}</span><span className="text-xs text-gray-500 uppercase tracking-wider block">{t.followers}</span></div>
                     <div className="w-px h-8 bg-gray-800"></div>
                     <div className="text-center"><span className="text-2xl font-bold text-white font-athletic">{profile.following.toLocaleString()}</span><span className="text-xs text-gray-500 uppercase tracking-wider block">{t.following}</span></div>
                 </div>
+
                 {/* Gallery */}
                 <div className="pb-24">
                     <div className="flex items-center justify-between px-6 mb-4">
@@ -125,7 +152,7 @@ const UserProfileDetail: React.FC<UserProfileDetailProps> = ({ language, person,
                     </div>
                 </div>
             </div>
-            {/* Lightbox logic remains same, abstracted for brevity in this snippet but assumed present */}
+            {/* Lightbox logic remains same */}
             {lightboxIndex !== null && (
                 <div className="fixed inset-0 z-[100] bg-black/95 backdrop-blur-md flex items-center justify-center animate-fade-in" onClick={() => setLightboxIndex(null)}>
                     <img src={profile.gallery[lightboxIndex]} className="max-h-[85vh] max-w-[95vw] object-contain rounded-lg shadow-2xl" />
@@ -194,6 +221,9 @@ const UserProfileDetail: React.FC<UserProfileDetailProps> = ({ language, person,
                 <div className="bg-gray-800/50 p-3 rounded-2xl text-center border border-gray-700/50"><span className="block text-xl font-bold text-white">{profile.followers.toLocaleString()}</span><span className="text-[10px] text-gray-500 uppercase">{t.followers}</span></div>
                 <div className="bg-gray-800/50 p-3 rounded-2xl text-center border border-gray-700/50"><span className="block text-xl font-bold text-white">5.0</span><span className="text-[10px] text-gray-500 uppercase">Rating</span></div>
             </div>
+
+            {/* Physical Stats for Organizer */}
+            {renderPhysicalStats('bg-gray-800/30 border-gray-700/50')}
 
             <div className="px-6 mb-8">
                <h3 className="text-yellow-500 text-xs font-bold uppercase mb-2 ml-1">About</h3>
@@ -265,6 +295,9 @@ const UserProfileDetail: React.FC<UserProfileDetailProps> = ({ language, person,
               <span className="text-[10px] text-gray-500 uppercase tracking-wider">Followers</span>
            </div>
       </div>
+
+      {/* Physical Stats for Supporter */}
+      {renderPhysicalStats('bg-gray-900')}
 
       <div className="px-6 text-center">
          <p className="text-gray-300 text-sm italic mb-6">"{profile.bio}"</p>

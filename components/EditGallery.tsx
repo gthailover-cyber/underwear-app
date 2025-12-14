@@ -1,7 +1,9 @@
-import React, { useState } from 'react';
+
+import React, { useState, useRef } from 'react';
 import { X, Plus, Save, Trash2, ImagePlus } from 'lucide-react';
 import { Language } from '../types';
 import { TRANSLATIONS } from '../constants';
+import { supabase } from '../lib/supabaseClient';
 
 interface EditGalleryProps {
   language: Language;
@@ -13,15 +15,89 @@ interface EditGalleryProps {
 const EditGallery: React.FC<EditGalleryProps> = ({ language, initialGallery, onSave, onCancel }) => {
   const t = TRANSLATIONS[language];
   const [gallery, setGallery] = useState<string[]>(initialGallery);
+  const [isUploading, setIsUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleDelete = (index: number) => {
     setGallery(prev => prev.filter((_, i) => i !== index));
   };
 
-  const handleAdd = () => {
-    // Mock adding an image by generating a random one
-    const newImage = `https://picsum.photos/300/400?random=${Date.now()}`;
-    setGallery(prev => [newImage, ...prev]);
+  const handleAddClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  // Utility to resize image
+  const resizeImage = (file: File, maxWidth: number): Promise<Blob> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const img = new Image();
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          let width = img.width;
+          let height = img.height;
+
+          if (width > maxWidth) {
+            height *= maxWidth / width;
+            width = maxWidth;
+          }
+
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          if (ctx) {
+            ctx.drawImage(img, 0, 0, width, height);
+            canvas.toBlob((blob) => {
+              if (blob) resolve(blob);
+              else reject(new Error('Canvas to Blob failed'));
+            }, 'image/jpeg', 0.85); // 85% quality for gallery
+          } else {
+            reject(new Error('Canvas context failed'));
+          }
+        };
+        img.src = e.target?.result as string;
+      };
+      reader.onerror = error => reject(error);
+      reader.readAsDataURL(file);
+    });
+  };
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0];
+      if (!file) return;
+
+      setIsUploading(true);
+      try {
+          // 1. Resize Image (Gallery typically needs decent quality, max width 1024px)
+          const resizedBlob = await resizeImage(file, 1024);
+
+          const fileExt = 'jpg';
+          const fileName = `gallery/${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
+          
+          // 2. Upload to 'gunderwear-bucket'
+          const { error: uploadError } = await supabase.storage
+              .from('gunderwear-bucket')
+              .upload(fileName, resizedBlob, {
+                contentType: 'image/jpeg'
+              });
+
+          if (uploadError) throw uploadError;
+
+          const { data } = supabase.storage
+              .from('gunderwear-bucket')
+              .getPublicUrl(fileName);
+          
+          if (data.publicUrl) {
+              setGallery(prev => [data.publicUrl, ...prev]);
+          }
+      } catch (error: any) {
+          console.error('Error uploading gallery image:', error);
+          alert(`Failed to upload image: ${error.message || 'Unknown error'}`);
+      } finally {
+          setIsUploading(false);
+          // Reset input so same file can be selected again if needed
+          if (fileInputRef.current) fileInputRef.current.value = '';
+      }
   };
 
   return (
@@ -46,15 +122,29 @@ const EditGallery: React.FC<EditGalleryProps> = ({ language, initialGallery, onS
 
       <div className="p-4">
         
+        {/* Hidden File Input */}
+        <input 
+            type="file" 
+            ref={fileInputRef} 
+            className="hidden" 
+            accept="image/*" 
+            onChange={handleFileChange}
+        />
+
         {/* Upload Button */}
         <button 
-          onClick={handleAdd}
-          className="w-full h-24 mb-6 border-2 border-dashed border-gray-700 rounded-2xl flex flex-col items-center justify-center text-gray-500 hover:text-white hover:border-red-600 hover:bg-gray-900/50 transition-all gap-2 group"
+          onClick={handleAddClick}
+          disabled={isUploading}
+          className={`w-full h-24 mb-6 border-2 border-dashed border-gray-700 rounded-2xl flex flex-col items-center justify-center text-gray-500 hover:text-white hover:border-red-600 hover:bg-gray-900/50 transition-all gap-2 group ${isUploading ? 'opacity-50 cursor-wait' : ''}`}
         >
           <div className="w-8 h-8 rounded-full bg-gray-800 flex items-center justify-center group-hover:bg-red-600 transition-colors">
-            <ImagePlus size={16} className="group-hover:text-white" />
+            {isUploading ? (
+                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+            ) : (
+                <ImagePlus size={16} className="group-hover:text-white" />
+            )}
           </div>
-          <span className="text-sm font-bold">{t.uploadImage}</span>
+          <span className="text-sm font-bold">{isUploading ? 'Uploading...' : t.uploadImage}</span>
         </button>
 
         {/* Gallery Grid */}

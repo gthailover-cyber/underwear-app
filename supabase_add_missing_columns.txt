@@ -1,0 +1,13 @@
+
+-- เพิ่มคอลัมน์ที่ขาดหายไปในตาราง profiles เพื่อให้ตรงกับ Frontend
+ALTER TABLE public.profiles 
+ADD COLUMN IF NOT EXISTS gallery text[] DEFAULT '{}',
+ADD COLUMN IF NOT EXISTS favorites text[] DEFAULT '{}',
+ADD COLUMN IF NOT EXISTS age integer DEFAULT 0,
+ADD COLUMN IF NOT EXISTS height decimal DEFAULT 0,
+ADD COLUMN IF NOT EXISTS weight decimal DEFAULT 0;
+
+-- ตรวจสอบว่าคอลัมน์ถูกเพิ่มแล้ว
+SELECT column_name, data_type 
+FROM information_schema.columns 
+WHERE table_name = 'profiles';

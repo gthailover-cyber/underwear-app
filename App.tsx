@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { MessageCircle, Bell, Menu, Plus, Home, Compass, ShoppingCart, User, Users, MapPin, CreditCard, Wallet, LogOut, ChevronRight, X, Globe, Coins, ArrowLeft, Package, ShoppingBag, Box, LayoutDashboard, Shield, List, UserCog, Video, MessageSquare, BicepsFlexed, Crown, Star, Clock, LockKeyhole } from 'lucide-react';
 import { supabase } from './lib/supabaseClient';
@@ -29,8 +28,9 @@ import MyAddress from './components/MyAddress';
 import MyPayment from './components/MyPayment';
 import MyOrders from './components/MyOrders';
 import ModelApplicationModal from './components/ModelApplicationModal';
+import StartLiveModal from './components/StartLiveModal';
 import UpdatePasswordModal from './components/UpdatePasswordModal'; 
-import { MOCK_STREAMERS, TRANSLATIONS, MOCK_PRODUCTS, MOCK_USER_PROFILE, MOCK_CHAT_ROOMS, MOCK_PEOPLE } from './constants';
+import { MOCK_STREAMERS, TRANSLATIONS, MOCK_PRODUCTS, MOCK_USER_PROFILE, MOCK_CHAT_ROOMS, MOCK_PEOPLE, DEFAULT_IMAGES } from './constants';
 import { Streamer, Language, CartItem, UserProfile, MessagePreview, Product, Person, ChatRoom } from './types';
 
 const App: React.FC = () => {
@@ -54,6 +54,7 @@ const App: React.FC = () => {
   const [selectedChatUser, setSelectedChatUser] = useState<MessagePreview | null>(null);
   const [selectedGroupRoom, setSelectedGroupRoom] = useState<ChatRoom | null>(null);
   const [organizerToolTab, setOrganizerToolTab] = useState<'rooms' | 'members'>('rooms'); // State for organizer tool tab
+  const [isStartLiveModalOpen, setIsStartLiveModalOpen] = useState(false);
   
   // People Tab State
   const [selectedPerson, setSelectedPerson] = useState<Person | null>(null);
@@ -98,23 +99,16 @@ const App: React.FC = () => {
       setSession(session);
       setLoadingSession(false);
       
-      // If user exists, update local profile (simple mock integration)
-      if (session?.user?.email) {
-          setUserProfile(prev => ({
-              ...prev,
-              username: session.user.email?.split('@')[0] || prev.username,
-          }));
+      if (session?.user) {
+          fetchUserProfile(session.user.id, session.user.email);
       }
     });
 
     // 2. Auth State Listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       setSession(session);
-      if (session?.user?.email) {
-        setUserProfile(prev => ({
-            ...prev,
-            username: session.user.email?.split('@')[0] || prev.username,
-        }));
+      if (session?.user) {
+        fetchUserProfile(session.user.id, session.user.email);
       }
 
       // Handle Password Recovery Event
@@ -124,7 +118,6 @@ const App: React.FC = () => {
     });
 
     // 3. Fallback: Manually check URL hash for recovery params
-    // This catches cases where the event might be missed or handled too quickly
     const hash = window.location.hash;
     if (hash && hash.includes('type=recovery')) {
        setIsUpdatePasswordOpen(true);
@@ -152,7 +145,7 @@ const App: React.FC = () => {
             name: room.profiles?.username || 'Unknown Host',
             title: room.title,
             viewerCount: room.viewer_count || 0,
-            coverImage: room.cover_image || 'https://picsum.photos/400/700?random=db',
+            coverImage: room.cover_image || DEFAULT_IMAGES.COVER, 
             videoUrl: room.video_url,
             youtubeId: room.youtube_id,
             itemCount: 5,
@@ -177,6 +170,41 @@ const App: React.FC = () => {
 
   }, []);
 
+  const fetchUserProfile = async (userId: string, email?: string) => {
+      try {
+          const { data, error } = await supabase
+              .from('profiles')
+              .select('*')
+              .eq('id', userId)
+              .single();
+
+          if (data) {
+              // Ensure we don't set empty strings for images
+              const safeAvatar = (data.avatar && data.avatar.trim() !== '') ? data.avatar : DEFAULT_IMAGES.AVATAR;
+              const safeCover = (data.cover_image && data.cover_image.trim() !== '') ? data.cover_image : DEFAULT_IMAGES.COVER;
+
+              setUserProfile({
+                  username: data.username || email?.split('@')[0] || 'User',
+                  avatar: safeAvatar,
+                  coverImage: safeCover,
+                  role: data.role || 'supporter',
+                  bio: data.bio || '',
+                  location: data.location || '',
+                  age: data.age || 0, 
+                  height: data.height || 0, 
+                  weight: data.weight || 0, 
+                  favorites: data.favorites || [], 
+                  gallery: data.gallery || [], 
+                  followers: data.followers || 0,
+                  following: data.following || 0,
+              });
+              setWalletBalance(data.wallet_balance || 0);
+          }
+      } catch (error) {
+          console.error("Error fetching profile:", error);
+      }
+  };
+
   const handleLogout = async () => {
     await supabase.auth.signOut();
     setIsMenuOpen(false);
@@ -192,20 +220,70 @@ const App: React.FC = () => {
 
   const handleTopUp = (amount: number) => {
     setWalletBalance(prev => prev + amount);
+    // In real app, call Supabase to update balance here
   };
 
   const handleUseCoins = (amount: number) => {
     setWalletBalance(prev => Math.max(0, prev - amount));
+    // In real app, call Supabase to update balance here
   };
 
-  const handleSaveProfile = (updatedProfile: UserProfile) => {
+  // --- PROFILE UPDATE LOGIC ---
+  const handleSaveProfile = async (updatedProfile: UserProfile) => {
+    // 1. Optimistic Update (Update UI immediately)
     setUserProfile(updatedProfile);
     setIsEditingProfile(false);
+
+    // 2. Database Update
+    if (session?.user) {
+        try {
+            const { error } = await supabase
+                .from('profiles')
+                .update({
+                    username: updatedProfile.username,
+                    location: updatedProfile.location,
+                    bio: updatedProfile.bio,
+                    avatar: updatedProfile.avatar,
+                    cover_image: updatedProfile.coverImage,
+                    age: updatedProfile.age,
+                    height: updatedProfile.height,
+                    weight: updatedProfile.weight,
+                    favorites: updatedProfile.favorites
+                })
+                .eq('id', session.user.id);
+
+            if (error) throw error;
+            console.log("Profile updated successfully in DB");
+        } catch (error: any) {
+            console.error("Error updating profile in DB:", error.message || error);
+            alert("Failed to save changes to the server. " + (error.message || ''));
+        }
+    }
   };
 
-  const handleSaveGallery = (newGallery: string[]) => {
+  // --- GALLERY UPDATE LOGIC ---
+  const handleSaveGallery = async (newGallery: string[]) => {
+    // 1. Optimistic Update
     setUserProfile(prev => ({ ...prev, gallery: newGallery }));
     setIsEditingGallery(false);
+
+    // 2. Database Update
+    if (session?.user) {
+        try {
+            const { error } = await supabase
+                .from('profiles')
+                .update({
+                    gallery: newGallery
+                })
+                .eq('id', session.user.id);
+
+            if (error) throw error;
+            console.log("Gallery updated successfully in DB");
+        } catch (error: any) {
+            console.error("Error updating gallery in DB:", error.message || error);
+            alert("Failed to save gallery changes. Make sure you ran the SQL to add the 'gallery' column.");
+        }
+    }
   };
 
   const handlePlusClick = () => {
@@ -235,7 +313,8 @@ const App: React.FC = () => {
     setIsProductSelectionOpen(false);
     
     if (selectionMode === 'multiple') {
-        startCountdownAndLive(selectedProducts, false);
+        // Go straight to start live modal
+        setIsStartLiveModalOpen(true);
     } else {
         if (selectedProducts.length > 0) {
             setAuctionSelectedProduct(selectedProducts[0]);
@@ -246,11 +325,15 @@ const App: React.FC = () => {
 
   const handleAuctionSetupConfirm = (durationMs: number, startingPrice: number) => {
     setIsAuctionSetupOpen(false);
-    const productsForLive = auctionSelectedProduct ? [auctionSelectedProduct] : [];
-    startCountdownAndLive(productsForLive, true, { durationMs, startingPrice });
+    setIsStartLiveModalOpen(true);
+    // Store auction data for when start stream is pressed
+    // In a real app we'd pass this to the StartLiveModal or store in state
   };
 
-  const startCountdownAndLive = (liveProducts: Product[], isAuction: boolean, auctionData?: { durationMs: number, startingPrice: number }) => {
+  const handleStartStream = (streamConfig: Streamer) => {
+     setIsStartLiveModalOpen(false);
+     
+     // Start Countdown
      setIsCountdownActive(true);
      setCountdownValue(5);
      
@@ -263,21 +346,14 @@ const App: React.FC = () => {
            clearInterval(timer);
            setIsCountdownActive(false);
            
+           // Construct Final Stream Object
            const myStream: Streamer = {
+              ...streamConfig,
               id: 'live-host-' + Date.now(),
               name: userProfile.username,
-              title: isAuction 
-                ? `Auction: ${liveProducts[0]?.name || 'Rare Item'} 🔨` 
-                : 'Flash Sale! My Collection 🔥',
-              viewerCount: 0,
               coverImage: userProfile.coverImage,
-              itemCount: liveProducts.length,
-              products: liveProducts.length > 0 ? liveProducts : myProducts,
-              isAuction: isAuction,
-              auctionEndTime: isAuction && auctionData ? Date.now() + auctionData.durationMs : undefined,
-              auctionStartingPrice: isAuction && auctionData ? auctionData.startingPrice : undefined,
-              currentBid: isAuction && auctionData ? auctionData.startingPrice : undefined,
-              topBidder: '-'
+              products: myProducts, // simplified for demo
+              // Add auction data if needed
            };
            setCurrentStreamer(myStream);
         }
@@ -308,12 +384,31 @@ const App: React.FC = () => {
       setIsMenuOpen(false);
   };
 
-  const handleSubmitModelApplication = () => {
+  const handleSubmitModelApplication = async () => {
+      // 1. Update local state to immediately reflect 'Model' status
       setUserProfile(prev => ({
           ...prev,
-          modelApplicationStatus: 'pending'
+          role: 'model',
+          modelApplicationStatus: 'approved'
       }));
-      // In real app, upload images here
+
+      // 2. Feedback
+      alert(language === 'th' 
+        ? "อนุมัติเรียบร้อย! คุณเป็น 'นายแบบ' แล้ว สามารถเริ่มไลฟ์ขายของได้เลย" 
+        : "Approved! You are now a 'Model' and can start selling."
+      );
+
+      // 3. Persist to Supabase
+      if (session?.user) {
+          try {
+              await supabase
+                .from('profiles')
+                .update({ role: 'model' })
+                .eq('id', session.user.id);
+          } catch (err) {
+              console.error("Error updating role:", err);
+          }
+      }
   };
 
   // Room Creation Logic
@@ -983,6 +1078,14 @@ const App: React.FC = () => {
         onClose={() => setIsUpdatePasswordOpen(false)}
         language={language}
       />
+
+      {isStartLiveModalOpen && (
+        <StartLiveModal 
+           language={language}
+           onClose={() => setIsStartLiveModalOpen(false)}
+           onStart={handleStartStream}
+        />
+      )}
 
       <div className={`transition-all duration-300 ${currentStreamer ? 'scale-95 opacity-0 pointer-events-none hidden' : 'scale-100 opacity-100'}`}>
         {!isFullScreenTab && !isPeopleDetail && (

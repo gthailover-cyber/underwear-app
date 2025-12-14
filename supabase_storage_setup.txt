@@ -1,0 +1,44 @@
+
+-- 1. Create or Update Bucket 'gunderwear-bucket' to be PUBLIC
+-- คำสั่งนี้จะสร้าง Bucket ถ้ายังไม่มี หรือถ้ามีแล้วจะบังคับเปลี่ยนให้เป็น Public = true
+INSERT INTO storage.buckets (id, name, public)
+VALUES ('gunderwear-bucket', 'gunderwear-bucket', true)
+ON CONFLICT (id) DO UPDATE
+SET public = true;
+
+-- 2. Drop existing policies to avoid "policy already exists" errors when re-running
+DROP POLICY IF EXISTS "Give public access to images" ON storage.objects;
+DROP POLICY IF EXISTS "Allow authenticated uploads" ON storage.objects;
+DROP POLICY IF EXISTS "Allow users to update own images" ON storage.objects;
+DROP POLICY IF EXISTS "Allow users to delete own images" ON storage.objects;
+
+-- 3. Policy: Public Read Access (Anyone can view images)
+-- อนุญาตให้ทุกคน (รวมถึงคนที่ไม่ได้ Login) ดูรูปได้
+CREATE POLICY "Give public access to images"
+ON storage.objects FOR SELECT
+USING ( bucket_id = 'gunderwear-bucket' );
+
+-- 4. Policy: Authenticated Uploads (Logged in users can upload)
+-- อนุญาตให้ User ที่ Login แล้วอัปโหลดรูปได้
+CREATE POLICY "Allow authenticated uploads"
+ON storage.objects FOR INSERT
+WITH CHECK (
+  bucket_id = 'gunderwear-bucket' 
+  AND auth.role() = 'authenticated'
+);
+
+-- 5. Policy: Update Own Images (Users can update files they own)
+CREATE POLICY "Allow users to update own images"
+ON storage.objects FOR UPDATE
+USING (
+  bucket_id = 'gunderwear-bucket' 
+  AND auth.uid() = owner
+);
+
+-- 6. Policy: Delete Own Images (Users can delete files they own)
+CREATE POLICY "Allow users to delete own images"
+ON storage.objects FOR DELETE
+USING (
+  bucket_id = 'gunderwear-bucket' 
+  AND auth.uid() = owner
+);

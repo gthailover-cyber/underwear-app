@@ -1,0 +1,49 @@
+
+-- สคริปต์นี้สำหรับแก้ไขปัญหาตาราง profiles และเติมรูปภาพที่หายไป
+-- สามารถรันซ้ำได้ปลอดภัย (Idempotent)
+
+-- 1. สร้าง/อัปเดตฟังก์ชัน handle_new_user
+CREATE OR REPLACE FUNCTION public.handle_new_user()
+RETURNS trigger AS $$
+BEGIN
+  INSERT INTO public.profiles (id, username, role, avatar, cover_image)
+  VALUES (
+    new.id,
+    COALESCE(new.raw_user_meta_data->>'username', split_part(new.email, '@', 1)),
+    COALESCE(new.raw_user_meta_data->>'role', 'supporter'),
+    'https://ui-avatars.com/api/?name=' || COALESCE(new.raw_user_meta_data->>'username', 'User') || '&background=111827&color=dc2626&size=256&bold=true',
+    'https://images.unsplash.com/photo-1614850523060-8da1d56ae167?w=1200&q=80'
+  )
+  ON CONFLICT (id) DO NOTHING;
+  RETURN new;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- 2. สร้าง Trigger
+DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
+CREATE TRIGGER on_auth_user_created
+  AFTER INSERT ON auth.users
+  FOR EACH ROW EXECUTE PROCEDURE public.handle_new_user();
+
+-- 3. Backfill: สร้าง Profile ให้ User ที่ยังไม่มีข้อมูลเลย
+INSERT INTO public.profiles (id, username, role, avatar, cover_image)
+SELECT 
+  id, 
+  COALESCE(raw_user_meta_data->>'username', split_part(email, '@', 1)),
+  COALESCE(raw_user_meta_data->>'role', 'supporter'),
+  'https://ui-avatars.com/api/?name=' || COALESCE(raw_user_meta_data->>'username', 'User') || '&background=111827&color=dc2626&size=256&bold=true',
+  'https://images.unsplash.com/photo-1614850523060-8da1d56ae167?w=1200&q=80'
+FROM auth.users
+WHERE id NOT IN (SELECT id FROM public.profiles);
+
+-- 4. [สำคัญ] Fix Missing Images: อัปเดต User ที่มี Profile แล้ว แต่รูปเป็น NULL หรือว่าง
+UPDATE public.profiles
+SET avatar = 'https://ui-avatars.com/api/?name=' || COALESCE(username, 'User') || '&background=111827&color=dc2626&size=256&bold=true'
+WHERE avatar IS NULL OR avatar = '';
+
+UPDATE public.profiles
+SET cover_image = 'https://images.unsplash.com/photo-1614850523060-8da1d56ae167?w=1200&q=80'
+WHERE cover_image IS NULL OR cover_image = '';
+
+-- 5. ตรวจสอบผลลัพธ์
+SELECT count(*) as profiles_fixed FROM public.profiles WHERE avatar IS NOT NULL;
