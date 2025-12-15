@@ -40,7 +40,10 @@ export interface Streamer {
   coverImage: string;
   youtubeId?: string; // Added for 100% Free Live Streaming via YouTube Embed
   videoUrl?: string; // Added for Direct MP4 Streaming (Professional & Reliable)
+<<<<<<< HEAD
   useLiveKit?: boolean; // NEW: Flag to use LiveKit for WebRTC streaming
+=======
+>>>>>>> 752a1b3a25bf1dbec06b56f9ec2b0d8b9a81ad85
   itemCount: number;
   products: Product[];
   isAuction?: boolean; // New flag for Auction mode
@@ -98,7 +101,11 @@ export interface ChatMessage {
   timestamp: string;
   read: boolean;
   // For Live Share
+<<<<<<< HEAD
   sharedStreamerId?: string;
+=======
+  sharedStreamerId?: string; 
+>>>>>>> 752a1b3a25bf1dbec06b56f9ec2b0d8b9a81ad85
   sharedStreamer?: Streamer; // In a real app, you'd fetch this by ID
   // For Group Chat
   senderName?: string;

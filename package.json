@@ -13,10 +13,14 @@
     "react-dom": "18.3.1",
     "lucide-react": "0.460.0",
     "socket.io-client": "4.7.5",
+<<<<<<< HEAD
     "@supabase/supabase-js": "^2.87.1",
     "@livekit/components-react": "^2.7.4",
     "@livekit/components-styles": "^1.1.4",
     "livekit-client": "^2.9.3"
+=======
+    "@supabase/supabase-js": "^2.87.1"
+>>>>>>> 752a1b3a25bf1dbec06b56f9ec2b0d8b9a81ad85
   },
   "devDependencies": {
     "@types/node": "^22.14.0",
@@ -24,4 +28,8 @@
     "typescript": "~5.8.2",
     "vite": "^6.2.0"
   }
+<<<<<<< HEAD
 }
+=======
+}
+>>>>>>> 752a1b3a25bf1dbec06b56f9ec2b0d8b9a81ad85

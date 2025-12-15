@@ -1,6 +1,10 @@
 
 import React, { useState } from 'react';
+<<<<<<< HEAD
 import { X, Video, Youtube, Link as LinkIcon, ImagePlus, Radio } from 'lucide-react';
+=======
+import { X, Video, Youtube, Link as LinkIcon, ImagePlus } from 'lucide-react';
+>>>>>>> 752a1b3a25bf1dbec06b56f9ec2b0d8b9a81ad85
 import { Language, Streamer, Product } from '../types';
 import { TRANSLATIONS } from '../constants';
 
@@ -10,14 +14,20 @@ interface StartLiveModalProps {
   onStart: (newStream: Streamer) => void;
 }
 
+<<<<<<< HEAD
 type StreamMethod = 'livekit' | 'youtube';
 
+=======
+>>>>>>> 752a1b3a25bf1dbec06b56f9ec2b0d8b9a81ad85
 const StartLiveModal: React.FC<StartLiveModalProps> = ({ language, onClose, onStart }) => {
   const [title, setTitle] = useState('');
   const [youtubeUrl, setYoutubeUrl] = useState('');
   const [coverImage, setCoverImage] = useState<string>('https://picsum.photos/400/700?random=' + Date.now());
   const [isLoading, setIsLoading] = useState(false);
+<<<<<<< HEAD
   const [streamMethod, setStreamMethod] = useState<StreamMethod>('livekit');
+=======
+>>>>>>> 752a1b3a25bf1dbec06b56f9ec2b0d8b9a81ad85
 
   const t = TRANSLATIONS[language];
 
@@ -33,16 +43,25 @@ const StartLiveModal: React.FC<StartLiveModalProps> = ({ language, onClose, onSt
 
     // Simulate API delay
     setTimeout(() => {
+<<<<<<< HEAD
       const youtubeId = streamMethod === 'youtube' ? extractYoutubeId(youtubeUrl) : undefined;
 
+=======
+      const youtubeId = extractYoutubeId(youtubeUrl);
+      
+>>>>>>> 752a1b3a25bf1dbec06b56f9ec2b0d8b9a81ad85
       const newStreamer: Streamer = {
         id: `live-${Date.now()}`,
         name: 'Me (Host)', // In real app, get from user profile
         title: title || 'Live Sale! 🔥',
         viewerCount: 0,
         coverImage: coverImage,
+<<<<<<< HEAD
         youtubeId: youtubeId, // Use extracted ID
         useLiveKit: streamMethod === 'livekit', // NEW: Flag to use LiveKit
+=======
+        youtubeId: youtubeId || undefined, // Use extracted ID
+>>>>>>> 752a1b3a25bf1dbec06b56f9ec2b0d8b9a81ad85
         itemCount: 0, // Will be populated in App.tsx logic if products selected
         products: [] // Will be populated in App.tsx logic if products selected
       };
@@ -55,9 +74,15 @@ const StartLiveModal: React.FC<StartLiveModalProps> = ({ language, onClose, onSt
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/90 backdrop-blur-sm" onClick={onClose} />
+<<<<<<< HEAD
 
       <div className="relative w-full max-w-md bg-gray-900 rounded-3xl border border-gray-800 shadow-2xl overflow-hidden animate-fade-in">
 
+=======
+      
+      <div className="relative w-full max-w-md bg-gray-900 rounded-3xl border border-gray-800 shadow-2xl overflow-hidden animate-fade-in">
+        
+>>>>>>> 752a1b3a25bf1dbec06b56f9ec2b0d8b9a81ad85
         {/* Header */}
         <div className="p-4 border-b border-gray-800 flex items-center justify-between">
           <h2 className="text-xl font-athletic text-white flex items-center gap-2">
@@ -70,6 +95,7 @@ const StartLiveModal: React.FC<StartLiveModalProps> = ({ language, onClose, onSt
         </div>
 
         <form onSubmit={handleSubmit} className="p-6 space-y-6">
+<<<<<<< HEAD
 
           {/* Cover Preview */}
           <div className="flex justify-center">
@@ -79,6 +105,17 @@ const StartLiveModal: React.FC<StartLiveModalProps> = ({ language, onClose, onSt
                 <ImagePlus size={24} />
                 <span className="text-[10px] font-bold mt-1">Cover</span>
               </div>
+=======
+          
+          {/* Cover Preview */}
+          <div className="flex justify-center">
+            <div className="relative w-32 h-48 bg-gray-800 rounded-xl overflow-hidden border-2 border-dashed border-gray-700 group cursor-pointer hover:border-red-500 transition-colors">
+               <img src={coverImage} className="w-full h-full object-cover opacity-60 group-hover:opacity-40" />
+               <div className="absolute inset-0 flex flex-col items-center justify-center text-gray-400 group-hover:text-white">
+                  <ImagePlus size={24} />
+                  <span className="text-[10px] font-bold mt-1">Cover</span>
+               </div>
+>>>>>>> 752a1b3a25bf1dbec06b56f9ec2b0d8b9a81ad85
             </div>
           </div>
 
@@ -86,8 +123,13 @@ const StartLiveModal: React.FC<StartLiveModalProps> = ({ language, onClose, onSt
           <div className="space-y-4">
             <div>
               <label className="text-xs font-bold text-gray-500 uppercase ml-1">Live Title</label>
+<<<<<<< HEAD
               <input
                 type="text"
+=======
+              <input 
+                type="text" 
+>>>>>>> 752a1b3a25bf1dbec06b56f9ec2b0d8b9a81ad85
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
                 placeholder="What are you selling today?"
@@ -96,6 +138,7 @@ const StartLiveModal: React.FC<StartLiveModalProps> = ({ language, onClose, onSt
               />
             </div>
 
+<<<<<<< HEAD
             {/* Stream Method Selection */}
             <div>
               <label className="text-xs font-bold text-gray-500 uppercase ml-1 mb-2 block">Streaming Method</label>
@@ -171,17 +214,52 @@ const StartLiveModal: React.FC<StartLiveModalProps> = ({ language, onClose, onSt
 
           {/* Button */}
           <button
+=======
+            <div>
+              <label className="text-xs font-bold text-gray-500 uppercase ml-1 flex items-center justify-between">
+                <span>YouTube Link</span>
+                <span className="text-[10px] text-red-500 flex items-center gap-1"><Youtube size={10}/> YouTube Only</span>
+              </label>
+              <div className="relative">
+                <input 
+                  type="text" 
+                  value={youtubeUrl}
+                  onChange={(e) => setYoutubeUrl(e.target.value)}
+                  placeholder="Paste YouTube Link (e.g. https://youtu.be/...)"
+                  className="w-full bg-gray-800 border border-gray-700 rounded-xl p-3 pl-10 text-white focus:border-red-600 focus:outline-none placeholder-gray-600"
+                  required
+                />
+                <LinkIcon size={16} className="absolute left-3.5 top-3.5 text-gray-500" />
+              </div>
+              <p className="text-[10px] text-gray-500 mt-2 leading-relaxed">
+                * Tip: Go Live on YouTube first, then copy the share link and paste it here. This allows you to stream for <b>FREE</b> with unlimited viewers.
+              </p>
+            </div>
+          </div>
+
+          {/* Button */}
+          <button 
+>>>>>>> 752a1b3a25bf1dbec06b56f9ec2b0d8b9a81ad85
             type="submit"
             disabled={isLoading}
             className="w-full bg-gradient-to-r from-red-600 to-red-500 text-white py-4 rounded-xl font-bold text-lg shadow-lg shadow-red-900/50 hover:from-red-500 hover:to-red-400 active:scale-95 transition-all flex items-center justify-center gap-2"
           >
             {isLoading ? (
+<<<<<<< HEAD
               <>
                 <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
                 Starting...
               </>
             ) : (
               'START LIVE NOW'
+=======
+               <>
+                 <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                 Starting...
+               </>
+            ) : (
+               'START LIVE NOW'
+>>>>>>> 752a1b3a25bf1dbec06b56f9ec2b0d8b9a81ad85
             )}
           </button>
 
@@ -193,4 +271,7 @@ const StartLiveModal: React.FC<StartLiveModalProps> = ({ language, onClose, onSt
 };
 
 export default StartLiveModal;
+<<<<<<< HEAD
 
+=======
+>>>>>>> 752a1b3a25bf1dbec06b56f9ec2b0d8b9a81ad85
