@@ -182,13 +182,25 @@ const LiveKitVideo: React.FC<LiveKitVideoProps> = ({
 
     // 3. Connected State (Real LiveKit Video)
     return (
-        <video
-            ref={videoRef}
-            autoPlay
-            playsInline
-            muted={isHost} // Mute local video to prevent echo
-            className={`w-full h-full object-cover ${isHost ? 'scale-x-[-1]' : ''} ${className}`}
-        />
+        <div className={`relative w-full h-full bg-black ${className}`}>
+            <video
+                ref={videoRef}
+                autoPlay
+                playsInline
+                muted={isHost} // Mute local video to prevent echo
+                className={`w-full h-full object-cover ${isHost ? 'scale-x-[-1]' : ''}`}
+            />
+
+            {/* DEBUG INFO (Temporary) */}
+            <div className="absolute top-2 left-2 bg-black/50 text-white text-[10px] p-2 rounded pointer-events-none font-mono z-50">
+                <p>Status: {isConnecting ? 'Connecting...' : 'Connected'}</p>
+                <p>Role: {isHost ? 'Host' : 'Viewer'}</p>
+                <p>Room: {room?.name || roomName}</p>
+                <p>Participant: {room?.localParticipant?.identity}</p>
+                <p>Remote Participants: {room?.remoteParticipants.size}</p>
+                <p>Local Video Tracks: {room?.localParticipant?.videoTrackPublications.size}</p>
+            </div>
+        </div>
     );
 };
 
