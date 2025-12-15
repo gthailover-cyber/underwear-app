@@ -87,6 +87,13 @@ const LiveKitVideo: React.FC<LiveKitVideoProps> = ({
             } catch (err) {
                 console.error('[LiveKit] Connection error:', err);
                 const errorMessage = err instanceof Error ? err.message : 'Failed to connect to live stream';
+
+                // If it's a client disconnect (often React Strict Mode double-invoke), ignore it or retry quietly
+                if (errorMessage.includes('Client initiated disconnect') || errorMessage.includes('cancelled')) {
+                    console.log('[LiveKit] Ignored intentional disconnect during mount/unmount cycle.');
+                    return;
+                }
+
                 setError(errorMessage);
                 setIsConnecting(false);
                 onError?.(err instanceof Error ? err : new Error(errorMessage));
