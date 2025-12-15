@@ -114,18 +114,39 @@ const LiveKitVideo: React.FC<LiveKitVideoProps> = ({
         };
     }, [roomName, isHost, participantName]);
 
+    // --- RENDER ---
+
+    // 1. Error / Fallback State (Mock Mode)
     if (error) {
         return (
-            <div className={`flex items-center justify-center bg-gray-900 ${className}`}>
-                <div className="text-center p-6">
-                    <div className="text-red-500 text-lg font-bold mb-2">Connection Error</div>
-                    <div className="text-gray-400 text-sm">{error}</div>
-                    <div className="text-gray-500 text-xs mt-2">Please check your LiveKit configuration</div>
+            <div className={`relative flex items-center justify-center bg-gray-900 ${className} overflow-hidden group`}>
+                {/* Mock Video Background */}
+                <video
+                    src="https://assets.mixkit.co/videos/preview/mixkit-man-working-out-in-a-gym-22606-large.mp4"
+                    autoPlay
+                    muted
+                    loop
+                    playsInline
+                    className="absolute inset-0 w-full h-full object-cover opacity-50"
+                />
+
+                <div className="absolute inset-0 flex flex-col items-center justify-center z-10">
+                    <div className="bg-black/60 backdrop-blur-md p-4 rounded-xl border border-red-500/30 text-center max-w-[80%]">
+                        <div className="text-red-400 font-bold mb-1">Demo Mode (Offline)</div>
+                        <p className="text-gray-300 text-xs mb-2">
+                            LiveKit credentials missing or invalid.
+                            <br />Showing demo video instead.
+                        </p>
+                        <div className="bg-black/40 p-2 rounded text-[10px] text-gray-500 font-mono text-left">
+                            {error}
+                        </div>
+                    </div>
                 </div>
             </div>
         );
     }
 
+    // 2. Connecting State
     if (isConnecting) {
         return (
             <div className={`flex items-center justify-center bg-gray-900 ${className}`}>
@@ -138,6 +159,7 @@ const LiveKitVideo: React.FC<LiveKitVideoProps> = ({
         );
     }
 
+    // 3. Connected State (Real LiveKit Video)
     return (
         <video
             ref={videoRef}
