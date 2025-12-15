@@ -388,7 +388,7 @@ const App: React.FC = () => {
           coverImage: userProfile.coverImage,
           products: myProducts,
           // Add auction data if needed
-          lives_products: myProducts, // Ensure backend compatibility field
+          // Add auction data if needed
         };
 
         setCurrentStreamer(myStream);
@@ -405,7 +405,6 @@ const App: React.FC = () => {
               youtube_id: null,
               viewer_count: 0,
               is_auction: false, // Default for now
-              status: 'active',
               created_at: new Date().toISOString()
             });
             if (error) console.error("Error creating room in DB:", error);
