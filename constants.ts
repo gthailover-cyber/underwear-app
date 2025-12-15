@@ -49,6 +49,16 @@ export const TRANSLATIONS = {
     myPayment: 'My Payment',
     myWallet: 'My Wallet',
     myProducts: 'My Products',
+    myRate: 'My Rate',
+    myRateTitle: 'My Rate',
+    myRateDesc: 'Set your hourly rates for different types of engagement.',
+    eventLiveRate: 'Online Event Rate',
+    productPresentationRate: 'Product Presentation Rate',
+    onsiteEventRate: 'Onsite Event Rate',
+    saveRates: 'Save Rates',
+    rateSaved: 'Rates saved successfully!',
+    perHour: '/ HOUR',
+    mySchedule: 'My Schedule',
     logout: 'Log Out',
     home: 'Home',
     discover: 'Discover',
@@ -302,6 +312,16 @@ export const TRANSLATIONS = {
     myPayment: 'ช่องทางการชำระเงิน',
     myWallet: 'กระเป๋าเงิน',
     myProducts: 'สินค้าของฉัน',
+    myRate: 'เรทค่าตัว',
+    myRateTitle: 'เรทค่าตัว',
+    myRateDesc: 'ตั้งค่าเรทราคาของคุณสำหรับงานประเภทต่างๆ',
+    eventLiveRate: 'ค่าตัว Online Event',
+    productPresentationRate: 'ค่าตัว นำเสนอสินค้า',
+    onsiteEventRate: 'ค่าตัว Onsite Event',
+    saveRates: 'บันทึกเรทราคา',
+    rateSaved: 'บันทึกเรียบร้อยแล้ว!',
+    perHour: '/ ชั่วโมง',
+    mySchedule: 'ตารางงานของฉัน',
     logout: 'ออกจากระบบ',
     home: 'หน้าหลัก',
     discover: 'ค้นพบ',
@@ -518,370 +538,34 @@ export const TRANSLATIONS = {
   }
 };
 
-export const MOCK_PRODUCTS: Product[] = [
-  {
-    id: 'p1',
-    name: 'Classic Boxer Briefs (Black)',
-    price: 350,
-    image: 'https://picsum.photos/200/200?random=101',
-    stock: 50,
-    sold: 12,
-    colors: ['#000000', '#FFFFFF', '#808080'],
-    sizes: ['M', 'L', 'XL']
-  },
-  {
-    id: 'p2',
-    name: 'Seamless Trunks (Red)',
-    price: 450,
-    image: 'https://picsum.photos/200/200?random=102',
-    stock: 20,
-    sold: 5,
-    colors: ['#FF0000', '#000000'],
-    sizes: ['S', 'M']
-  },
-  {
-    id: 'p3',
-    name: 'Cotton Briefs Pack (White)',
-    price: 990,
-    image: 'https://picsum.photos/200/200?random=103',
-    stock: 15,
-    sold: 8,
-    colors: ['#FFFFFF'],
-    sizes: ['L', 'XL', 'XXL']
-  },
-  {
-    id: 'p4',
-    name: 'Sport Performance Jockstrap',
-    price: 590,
-    image: 'https://picsum.photos/200/200?random=104',
-    stock: 10,
-    sold: 2,
-    colors: ['#0000FF', '#FFFF00'],
-    sizes: ['M', 'L']
-  }
-];
-
-export const MOCK_ORDERS: Order[] = [
-  {
-    id: 'ORD-882910',
-    items: [
-      { ...MOCK_PRODUCTS[0], quantity: 2, size: 'L', color: '#000000' }
-    ],
-    totalPrice: 700,
-    status: 'shipping',
-    date: '2024-05-20',
-    trackingNumber: 'TH123456789',
-    timeline: [
-      {
-        id: 't1',
-        title: 'Order Placed',
-        description: 'Your order has been verified.',
-        date: '20 May',
-        time: '10:30',
-        isCompleted: true,
-        isCurrent: false
-      },
-      {
-        id: 't2',
-        title: 'Packed',
-        description: 'Seller has packed your order.',
-        date: '20 May',
-        time: '14:00',
-        isCompleted: true,
-        isCurrent: false
-      },
-      {
-        id: 't3',
-        title: 'In Transit',
-        description: 'Package is on the way to logistics center.',
-        date: '21 May',
-        time: '09:15',
-        isCompleted: true,
-        isCurrent: true
-      },
-      {
-        id: 't4',
-        title: 'Delivered',
-        description: 'Package will be delivered to you.',
-        date: 'Expected 22 May',
-        time: '-',
-        isCompleted: false,
-        isCurrent: false
-      }
-    ]
-  },
-  {
-    id: 'ORD-773122',
-    items: [
-      { ...MOCK_PRODUCTS[1], quantity: 1, size: 'M', color: '#FF0000' }
-    ],
-    totalPrice: 450,
-    status: 'delivered',
-    date: '2024-05-15',
-    trackingNumber: 'TH987654321',
-    timeline: [
-      {
-        id: 't1',
-        title: 'Order Placed',
-        description: '',
-        date: '15 May',
-        time: '09:00',
-        isCompleted: true,
-        isCurrent: false
-      },
-      {
-        id: 't4',
-        title: 'Delivered',
-        description: 'Package delivered successfully.',
-        date: '17 May',
-        time: '13:45',
-        isCompleted: true,
-        isCurrent: true
-      }
-    ]
-  },
-  {
-    id: 'ORD-662199',
-    items: [
-      { ...MOCK_PRODUCTS[3], quantity: 3, size: 'M', color: '#0000FF' }
-    ],
-    totalPrice: 1770,
-    status: 'pending',
-    date: '2024-05-21',
-  }
-];
-
-export const MOCK_STREAMERS: Streamer[] = [
-  {
-    id: 's1',
-    name: 'Jason Model',
-    title: 'Sale! Boxer Briefs 50% Off 🔥',
-    viewerCount: 1540,
-    coverImage: 'https://picsum.photos/400/700?random=1',
-    videoUrl: 'https://assets.mixkit.co/videos/preview/mixkit-man-exercising-with-gym-ropes-209-large.mp4',
-    itemCount: 12,
-    products: MOCK_PRODUCTS
-  },
-  {
-    id: 's2',
-    name: 'Top Form Men',
-    title: 'New Collection Arrival 🕶️',
-    viewerCount: 890,
-    coverImage: 'https://picsum.photos/400/700?random=2',
-    videoUrl: 'https://assets.mixkit.co/videos/preview/mixkit-young-man-training-on-the-bars-in-the-gym-23588-large.mp4',
-    itemCount: 8,
-    products: [MOCK_PRODUCTS[0], MOCK_PRODUCTS[2]]
-  },
-  {
-    id: 's3',
-    name: 'Guy Next Door',
-    title: 'ล้างสต็อก หมดแล้วหมดเลย 📦',
-    viewerCount: 3200,
-    coverImage: 'https://picsum.photos/400/700?random=3',
-    videoUrl: 'https://assets.mixkit.co/videos/preview/mixkit-man-doing-push-ups-in-gym-23616-large.mp4',
-    itemCount: 5,
-    products: [MOCK_PRODUCTS[1], MOCK_PRODUCTS[3]]
-  },
-  {
-    id: 's4',
-    name: 'Fitness Addict',
-    title: 'Sport Underwear for Gym 💪',
-    viewerCount: 560,
-    coverImage: 'https://picsum.photos/400/700?random=4',
-    videoUrl: 'https://assets.mixkit.co/videos/preview/mixkit-athletic-man-working-out-with-heavy-ropes-23267-large.mp4',
-    itemCount: 20,
-    products: MOCK_PRODUCTS,
-    isAuction: true,
-    auctionEndTime: Date.now() + 3600000,
-    auctionStartingPrice: 500,
-    currentBid: 650,
-    topBidder: 'GymRat99'
-  }
-];
-
-export const INITIAL_COMMENTS = [
-  { id: 'c1', username: 'System', message: 'Welcome to the live room!', isSystem: true, avatar: '' },
-  { id: 'c2', username: 'User123', message: 'ราคาเท่าไหร่ครับ?', avatar: 'https://picsum.photos/200/200?random=50' },
-  { id: 'c3', username: 'TonyStark', message: 'Looking good!', avatar: 'https://picsum.photos/200/200?random=51' },
-  { id: 'c4', username: 'BKK_Boy', message: 'มีสีแดงไหมครับ?', avatar: 'https://picsum.photos/200/200?random=52' },
-  { id: 'c5', username: 'Sarah_Jane', message: 'Fabulous!', avatar: 'https://picsum.photos/200/200?random=53' },
-  { id: 'c6', username: 'Mike_T', message: 'Can I see the back?', avatar: 'https://picsum.photos/200/200?random=54' },
-];
-
-export const MOCK_STORIES = [
-  {
-    id: 'story1',
-    username: 'Jason M.',
-    avatar: 'https://picsum.photos/200/200?random=1',
-    image: 'https://images.unsplash.com/photo-1517836357463-d25dfeac3438?w=400&q=80',
-    isLive: true
-  },
-  {
-    id: 'story2',
-    username: 'Gym Rat',
-    avatar: 'https://picsum.photos/200/200?random=2',
-    image: 'https://images.unsplash.com/photo-1581009146145-b5ef050c2e1e?w=400&q=80',
-    isLive: false
-  },
-  {
-    id: 'story3',
-    username: 'BKK Boy',
-    avatar: 'https://picsum.photos/200/200?random=3',
-    image: 'https://images.unsplash.com/photo-1504194921103-f8b80cadd5e4?w=400&q=80',
-    isLive: false
-  },
-  {
-    id: 'story4',
-    username: 'Underwear King',
-    avatar: 'https://picsum.photos/200/200?random=4',
-    image: 'https://images.unsplash.com/photo-1552160793-cbaf2bd5cf7f?w=400&q=80',
-    isLive: true
-  },
-  {
-    id: 'story5',
-    username: 'Max Power',
-    avatar: 'https://picsum.photos/200/200?random=5',
-    image: 'https://images.unsplash.com/photo-1550993510-06f6e52c8033?w=400&q=80',
-    isLive: false
-  }
-];
-
-export const DISCOVER_TAGS = [
-  '#Sexy', '#GymWear', '#Cotton100%', '#LimitedEdition', '#ThaiBrand', '#ModelLive'
-];
-
 export const MOCK_USER_PROFILE: UserProfile = {
   username: 'New User',
   avatar: DEFAULT_IMAGES.AVATAR,
   coverImage: DEFAULT_IMAGES.COVER,
   role: 'supporter', 
   modelApplicationStatus: 'none', 
-  age: 20,
-  height: 175,
-  weight: 70,
-  location: 'Bangkok, Thailand',
-  bio: 'Just a fan of cool underwear and fitness.',
-  favorites: ['Boxer Briefs'],
+  age: 0,
+  height: 0,
+  weight: 0,
+  location: '',
+  bio: '',
+  favorites: [],
   gallery: [],
   followers: 0,
   following: 0,
 };
 
-export const MOCK_MESSAGES: MessagePreview[] = [
-  {
-    id: 'm1',
-    userId: 'u1',
-    username: 'Jason Model',
-    avatar: 'https://picsum.photos/200/200?random=1',
-    lastMessage: 'ขอบคุณที่สั่งซื้อสินค้าครับ จะรีบจัดส่งให้วันนี้เลย!',
-    time: '10:30',
-    unread: 2,
-    isOnline: true,
-    isVerified: true
-  },
-  {
-    id: 'm2',
-    userId: 'u2',
-    username: 'Underwear King',
-    avatar: 'https://picsum.photos/200/200?random=4',
-    lastMessage: 'รุ่นใหม่มาแล้วนะครับ สนใจรับเพิ่มไหม?',
-    time: 'Yesterday',
-    unread: 0,
-    isOnline: false,
-    isVerified: true
-  },
-  {
-    id: 'm3',
-    userId: 'u3',
-    username: 'Customer Support',
-    avatar: 'https://picsum.photos/200/200?random=50',
-    lastMessage: 'Your refund request has been processed.',
-    time: 'Mon',
-    unread: 1,
-    isOnline: true
-  },
-  {
-    id: 'm4',
-    userId: 'u4',
-    username: 'Top Form Men',
-    avatar: 'https://picsum.photos/200/200?random=2',
-    lastMessage: '👍👍',
-    time: 'Sun',
-    unread: 0,
-    isOnline: false
-  },
-  {
-    id: 'm5',
-    userId: 'u5',
-    username: 'Gym Bro Shop',
-    avatar: 'https://picsum.photos/200/200?random=8',
-    lastMessage: 'มีไซส์ XL สีดำเหลือ 2 ตัวครับ',
-    time: 'Last Week',
-    unread: 0,
-    isOnline: true
-  }
+export const DISCOVER_TAGS = [
+  '#Sexy', '#GymWear', '#Cotton100%', '#LimitedEdition', '#ThaiBrand', '#ModelLive'
 ];
 
-export const MOCK_CHAT_HISTORY: ChatMessage[] = [
-  { id: '1', senderId: 'u1', text: 'สวัสดีครับ สนใจกางเกงในรุ่น Classic Boxer Briefs ครับ', type: 'text', timestamp: '10:00', read: true },
-  { id: '2', senderId: 'me', text: 'สวัสดีครับผม รุ่นนี้มีของพร้อมส่งครับ', type: 'text', timestamp: '10:02', read: true },
-  { id: '3', senderId: 'me', text: 'รับสีดำ ไซส์ M ใช่ไหมครับ?', type: 'text', timestamp: '10:02', read: true },
-  { id: '4', senderId: 'u1', text: 'ใช่ครับ', type: 'text', timestamp: '10:05', read: true },
-  { 
-    id: '5', 
-    senderId: 'me', 
-    type: 'live_share', 
-    timestamp: '10:06', 
-    read: true,
-    sharedStreamerId: 's1',
-    sharedStreamer: MOCK_STREAMERS[0]
-  },
-  { id: '6', senderId: 'me', text: 'ตอนนี้ผมกำลังไลฟ์สดอยู่พอดี เข้ามาดูสินค้าจริงในไลฟ์ก่อนได้นะครับ', type: 'text', timestamp: '10:06', read: true },
-  { id: '7', senderId: 'u1', text: 'โอเคครับ เดี๋ยวเข้าไปดูครับ', type: 'text', timestamp: '10:08', read: true },
-  { id: '8', senderId: 'me', text: 'ขอบคุณที่สั่งซื้อสินค้าครับ จะรีบจัดส่งให้วันนี้เลย!', type: 'text', timestamp: '10:30', read: false },
+export const MOCK_PEOPLE: Person[] = [
+  { id: '1', username: 'Alex', avatar: 'https://ui-avatars.com/api/?name=Alex&background=random', isOnline: true, followers: 1200, role: 'model' },
+  { id: '2', username: 'Mike', avatar: 'https://ui-avatars.com/api/?name=Mike&background=random', isOnline: false, followers: 450, role: 'supporter' },
+  { id: '3', username: 'Sarah', avatar: 'https://ui-avatars.com/api/?name=Sarah&background=random', isOnline: true, followers: 8900, role: 'organizer' },
+  { id: '4', username: 'John', avatar: 'https://ui-avatars.com/api/?name=John&background=random', isOnline: false, followers: 120, role: 'supporter' },
+  { id: '5', username: 'David', avatar: 'https://ui-avatars.com/api/?name=David&background=random', isOnline: true, followers: 3400, role: 'model' },
+  { id: '6', username: 'Chris', avatar: 'https://ui-avatars.com/api/?name=Chris&background=random', isOnline: true, followers: 560, role: 'supporter' },
+  { id: '7', username: 'Tom', avatar: 'https://ui-avatars.com/api/?name=Tom&background=random', isOnline: false, followers: 230, role: 'model' },
+  { id: '8', username: 'Ben', avatar: 'https://ui-avatars.com/api/?name=Ben&background=random', isOnline: true, followers: 89, role: 'supporter' },
 ];
-
-export const MOCK_CHAT_ROOMS: ChatRoom[] = [
-  {
-    id: 'room1',
-    name: 'Underwear Lovers Community',
-    image: 'https://picsum.photos/200/200?random=301',
-    type: 'public',
-    hostId: 'host1',
-    hostName: 'Admin Guy',
-    members: 1250,
-    lastMessage: 'Welcome everyone to the biggest community!',
-    lastMessageTime: '10:45'
-  },
-  {
-    id: 'room2',
-    name: 'VIP Models Exclusive',
-    image: 'https://picsum.photos/200/200?random=302',
-    type: 'private',
-    hostId: 'host2',
-    hostName: 'Top Model Agency',
-    members: 45,
-    lastMessage: 'New casting call tomorrow.',
-    lastMessageTime: 'Yesterday'
-  },
-  {
-    id: 'room3',
-    name: 'Gym & Fitness Talk',
-    image: 'https://picsum.photos/200/200?random=303',
-    type: 'public',
-    hostId: 'host3',
-    hostName: 'Fit Coach',
-    members: 890,
-    lastMessage: 'Best underwear for leg day?',
-    lastMessageTime: '1h ago'
-  }
-];
-
-export const MOCK_PEOPLE: Person[] = Array.from({ length: 24 }).map((_, i) => ({
-  id: `person-${i}`,
-  username: ['Alex Gym', 'TopGuy88', 'BKK Boy', 'FitAddict', 'ThaiModel', 'BoxerLvr'][i % 6] + (i > 5 ? `_${i}` : ''),
-  avatar: `https://picsum.photos/200/200?random=${200 + i}`,
-  isOnline: Math.random() > 0.5, // Randomized online status (approx 50% online)
-  followers: Math.floor(Math.random() * 5000),
-  role: (i % 6 === 0) ? 'organizer' : (i % 3 === 0) ? 'model' : 'supporter' as UserRole, // Assign random roles
-}));

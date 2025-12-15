@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { ArrowLeft, MapPin, Plus, Trash2, Edit2, CheckCircle, X } from 'lucide-react';
+import { ArrowLeft, MapPin, Plus, Trash2, X } from 'lucide-react';
 import { Language } from '../types';
 import { TRANSLATIONS } from '../constants';
 
@@ -19,30 +19,9 @@ interface Address {
   isDefault: boolean;
 }
 
-const MOCK_ADDRESSES: Address[] = [
-  {
-    id: '1',
-    name: 'Jason Statham',
-    phone: '081-234-5678',
-    address: '123/45 Condo ABC, Sukhumvit Rd.',
-    province: 'Bangkok',
-    postalCode: '10110',
-    isDefault: true
-  },
-  {
-    id: '2',
-    name: 'Jason Office',
-    phone: '02-999-9999',
-    address: '88/8 Silom Tower, Silom Rd.',
-    province: 'Bangkok',
-    postalCode: '10500',
-    isDefault: false
-  }
-];
-
 const MyAddress: React.FC<MyAddressProps> = ({ language, onBack }) => {
   const t = TRANSLATIONS[language];
-  const [addresses, setAddresses] = useState<Address[]>(MOCK_ADDRESSES);
+  const [addresses, setAddresses] = useState<Address[]>([]); // Initialize empty
   const [isAdding, setIsAdding] = useState(false);
   
   // Form State
@@ -96,7 +75,7 @@ const MyAddress: React.FC<MyAddressProps> = ({ language, onBack }) => {
         <div className="flex items-center gap-3">
             <button 
                 onClick={onBack}
-                className="w-10 h-10 rounded-full bg-gray-800 flex items-center justify-center hover:bg-gray-700 transition-colors border border-gray-700 md:hidden"
+                className="w-10 h-10 rounded-full bg-gray-800 flex items-center justify-center hover:bg-gray-700 transition-colors border border-gray-700"
             >
                 <ArrowLeft size={20} className="text-white" />
             </button>

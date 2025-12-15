@@ -1,5 +1,6 @@
+
 import React, { useState, useEffect } from 'react';
-import { MessageCircle, Bell, Menu, Plus, Home, Compass, ShoppingCart, User, Users, MapPin, CreditCard, Wallet, LogOut, ChevronRight, X, Globe, Coins, ArrowLeft, Package, ShoppingBag, Box, LayoutDashboard, Shield, List, UserCog, Video, MessageSquare, BicepsFlexed, Crown, Star, Clock, LockKeyhole } from 'lucide-react';
+import { MessageCircle, Bell, Menu, Plus, Home, Compass, ShoppingCart, User, Users, MapPin, CreditCard, Wallet, LogOut, ChevronRight, X, Globe, Coins, ArrowLeft, Package, ShoppingBag, Box, LayoutDashboard, Shield, List, UserCog, Video, MessageSquare, BicepsFlexed, Crown, Star, Clock, LockKeyhole, Banknote, Calendar } from 'lucide-react';
 import { supabase } from './lib/supabaseClient';
 import { Session } from '@supabase/supabase-js';
 import AuthPage from './components/AuthPage';
@@ -24,13 +25,14 @@ import EditGallery from './components/EditGallery';
 import Messages from './components/Messages';
 import ChatDetail from './components/ChatDetail';
 import MyProducts from './components/MyProducts';
+import MyRate from './components/MyRate';
 import MyAddress from './components/MyAddress';
 import MyPayment from './components/MyPayment';
 import MyOrders from './components/MyOrders';
 import ModelApplicationModal from './components/ModelApplicationModal';
 import StartLiveModal from './components/StartLiveModal';
 import UpdatePasswordModal from './components/UpdatePasswordModal'; 
-import { MOCK_STREAMERS, TRANSLATIONS, MOCK_PRODUCTS, MOCK_USER_PROFILE, MOCK_CHAT_ROOMS, MOCK_PEOPLE, DEFAULT_IMAGES } from './constants';
+import { TRANSLATIONS, MOCK_USER_PROFILE, DEFAULT_IMAGES } from './constants';
 import { Streamer, Language, CartItem, UserProfile, MessagePreview, Product, Person, ChatRoom } from './types';
 
 const App: React.FC = () => {
@@ -40,15 +42,16 @@ const App: React.FC = () => {
   const [isUpdatePasswordOpen, setIsUpdatePasswordOpen] = useState(false); 
 
   // Data State
-  const [streamers, setStreamers] = useState<Streamer[]>(MOCK_STREAMERS);
-  const [myProducts, setMyProducts] = useState<Product[]>(MOCK_PRODUCTS);
-  const [chatRooms, setChatRooms] = useState<ChatRoom[]>(MOCK_CHAT_ROOMS); 
+  const [streamers, setStreamers] = useState<Streamer[]>([]);
+  const [myProducts, setMyProducts] = useState<Product[]>([]);
+  const [chatRooms, setChatRooms] = useState<ChatRoom[]>([]); 
+  const [people, setPeople] = useState<Person[]>([]);
   
   // UI State
   const [currentStreamer, setCurrentStreamer] = useState<Streamer | null>(null);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [language, setLanguage] = useState<Language>('th');
-  const [activeTab, setActiveTab] = useState<'home' | 'discover' | 'cart' | 'people' | 'profile' | 'all_live' | 'messages' | 'my_products' | 'address' | 'payment' | 'my_orders' | 'organizer_tools'>('home');
+  const [activeTab, setActiveTab] = useState<'home' | 'discover' | 'cart' | 'people' | 'profile' | 'all_live' | 'messages' | 'my_products' | 'address' | 'payment' | 'my_orders' | 'organizer_tools' | 'my_rate' | 'my_schedule'>('home');
   const [returnTab, setReturnTab] = useState<string | null>(null); // For navigation history
   const [homeTab, setHomeTab] = useState<'live' | 'rooms' | 'models'>('live'); // New: Sub-tab for Home
   const [selectedChatUser, setSelectedChatUser] = useState<MessagePreview | null>(null);
@@ -82,13 +85,10 @@ const App: React.FC = () => {
   const [isEditingGallery, setIsEditingGallery] = useState(false);
 
   // Wallet State
-  const [walletBalance, setWalletBalance] = useState(5500);
+  const [walletBalance, setWalletBalance] = useState(0);
 
-  // Cart State
-  const [cartItems, setCartItems] = useState<CartItem[]>([
-    { ...MOCK_PRODUCTS[0], quantity: 1, size: 'M' },
-    { ...MOCK_PRODUCTS[2], quantity: 2, size: 'L' }
-  ]);
+  // Cart State (In real app, fetch from DB order_items with status 'in_cart' if implemented)
+  const [cartItems, setCartItems] = useState<CartItem[]>([]);
 
   const t = TRANSLATIONS[language];
 
@@ -101,6 +101,7 @@ const App: React.FC = () => {
       
       if (session?.user) {
           fetchUserProfile(session.user.id, session.user.email);
+          fetchGlobalData(session.user.id);
       }
     });
 
@@ -109,6 +110,7 @@ const App: React.FC = () => {
       setSession(session);
       if (session?.user) {
         fetchUserProfile(session.user.id, session.user.email);
+        fetchGlobalData(session.user.id);
       }
 
       // Handle Password Recovery Event
@@ -123,8 +125,12 @@ const App: React.FC = () => {
        setIsUpdatePasswordOpen(true);
     }
 
-    // 4. Fetch Rooms
-    const fetchRooms = async () => {
+    return () => subscription.unsubscribe();
+
+  }, []);
+
+  const fetchGlobalData = async (userId: string) => {
+      // 1. Fetch Rooms (Streamers)
       try {
         const { data, error } = await supabase
           .from('rooms')
@@ -134,12 +140,7 @@ const App: React.FC = () => {
           `)
           .order('created_at', { ascending: false });
 
-        if (error) {
-          console.error('Error fetching rooms:', error);
-          return;
-        }
-
-        if (data && data.length > 0) {
+        if (!error && data) {
           const dbStreamers: Streamer[] = data.map((room: any) => ({
             id: room.id,
             name: room.profiles?.username || 'Unknown Host',
@@ -148,27 +149,50 @@ const App: React.FC = () => {
             coverImage: room.cover_image || DEFAULT_IMAGES.COVER, 
             videoUrl: room.video_url,
             youtubeId: room.youtube_id,
-            itemCount: 5,
-            products: MOCK_PRODUCTS,
+            itemCount: 0, // Need to join products if possible, or fetch separate
+            products: [], // Populate if needed
             isAuction: room.is_auction,
             auctionEndTime: room.auction_end_time ? Number(room.auction_end_time) : undefined,
             auctionStartingPrice: room.auction_starting_price,
             currentBid: room.current_bid,
             topBidder: room.top_bidder_name
           }));
-          
           setStreamers(dbStreamers);
         }
       } catch (err) {
-        console.error('Unexpected error fetching rooms:', err);
+        console.error('Error fetching rooms:', err);
       }
-    };
 
-    fetchRooms();
+      // 2. Fetch My Products
+      try {
+          const { data: prodData } = await supabase.from('products').select('*').eq('seller_id', userId);
+          if (prodData) setMyProducts(prodData);
+      } catch (err) {
+          console.error('Error fetching products:', err);
+      }
 
-    return () => subscription.unsubscribe();
+      // 3. Fetch All People (Profiles)
+      try {
+          const { data: profileData } = await supabase.from('profiles').select('*');
+          if (profileData) {
+             setPeople(profileData.map(p => ({
+                id: p.id,
+                username: p.username || 'User',
+                avatar: p.avatar || DEFAULT_IMAGES.AVATAR,
+                isOnline: false, // Placeholder
+                followers: p.followers || 0,
+                role: p.role
+             })));
+          }
+      } catch (err) {
+          console.error('Error fetching people:', err);
+      }
 
-  }, []);
+      // 4. Chat Rooms (Use 'rooms' table or separate 'chat_rooms' if exists. Reusing rooms for now)
+      // Since schema uses 'rooms' for live, we can treat them as group chats too if they are persistent
+      // For now, let's just initialize empty or filter for non-live rooms if logic existed
+      // setChatRooms([]); 
+  };
 
   const fetchUserProfile = async (userId: string, email?: string) => {
       try {
@@ -179,7 +203,6 @@ const App: React.FC = () => {
               .single();
 
           if (data) {
-              // Ensure we don't set empty strings for images
               const safeAvatar = (data.avatar && data.avatar.trim() !== '') ? data.avatar : DEFAULT_IMAGES.AVATAR;
               const safeCover = (data.cover_image && data.cover_image.trim() !== '') ? data.cover_image : DEFAULT_IMAGES.COVER;
 
@@ -352,7 +375,7 @@ const App: React.FC = () => {
               id: 'live-host-' + Date.now(),
               name: userProfile.username,
               coverImage: userProfile.coverImage,
-              products: myProducts, // simplified for demo
+              products: myProducts, 
               // Add auction data if needed
            };
            setCurrentStreamer(myStream);
@@ -458,14 +481,13 @@ const App: React.FC = () => {
     }
   };
 
-  // Menu items - Conditionally show 'My Products' only for Models
+  // Menu items
   const menuItems = [
     { id: 'profile', icon: User, label: t.profile },
     { id: 'my_orders', icon: ShoppingBag, label: t.myOrders },
     { id: 'address', icon: MapPin, label: t.myAddress },
     { id: 'payment', icon: CreditCard, label: t.myPayment },
     { id: 'wallet', icon: Wallet, label: t.myWallet },
-    ...(userProfile.role === 'model' ? [{ id: 'my_products', icon: Box, label: t.myProducts }] : []),
   ];
 
   const handleMenuClick = (id: string) => {
@@ -553,10 +575,14 @@ const App: React.FC = () => {
   };
 
   // --- Helpers for Layout ---
-  const isFullScreenTab = activeTab === 'messages' || activeTab === 'all_live' || activeTab === 'my_products' || activeTab === 'address' || activeTab === 'payment' || activeTab === 'my_orders' || activeTab === 'organizer_tools';
+  const isFullScreenTab = activeTab === 'messages' || activeTab === 'all_live' || activeTab === 'my_products' || activeTab === 'address' || activeTab === 'payment' || activeTab === 'my_orders' || activeTab === 'organizer_tools' || activeTab === 'my_rate' || activeTab === 'my_schedule';
   const isPeopleTab = activeTab === 'people';
   const isPeopleDetail = isPeopleTab && selectedPerson !== null;
   const isHomeTab = activeTab === 'home';
+  
+  // Decide when to show Top/Bottom Bars
+  const showTopNav = !isFullScreenTab && !isPeopleDetail;
+  const showBottomNav = !isFullScreenTab && !isPeopleDetail;
 
   // --- Render Content based on Active Tab ---
   const renderContent = () => {
@@ -603,7 +629,8 @@ const App: React.FC = () => {
         return (
           <Discover 
             language={language} 
-            onOpenStream={handleOpenStream} 
+            onOpenStream={handleOpenStream}
+            streamers={streamers} 
           />
         );
       case 'cart':
@@ -633,6 +660,7 @@ const App: React.FC = () => {
             language={language} 
             onUserClick={(person) => setSelectedPerson(person)}
             streamers={streamers}
+            people={people}
           />
         );
       case 'profile':
@@ -666,7 +694,6 @@ const App: React.FC = () => {
           />
         );
       case 'my_products':
-        // Guard Clause: Access only for models
         if (userProfile.role !== 'model') {
             return (
                 <div className="flex flex-col items-center justify-center h-full text-center p-8 text-gray-500 space-y-4">
@@ -688,6 +715,30 @@ const App: React.FC = () => {
                 products={myProducts}
                 setProducts={setMyProducts}
             />
+        );
+      case 'my_rate':
+        return (
+            <MyRate 
+                language={language}
+                onBack={() => setActiveTab('home')}
+            />
+        );
+      case 'my_schedule':
+        return (
+            <div className="pb-24 animate-fade-in bg-black min-h-screen flex flex-col">
+                <div className="flex items-center gap-3 px-4 py-4 sticky top-0 bg-black/90 backdrop-blur z-30 border-b border-gray-800">
+                    <button 
+                        onClick={() => setActiveTab('home')}
+                        className="w-10 h-10 rounded-full bg-gray-800 flex items-center justify-center hover:bg-gray-700 transition-colors border border-gray-700"
+                    >
+                        <ArrowLeft size={20} className="text-white" />
+                    </button>
+                    <h2 className="text-xl font-athletic tracking-wide text-white">{t.mySchedule}</h2>
+                </div>
+                <div className="flex-1 flex items-center justify-center text-gray-500">
+                    <p>My Schedule (Coming Soon)</p>
+                </div>
+            </div>
         );
       case 'address':
         return (
@@ -752,32 +803,32 @@ const App: React.FC = () => {
       default:
         return (
           <>
-             {/* Fixed Tabs - Forcefully placed at top-16 (64px) to be flush with header */}
-            <div className="fixed top-16 left-0 right-0 z-30 bg-black/95 backdrop-blur-md py-2 px-2 border-b border-gray-800/50 shadow-md max-w-5xl mx-auto">
+             {/* Fixed Sub-Tabs */}
+            <div className="fixed top-16 left-0 right-0 z-30 bg-black/95 backdrop-blur-md py-1 px-2 border-b border-gray-800/50 shadow-md max-w-5xl mx-auto">
                 <div className="flex bg-gray-900 rounded-xl p-1 border border-gray-800">
                     <button 
                       onClick={() => setHomeTab('live')} 
-                      className={`flex-1 py-2 text-sm font-bold rounded-lg transition-all flex items-center justify-center gap-2 ${homeTab === 'live' ? 'bg-red-600 text-white shadow-lg' : 'text-gray-400 hover:text-gray-200'}`}
+                      className={`flex-1 py-1.5 text-sm font-bold rounded-lg transition-all flex items-center justify-center gap-2 ${homeTab === 'live' ? 'bg-red-600 text-white shadow-lg' : 'text-gray-400 hover:text-gray-200'}`}
                     >
                        <Video size={16} /> <span>{t.homeTabs.live}</span>
                     </button>
                     <button 
                       onClick={() => setHomeTab('rooms')} 
-                      className={`flex-1 py-2 text-sm font-bold rounded-lg transition-all flex items-center justify-center gap-2 ${homeTab === 'rooms' ? 'bg-red-600 text-white shadow-lg' : 'text-gray-400 hover:text-gray-200'}`}
+                      className={`flex-1 py-1.5 text-sm font-bold rounded-lg transition-all flex items-center justify-center gap-2 ${homeTab === 'rooms' ? 'bg-red-600 text-white shadow-lg' : 'text-gray-400 hover:text-gray-200'}`}
                     >
                        <MessageSquare size={16} /> <span>{t.homeTabs.rooms}</span>
                     </button>
                     <button 
                       onClick={() => setHomeTab('models')} 
-                      className={`flex-1 py-2 text-sm font-bold rounded-lg transition-all flex items-center justify-center gap-2 ${homeTab === 'models' ? 'bg-red-600 text-white shadow-lg' : 'text-gray-400 hover:text-gray-200'}`}
+                      className={`flex-1 py-1.5 text-sm font-bold rounded-lg transition-all flex items-center justify-center gap-2 ${homeTab === 'models' ? 'bg-red-600 text-white shadow-lg' : 'text-gray-400 hover:text-gray-200'}`}
                     >
                        <Users size={16} /> <span>{t.homeTabs.models}</span>
                     </button>
                 </div>
             </div>
 
-            {/* Sub-tab Content with padding-top to account for fixed tabs */}
-            <div className="pt-[60px] pb-20 animate-fade-in">
+            {/* Sub-tab Content */}
+            <div className="pt-12 pb-6 animate-fade-in">
                 {homeTab === 'live' && (
                     <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 px-2">
                     {streamers.length > 0 ? streamers.map(streamer => (
@@ -797,7 +848,7 @@ const App: React.FC = () => {
 
                 {homeTab === 'rooms' && (
                     <div className="space-y-3 px-2">
-                    {chatRooms.map(room => (
+                    {chatRooms.length > 0 ? chatRooms.map(room => (
                         <div 
                             key={room.id} 
                             onClick={() => handleOpenGroup(room)}
@@ -822,13 +873,18 @@ const App: React.FC = () => {
                                 <ChevronRight size={18} />
                             </div>
                         </div>
-                    ))}
+                    )) : (
+                        <div className="flex flex-col items-center justify-center py-20 text-gray-500">
+                            <MessageSquare size={48} className="mb-4 opacity-30" />
+                            <p>No rooms active</p>
+                        </div>
+                    )}
                     </div>
                 )}
 
                 {homeTab === 'models' && (
                     <div className="grid grid-cols-3 gap-1 px-1">
-                    {MOCK_PEOPLE.filter(p => p.role === 'model').map((person) => {
+                    {people.filter(p => p.role === 'model').length > 0 ? people.filter(p => p.role === 'model').map((person) => {
                         const isLive = streamers.some(s => s.name === person.username);
                         return (
                             <div 
@@ -845,7 +901,7 @@ const App: React.FC = () => {
                                 {/* Gradient Overlay */}
                                 <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-90"></div>
 
-                                {/* Badge - Like People Page */}
+                                {/* Badge */}
                                 <div className="absolute top-2 right-2 w-5 h-5 rounded-full flex items-center justify-center shadow-lg z-10 bg-white">
                                     <BicepsFlexed size={12} className="text-black" strokeWidth={3} />
                                 </div>
@@ -870,7 +926,12 @@ const App: React.FC = () => {
                                 </div>
                             </div>
                         );
-                    })}
+                    }) : (
+                        <div className="col-span-full flex flex-col items-center justify-center py-20 text-gray-500">
+                            <Users size={48} className="mb-4 opacity-30" />
+                            <p>No models found</p>
+                        </div>
+                    )}
                     </div>
                 )}
             </div>
@@ -879,12 +940,12 @@ const App: React.FC = () => {
     }
   };
 
-  // If loading session state, show loader (or just blank screen briefly)
+  // If loading session state
   if (loadingSession) {
       return <div className="min-h-screen bg-black flex items-center justify-center"><div className="w-8 h-8 border-4 border-red-600 border-t-transparent rounded-full animate-spin"></div></div>;
   }
 
-  // FORCE LOGIN: If no session, show AuthPage
+  // FORCE LOGIN
   if (!session) {
     return <AuthPage language={language} onLanguageChange={setLanguage} />;
   }
@@ -892,12 +953,12 @@ const App: React.FC = () => {
   return (
     <div className="min-h-screen bg-gradient-to-b from-black via-gray-900 to-gray-800 text-white font-sans selection:bg-red-500 selection:text-white overflow-hidden">
       
-      {/* Side Menu */}
+      {/* Side Menu (Same as before) */}
       <div 
-        className={`fixed inset-0 z-50 bg-black/80 backdrop-blur-sm transition-opacity duration-300 ${isMenuOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`}
+        className={`fixed inset-0 z-[60] bg-black/80 backdrop-blur-sm transition-opacity duration-300 ${isMenuOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`}
         onClick={() => setIsMenuOpen(false)}
       />
-      <div className={`fixed top-0 left-0 bottom-0 w-[80%] max-w-sm z-50 bg-gray-900 border-r border-gray-800 shadow-2xl transform transition-transform duration-300 ease-out ${isMenuOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+      <div className={`fixed top-0 left-0 bottom-0 w-[80%] max-w-sm z-[60] bg-gray-900 border-r border-gray-800 shadow-2xl transform transition-transform duration-300 ease-out ${isMenuOpen ? 'translate-x-0' : '-translate-x-full'}`}>
         <div className="flex flex-col h-full overflow-y-auto no-scrollbar">
           <div className="p-6 pt-12 border-b border-gray-800 bg-gradient-to-b from-black to-gray-900">
             <button onClick={() => setIsMenuOpen(false)} className="absolute top-4 right-4 text-gray-400 hover:text-white"><X size={24} /></button>
@@ -914,7 +975,6 @@ const App: React.FC = () => {
               </div>
               
               <div className="flex flex-col">
-                {/* Role Badge */}
                 <div className={`flex items-center gap-1 px-2 py-0.5 rounded-md w-fit mb-1 border ${
                     userProfile.role === 'organizer' ? 'bg-yellow-500/10 border-yellow-500/30 text-yellow-500' :
                     userProfile.role === 'model' ? 'bg-blue-500/10 border-blue-500/30 text-blue-400' :
@@ -945,7 +1005,7 @@ const App: React.FC = () => {
             </div>
           </div>
           
-          {/* Career / Roles Upgrade Section */}
+          {/* Roles Upgrade Section */}
           <div className="px-4 mt-4 mb-2 grid grid-cols-2 gap-3">
             {userProfile.role !== 'organizer' && (
               <button onClick={() => { setIsUpgradeModalOpen(true); setIsMenuOpen(false); }} className="relative overflow-hidden rounded-xl p-3 bg-gradient-to-br from-yellow-900/40 to-black border border-yellow-600/30 flex flex-col items-center text-center group transition-all hover:border-yellow-500 active:scale-95">
@@ -991,7 +1051,7 @@ const App: React.FC = () => {
 
           <div className="flex-1 py-4">
             
-            {/* Organizer Tools Section */}
+            {/* Organizer Tools */}
             {userProfile.role === 'organizer' && (
               <div className="mb-4">
                  <div className="px-6 py-2 mt-2 text-xs font-bold text-gray-500 uppercase tracking-wider flex items-center gap-2">
@@ -1025,7 +1085,44 @@ const App: React.FC = () => {
               </div>
             )}
 
-            {/* Standard Menu Items */}
+            {/* Model Tools */}
+            {userProfile.role === 'model' && (
+              <div className="mb-4">
+                 <div className="px-6 py-2 mt-2 text-xs font-bold text-gray-500 uppercase tracking-wider flex items-center gap-2">
+                    <BicepsFlexed size={12} className="text-blue-500" /> Model Tools
+                 </div>
+                 <button onClick={() => { setActiveTab('my_products'); setIsMenuOpen(false); }} className="w-full flex items-center justify-between px-6 py-3 hover:bg-white/5 transition-colors group">
+                    <div className="flex items-center gap-4">
+                       <div className="w-9 h-9 rounded-lg bg-blue-900/30 border border-blue-500/50 flex items-center justify-center group-hover:bg-blue-600 transition-colors">
+                          <Box size={18} className="text-blue-500 group-hover:text-white" />
+                       </div>
+                       <span className="font-medium text-base text-gray-200 group-hover:text-white">{t.myProducts}</span>
+                    </div>
+                    <ChevronRight size={18} className="text-gray-600 group-hover:text-white" />
+                 </button>
+                 <button onClick={() => { setActiveTab('my_rate'); setIsMenuOpen(false); }} className="w-full flex items-center justify-between px-6 py-3 hover:bg-white/5 transition-colors group">
+                    <div className="flex items-center gap-4">
+                       <div className="w-9 h-9 rounded-lg bg-blue-900/30 border border-blue-500/50 flex items-center justify-center group-hover:bg-blue-600 transition-colors">
+                          <Banknote size={18} className="text-blue-500 group-hover:text-white" />
+                       </div>
+                       <span className="font-medium text-base text-gray-200 group-hover:text-white">{t.myRate}</span>
+                    </div>
+                    <ChevronRight size={18} className="text-gray-600 group-hover:text-white" />
+                 </button>
+                 <button onClick={() => { setActiveTab('my_schedule'); setIsMenuOpen(false); }} className="w-full flex items-center justify-between px-6 py-3 hover:bg-white/5 transition-colors group">
+                    <div className="flex items-center gap-4">
+                       <div className="w-9 h-9 rounded-lg bg-blue-900/30 border border-blue-500/50 flex items-center justify-center group-hover:bg-blue-600 transition-colors">
+                          <Calendar size={18} className="text-blue-500 group-hover:text-white" />
+                       </div>
+                       <span className="font-medium text-base text-gray-200 group-hover:text-white">{t.mySchedule}</span>
+                    </div>
+                    <ChevronRight size={18} className="text-gray-600 group-hover:text-white" />
+                 </button>
+                 <div className="h-px bg-gray-800 mx-6 my-2"></div>
+              </div>
+            )}
+
+            {/* Menu Items */}
             {menuItems.map((item, index) => (
               <button key={index} onClick={() => handleMenuClick(item.id)} className="w-full flex items-center justify-between px-6 py-3.5 hover:bg-white/5 transition-colors group">
                 <div className="flex items-center gap-4">
@@ -1043,96 +1140,98 @@ const App: React.FC = () => {
             <button onClick={handleLogout} className="w-full flex items-center gap-3 px-4 py-3 rounded-xl bg-red-600/10 text-red-500 hover:bg-red-600 hover:text-white transition-all font-bold">
               <LogOut size={20} /><span>{t.logout}</span>
             </button>
-            <p className="text-center text-[10px] text-gray-600 mt-4 uppercase tracking-widest">Version 1.0.2</p>
+            <p className="text-center text-[10px] text-gray-600 mt-4 uppercase tracking-widest">Version 1.0.3</p>
           </div>
         </div>
       </div>
 
-      <WalletModal isOpen={isWalletOpen} onClose={() => setIsWalletOpen(false)} balance={walletBalance} onTopUp={handleTopUp} language={language} />
-      <UpgradeOrganizerModal isOpen={isUpgradeModalOpen} onClose={() => setIsUpgradeModalOpen(false)} language={language} walletBalance={walletBalance} onConfirmUpgrade={handleConfirmUpgrade} onTopUpRedirect={() => { setIsUpgradeModalOpen(false); setIsWalletOpen(true); }} />
-      <LiveSelectionModal isOpen={isLiveSelectionOpen} onClose={() => setIsLiveSelectionOpen(false)} onSelect={handleLiveTypeSelect} language={language} />
-      <LiveProductSelectionModal isOpen={isProductSelectionOpen} onClose={() => setIsProductSelectionOpen(false)} products={myProducts} onConfirm={handleProductSelectionConfirm} onAddProductRedirect={handleAddProductRedirect} language={language} selectionMode={selectionMode} />
-      <LiveAuctionSetupModal isOpen={isAuctionSetupOpen} onClose={() => setIsAuctionSetupOpen(false)} onConfirm={handleAuctionSetupConfirm} language={language} product={auctionSelectedProduct} />
-      <CountdownOverlay count={countdownValue} isActive={isCountdownActive} language={language} />
-      
-      {/* Create Room Modal */}
-      <CreateRoomModal 
-        isOpen={isCreateRoomOpen} 
-        onClose={() => setIsCreateRoomOpen(false)} 
-        language={language}
-        onCreate={handleCreateRoom}
-        username={userProfile.username}
-      />
+      {/* FIXED TOP NAV BAR */}
+      {showTopNav && (
+         <div className="fixed top-0 left-0 right-0 z-40 bg-black/95 backdrop-blur-md px-4 py-3 border-b border-gray-800 flex justify-between items-center shadow-md">
+            <div className="flex items-center gap-3">
+               <button onClick={() => setIsMenuOpen(true)} className="active:scale-90 transition-transform">
+                 <Menu className="text-white" size={24} />
+               </button>
+               <h1 className="text-lg font-athletic text-white tracking-wider">UNDERWEAR<span className="text-red-600">LIVE</span></h1>
+            </div>
 
-      {/* Model Application Modal */}
-      <ModelApplicationModal 
-        isOpen={isModelApplicationOpen}
-        onClose={() => setIsModelApplicationOpen(false)}
-        onSubmit={handleSubmitModelApplication}
-        language={language}
-      />
+            <div className="flex items-center gap-3">
+               <button 
+                 onClick={() => setIsWalletOpen(true)}
+                 className="flex items-center gap-1.5 bg-gray-800 rounded-full pl-2 pr-3 py-1 border border-gray-700 hover:border-yellow-500 transition-colors active:scale-95"
+               >
+                  <Coins size={16} className="text-yellow-400 fill-yellow-400" />
+                  <span className="text-xs font-bold text-white font-athletic">{walletBalance.toLocaleString()}</span>
+               </button>
+               
+               <button className="relative p-1 hover:text-gray-300 transition-colors">
+                  <Bell size={22} className="text-white" />
+                  <span className="absolute top-0 right-0 w-2.5 h-2.5 bg-red-600 rounded-full border-2 border-black animate-pulse"></span>
+               </button>
 
-      {/* NEW: Update Password Modal (Triggered by Recovery Link) */}
-      <UpdatePasswordModal 
-        isOpen={isUpdatePasswordOpen}
-        onClose={() => setIsUpdatePasswordOpen(false)}
-        language={language}
-      />
-
-      {isStartLiveModalOpen && (
-        <StartLiveModal 
-           language={language}
-           onClose={() => setIsStartLiveModalOpen(false)}
-           onStart={handleStartStream}
-        />
+               <button onClick={() => setActiveTab('messages')} className="relative p-1 hover:text-gray-300 transition-colors">
+                  <MessageCircle size={22} className="text-white" />
+                  <span className="absolute top-0 right-0 w-2.5 h-2.5 bg-blue-500 rounded-full border-2 border-black"></span>
+               </button>
+            </div>
+         </div>
       )}
 
-      <div className={`transition-all duration-300 ${currentStreamer ? 'scale-95 opacity-0 pointer-events-none hidden' : 'scale-100 opacity-100'}`}>
-        {!isFullScreenTab && !isPeopleDetail && (
-          <header className="fixed top-0 left-0 right-0 z-40 bg-black/80 backdrop-blur-md px-4 h-16 flex items-center justify-between border-b border-gray-800 shadow-lg shadow-black/50">
-            <div className="flex items-center gap-3">
-              <button onClick={() => setIsMenuOpen(true)} className="p-1 hover:bg-white/10 rounded-full transition-colors"><Menu size={24} className="text-white" /></button>
-              <h1 className="text-2xl font-athletic italic tracking-wider text-white">UNDERWEAR<span className="text-red-600">LIVE</span></h1>
-            </div>
-            <div className="flex items-center gap-1">
-              <button onClick={() => setIsWalletOpen(true)} className="flex items-center gap-1 mr-1 bg-gray-800/50 backdrop-blur border border-yellow-500/30 rounded-full pl-2 pr-2.5 py-1 hover:bg-gray-700 transition-colors active:scale-95">
-                <Coins size={13} className="text-yellow-400 fill-yellow-400" />
-                <span className="text-xs font-bold text-yellow-400 leading-none pt-0.5">{walletBalance.toLocaleString()}</span>
-              </button>
-              <button onClick={() => setActiveTab('messages')} className="hover:bg-gray-800 p-2 rounded-full transition-colors relative">
-                <MessageCircle size={20} className="text-gray-300" />
-                <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full border border-black"></span>
-              </button>
-              <button className="relative hover:bg-gray-800 p-2 rounded-full transition-colors">
-                <Bell size={20} className="text-gray-300" />
-                <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full"></span>
-              </button>
-            </div>
-          </header>
-        )}
-
-        <main className={`
-          ${isFullScreenTab ? 'pt-0 p-0 h-screen overflow-hidden' : ''} 
-          ${isPeopleDetail ? 'pt-0 p-0 h-screen overflow-hidden' : (isPeopleTab ? 'pt-16 p-0 h-screen overflow-hidden' : '')} 
-          ${!isFullScreenTab && !isPeopleDetail && !isPeopleTab ? 
-            'pt-16 h-screen overflow-y-auto no-scrollbar' 
-            : ''} 
-          max-w-5xl mx-auto
-        `}>
-          {renderContent()}
-        </main>
-        
-        {(activeTab !== 'messages') && (activeTab !== 'my_products') && !isPeopleDetail && (activeTab !== 'organizer_tools') && (
-          <nav className="fixed bottom-0 left-0 right-0 bg-black/90 backdrop-blur border-t border-gray-800 py-3 px-6 flex justify-between items-center z-40 md:hidden pb-safe shadow-[0_-5px_10px_rgba(0,0,0,0.5)]">
-             <button onClick={() => setActiveTab('home')} className={`flex flex-col items-center gap-1 ${activeTab === 'home' || activeTab === 'all_live' ? 'text-red-500' : 'text-gray-500 hover:text-gray-300'}`}><Home size={24} /><span className="text-[10px] font-medium">{t.home}</span></button>
-             <button onClick={() => setActiveTab('discover')} className={`flex flex-col items-center gap-1 ${activeTab === 'discover' ? 'text-red-500' : 'text-gray-500 hover:text-gray-300'}`}><Compass size={24} /><span className="text-[10px] font-medium">{t.discover}</span></button>
-             <div className="w-12 h-12 bg-red-600 rounded-full -mt-8 flex items-center justify-center border-4 border-black shadow-lg shadow-red-900/50 cursor-pointer hover:bg-red-700 transition-colors active:scale-95" onClick={handlePlusClick}><Plus size={24} color="white" /></div>
-             <button onClick={() => setActiveTab('cart')} className={`flex flex-col items-center gap-1 relative ${activeTab === 'cart' ? 'text-red-500' : 'text-gray-500 hover:text-gray-300'}`}><ShoppingCart size={24} /><span className="text-[10px] font-medium">{t.cart}</span>{cartItems.length > 0 && (<span className="absolute -top-1 right-2 w-4 h-4 bg-red-600 border border-black text-white text-[9px] font-bold rounded-full flex items-center justify-center">{cartItems.length}</span>)}</button>
-             <button onClick={() => { setActiveTab('people'); setSelectedPerson(null); }} className={`flex flex-col items-center gap-1 ${activeTab === 'people' ? 'text-red-500' : 'text-gray-500 hover:text-gray-300'}`}><Users size={24} /><span className="text-[10px] font-medium">{t.people}</span></button>
-          </nav>
-        )}
+      {/* Main Content Area */}
+      <div className={`h-full overflow-y-auto no-scrollbar ${showTopNav ? 'pt-[64px]' : ''} ${showBottomNav ? 'pb-[80px]' : ''}`}>
+        {renderContent()}
       </div>
 
+      {/* FIXED BOTTOM NAV BAR */}
+      {showBottomNav && (
+         <div className="fixed bottom-0 left-0 right-0 z-40 bg-black/95 backdrop-blur-lg border-t border-gray-800 px-2 py-2 flex justify-around items-end pb-safe">
+            <button
+                onClick={() => setActiveTab('home')}
+                className={`flex-1 flex flex-col items-center gap-1 transition-all duration-200 active:scale-90 ${activeTab === 'home' ? 'text-red-600' : 'text-gray-500 hover:text-gray-300'}`}
+            >
+               <Home size={24} strokeWidth={activeTab === 'home' ? 2.5 : 2} />
+               <span className="text-[10px] font-bold">{t.home}</span>
+            </button>
+
+            <button
+                onClick={() => setActiveTab('discover')}
+                className={`flex-1 flex flex-col items-center gap-1 transition-all duration-200 active:scale-90 ${activeTab === 'discover' ? 'text-red-600' : 'text-gray-500 hover:text-gray-300'}`}
+            >
+               <Compass size={24} strokeWidth={activeTab === 'discover' ? 2.5 : 2} />
+               <span className="text-[10px] font-bold">{t.discover}</span>
+            </button>
+
+            <div className="flex-1 flex justify-center -mt-6">
+               <button
+                  onClick={handlePlusClick}
+                  className="w-14 h-14 bg-gradient-to-tr from-red-600 to-red-500 rounded-full flex items-center justify-center text-white shadow-lg shadow-red-900/50 border-4 border-black active:scale-95 transition-transform"
+               >
+                  <Plus size={28} strokeWidth={3} />
+               </button>
+            </div>
+
+            <button
+                onClick={() => setActiveTab('people')}
+                className={`flex-1 flex flex-col items-center gap-1 transition-all duration-200 active:scale-90 ${activeTab === 'people' ? 'text-red-600' : 'text-gray-500 hover:text-gray-300'}`}
+            >
+               <Users size={24} strokeWidth={activeTab === 'people' ? 2.5 : 2} />
+               <span className="text-[10px] font-bold">{t.people}</span>
+            </button>
+
+            <button
+                onClick={() => setActiveTab('cart')}
+                className={`flex-1 flex flex-col items-center gap-1 relative transition-all duration-200 active:scale-90 ${activeTab === 'cart' ? 'text-red-600' : 'text-gray-500 hover:text-gray-300'}`}
+            >
+               <div className="relative">
+                 <ShoppingCart size={24} strokeWidth={activeTab === 'cart' ? 2.5 : 2} />
+                 {cartItems.length > 0 && <span className="absolute -top-1.5 -right-2 bg-red-600 text-white text-[9px] min-w-[16px] h-4 rounded-full flex items-center justify-center font-bold px-1 border border-black">{cartItems.length}</span>}
+               </div>
+               <span className="text-[10px] font-bold">{t.cart}</span>
+            </button>
+         </div>
+      )}
+
+      {/* Overlays / Modals */}
       {currentStreamer && (
         <LiveRoom 
           streamer={currentStreamer} 
@@ -1144,6 +1243,84 @@ const App: React.FC = () => {
           onAddToCart={handleAddToCart}
         />
       )}
+
+      <WalletModal 
+        isOpen={isWalletOpen} 
+        onClose={() => setIsWalletOpen(false)} 
+        balance={walletBalance} 
+        onTopUp={handleTopUp}
+        language={language}
+      />
+
+      <LiveSelectionModal 
+        isOpen={isLiveSelectionOpen}
+        onClose={() => setIsLiveSelectionOpen(false)}
+        onSelect={handleLiveTypeSelect}
+        language={language}
+      />
+
+      <LiveProductSelectionModal 
+        isOpen={isProductSelectionOpen}
+        onClose={() => setIsProductSelectionOpen(false)}
+        products={myProducts}
+        onConfirm={handleProductSelectionConfirm}
+        onAddProductRedirect={handleAddProductRedirect}
+        language={language}
+        selectionMode={selectionMode}
+      />
+
+      <LiveAuctionSetupModal 
+        isOpen={isAuctionSetupOpen}
+        onClose={() => setIsAuctionSetupOpen(false)}
+        onConfirm={handleAuctionSetupConfirm}
+        language={language}
+        product={auctionSelectedProduct}
+      />
+
+      <UpgradeOrganizerModal 
+        isOpen={isUpgradeModalOpen}
+        onClose={() => setIsUpgradeModalOpen(false)}
+        language={language}
+        walletBalance={walletBalance}
+        onConfirmUpgrade={handleConfirmUpgrade}
+        onTopUpRedirect={() => { setIsUpgradeModalOpen(false); setIsWalletOpen(true); }}
+      />
+
+      <ModelApplicationModal 
+        isOpen={isModelApplicationOpen}
+        onClose={() => setIsModelApplicationOpen(false)}
+        onSubmit={handleSubmitModelApplication}
+        language={language}
+      />
+
+      <CreateRoomModal 
+        isOpen={isCreateRoomOpen}
+        language={language}
+        onClose={() => setIsCreateRoomOpen(false)}
+        onCreate={handleCreateRoom}
+        username={userProfile.username}
+      />
+
+      {isStartLiveModalOpen && (
+        <StartLiveModal 
+          language={language}
+          onClose={() => setIsStartLiveModalOpen(false)}
+          onStart={handleStartStream}
+        />
+      )}
+
+      <UpdatePasswordModal 
+         isOpen={isUpdatePasswordOpen}
+         onClose={() => setIsUpdatePasswordOpen(false)}
+         language={language}
+      />
+
+      <CountdownOverlay 
+        count={countdownValue} 
+        isActive={isCountdownActive} 
+        language={language}
+      />
+
     </div>
   );
 };

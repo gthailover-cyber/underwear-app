@@ -1,21 +1,32 @@
+
 import React from 'react';
-import { Play, TrendingUp, ArrowRight, Plus } from 'lucide-react';
+import { Play, TrendingUp, Plus } from 'lucide-react';
 import { Streamer, Language } from '../types';
-import { TRANSLATIONS, DISCOVER_TAGS, MOCK_STREAMERS, MOCK_STORIES } from '../constants';
+import { TRANSLATIONS, DISCOVER_TAGS } from '../constants';
 import StreamCard from './StreamCard';
 
 interface DiscoverProps {
   language: Language;
   onOpenStream: (streamer: Streamer) => void;
+  streamers: Streamer[];
 }
 
-const Discover: React.FC<DiscoverProps> = ({ language, onOpenStream }) => {
+const Discover: React.FC<DiscoverProps> = ({ language, onOpenStream, streamers }) => {
   const t = TRANSLATIONS[language];
+
+  // Logic to show "Stories" (active streamers)
+  const stories = streamers.map(s => ({
+      id: s.id,
+      username: s.name,
+      avatar: s.coverImage, // Use cover image as avatar fallback for story
+      image: s.coverImage,
+      isLive: true
+  }));
 
   return (
     <div className="pb-24 animate-fade-in">
       
-      {/* Stories Section (Replaces Banner) */}
+      {/* Stories Section */}
       <div className="mb-6 pt-2">
         <div className="flex gap-3 overflow-x-auto no-scrollbar px-4 py-2">
           
@@ -30,11 +41,12 @@ const Discover: React.FC<DiscoverProps> = ({ language, onOpenStream }) => {
              </div>
           </div>
 
-          {/* User Stories */}
-          {MOCK_STORIES.map((story) => (
+          {/* User Stories (Derived from live streamers) */}
+          {stories.length > 0 ? stories.map((story) => (
             <div 
               key={story.id}
               className="flex-shrink-0 w-28 aspect-[9/16] relative rounded-xl overflow-hidden cursor-pointer group border border-gray-800 shadow-lg"
+              onClick={() => onOpenStream(streamers.find(s => s.id === story.id)!)}
             >
               <img 
                 src={story.image} 
@@ -45,7 +57,7 @@ const Discover: React.FC<DiscoverProps> = ({ language, onOpenStream }) => {
               
               {/* Avatar Top Right */}
               <div className={`absolute top-2 right-2 p-[2px] rounded-full ${story.isLive ? 'bg-gradient-to-tr from-yellow-400 to-red-600 animate-pulse' : 'bg-blue-500'}`}>
-                 <img src={story.avatar} className="w-8 h-8 rounded-full border-2 border-black" alt="avatar" />
+                 <img src={story.avatar} className="w-8 h-8 rounded-full border-2 border-black object-cover" alt="avatar" />
               </div>
 
               {/* Username Bottom */}
@@ -53,7 +65,11 @@ const Discover: React.FC<DiscoverProps> = ({ language, onOpenStream }) => {
                  <p className="text-white text-[11px] font-bold truncate text-shadow">{story.username}</p>
               </div>
             </div>
-          ))}
+          )) : (
+             <div className="flex items-center justify-center w-full h-full text-gray-500 text-xs px-4">
+                No active stories
+             </div>
+          )}
         </div>
       </div>
 
@@ -67,23 +83,27 @@ const Discover: React.FC<DiscoverProps> = ({ language, onOpenStream }) => {
           <button className="text-xs text-gray-500 hover:text-white transition-colors">{t.viewAll}</button>
         </div>
         
-        <div className="overflow-x-auto no-scrollbar flex gap-4 px-4">
-          {MOCK_STREAMERS.slice().reverse().map((streamer) => (
-            <div 
-              key={streamer.id}
-              onClick={() => onOpenStream(streamer)}
-              className="flex-shrink-0 w-32 relative group cursor-pointer"
-            >
-              <div className="aspect-[3/4] rounded-xl overflow-hidden mb-2 relative border border-gray-800">
-                <img src={streamer.coverImage} className="w-full h-full object-cover" />
-                <div className="absolute inset-0 bg-black/20 group-hover:bg-transparent transition-colors"></div>
-                <div className="absolute top-2 right-2 bg-red-600 text-white text-[8px] font-bold px-1.5 py-0.5 rounded">LIVE</div>
-              </div>
-              <h4 className="text-sm font-bold text-white truncate">{streamer.name}</h4>
-              <p className="text-xs text-gray-500 truncate">{streamer.viewerCount.toLocaleString()} {t.watching}</p>
+        {streamers.length > 0 ? (
+            <div className="overflow-x-auto no-scrollbar flex gap-4 px-4">
+            {streamers.slice(0, 5).map((streamer) => (
+                <div 
+                key={streamer.id}
+                onClick={() => onOpenStream(streamer)}
+                className="flex-shrink-0 w-32 relative group cursor-pointer"
+                >
+                <div className="aspect-[3/4] rounded-xl overflow-hidden mb-2 relative border border-gray-800">
+                    <img src={streamer.coverImage} className="w-full h-full object-cover" />
+                    <div className="absolute inset-0 bg-black/20 group-hover:bg-transparent transition-colors"></div>
+                    <div className="absolute top-2 right-2 bg-red-600 text-white text-[8px] font-bold px-1.5 py-0.5 rounded">LIVE</div>
+                </div>
+                <h4 className="text-sm font-bold text-white truncate">{streamer.name}</h4>
+                <p className="text-xs text-gray-500 truncate">{streamer.viewerCount.toLocaleString()} {t.watching}</p>
+                </div>
+            ))}
             </div>
-          ))}
-        </div>
+        ) : (
+            <div className="px-4 text-gray-500 text-sm">No live streams at the moment.</div>
+        )}
       </div>
 
       {/* Trending Tags */}
@@ -110,15 +130,21 @@ const Discover: React.FC<DiscoverProps> = ({ language, onOpenStream }) => {
           <span className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></span>
           {t.recommended}
         </h3>
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-          {[...MOCK_STREAMERS].sort(() => Math.random() - 0.5).map((streamer, i) => (
-            <StreamCard 
-              key={`${streamer.id}-${i}`} 
-              streamer={streamer} 
-              onPress={onOpenStream} 
-            />
-          ))}
-        </div>
+        {streamers.length > 0 ? (
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+            {streamers.map((streamer, i) => (
+                <StreamCard 
+                key={`${streamer.id}-${i}`} 
+                streamer={streamer} 
+                onPress={onOpenStream} 
+                />
+            ))}
+            </div>
+        ) : (
+            <div className="text-center text-gray-500 py-8">
+                Check back later for more live streams!
+            </div>
+        )}
       </div>
 
     </div>

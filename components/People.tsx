@@ -1,20 +1,21 @@
 
 import React, { useState } from 'react';
-import { Users, Crown, Star, User, BicepsFlexed, Video } from 'lucide-react';
+import { Users, Crown, User, BicepsFlexed } from 'lucide-react';
 import { Language, Person, UserRole, Streamer } from '../types';
-import { TRANSLATIONS, MOCK_PEOPLE } from '../constants';
+import { TRANSLATIONS } from '../constants';
 
 interface PeopleProps {
   language: Language;
   onUserClick: (person: Person) => void;
-  streamers: Streamer[]; // Added streamers prop
+  streamers: Streamer[]; 
+  people: Person[]; // Added people prop
 }
 
-const People: React.FC<PeopleProps> = ({ language, onUserClick, streamers }) => {
+const People: React.FC<PeopleProps> = ({ language, onUserClick, streamers, people }) => {
   const t = TRANSLATIONS[language];
   const [filter, setFilter] = useState<'all' | UserRole>('all');
 
-  const filteredPeople = MOCK_PEOPLE.filter(p => {
+  const filteredPeople = people.filter(p => {
     if (filter === 'all') return true;
     return p.role === filter;
   });

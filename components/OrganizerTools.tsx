@@ -43,7 +43,7 @@ const OrganizerTools: React.FC<OrganizerToolsProps> = ({
         <div className="flex items-center gap-3">
             <button 
                 onClick={onBack}
-                className="w-10 h-10 rounded-full bg-gray-800 flex items-center justify-center hover:bg-gray-700 transition-colors border border-gray-700 md:hidden"
+                className="w-10 h-10 rounded-full bg-gray-800 flex items-center justify-center hover:bg-gray-700 transition-colors border border-gray-700"
             >
                 <ArrowLeft size={20} className="text-white" />
             </button>

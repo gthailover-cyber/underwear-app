@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { X, Video, Youtube, Link as LinkIcon, ImagePlus } from 'lucide-react';
 import { Language, Streamer, Product } from '../types';
-import { TRANSLATIONS, MOCK_PRODUCTS } from '../constants';
+import { TRANSLATIONS } from '../constants';
 
 interface StartLiveModalProps {
   language: Language;
@@ -39,8 +39,8 @@ const StartLiveModal: React.FC<StartLiveModalProps> = ({ language, onClose, onSt
         viewerCount: 0,
         coverImage: coverImage,
         youtubeId: youtubeId || undefined, // Use extracted ID
-        itemCount: 5,
-        products: MOCK_PRODUCTS // Mock products for demo
+        itemCount: 0, // Will be populated in App.tsx logic if products selected
+        products: [] // Will be populated in App.tsx logic if products selected
       };
 
       onStart(newStreamer);
@@ -52,7 +52,7 @@ const StartLiveModal: React.FC<StartLiveModalProps> = ({ language, onClose, onSt
     <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/90 backdrop-blur-sm" onClick={onClose} />
       
-      <div className="relative w-full max-w-md bg-gray-900 rounded-3xl border border-gray-800 shadow-2xl overflow-hidden animate-float">
+      <div className="relative w-full max-w-md bg-gray-900 rounded-3xl border border-gray-800 shadow-2xl overflow-hidden animate-fade-in">
         
         {/* Header */}
         <div className="p-4 border-b border-gray-800 flex items-center justify-between">

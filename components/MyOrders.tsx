@@ -1,8 +1,9 @@
 
-import React, { useState } from 'react';
-import { ArrowLeft, Package, Truck, CheckCircle, Clock, ChevronRight, Copy, MapPin, X, Circle, RotateCw } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { ArrowLeft, Package, Truck, CheckCircle, Circle, RotateCw, X } from 'lucide-react';
 import { Language, Order, OrderStatus } from '../types';
-import { TRANSLATIONS, MOCK_ORDERS } from '../constants';
+import { TRANSLATIONS } from '../constants';
+import { supabase } from '../lib/supabaseClient';
 
 interface MyOrdersProps {
   language: Language;
@@ -12,12 +13,48 @@ interface MyOrdersProps {
 const MyOrders: React.FC<MyOrdersProps> = ({ language, onBack }) => {
   const t = TRANSLATIONS[language];
   const [activeTab, setActiveTab] = useState<'all' | OrderStatus>('all');
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [loading, setLoading] = useState(true);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [isTrackingOpen, setIsTrackingOpen] = useState(false);
 
+  useEffect(() => {
+    const fetchOrders = async () => {
+      setLoading(true);
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (user) {
+        // Fetch orders. NOTE: Schema might need 'order_items' join
+        // For simplicity, we just fetch orders table first
+        const { data, error } = await supabase
+          .from('orders')
+          .select('*')
+          .eq('buyer_id', user.id)
+          .order('created_at', { ascending: false });
+
+        if (!error && data) {
+           // Mapping logic here depends on how complex your real query is
+           // Assuming a simpler structure for now or just placeholder items
+           const mappedOrders: Order[] = data.map((o: any) => ({
+              id: o.id,
+              items: [], // Would need a separate fetch or join for items
+              totalPrice: o.total_amount,
+              status: o.status,
+              date: new Date(o.created_at).toLocaleDateString(),
+              trackingNumber: o.tracking_number
+           }));
+           setOrders(mappedOrders);
+        }
+      }
+      setLoading(false);
+    };
+
+    fetchOrders();
+  }, []);
+
   const filteredOrders = activeTab === 'all' 
-    ? MOCK_ORDERS 
-    : MOCK_ORDERS.filter(o => o.status === activeTab);
+    ? orders 
+    : orders.filter(o => o.status === activeTab);
 
   const getStatusColor = (status: OrderStatus) => {
     switch (status) {
@@ -45,7 +82,7 @@ const MyOrders: React.FC<MyOrdersProps> = ({ language, onBack }) => {
       <div className="flex items-center gap-3 px-4 py-4 sticky top-0 bg-black/90 backdrop-blur z-30 border-b border-gray-800">
         <button 
             onClick={onBack}
-            className="w-10 h-10 rounded-full bg-gray-800 flex items-center justify-center hover:bg-gray-700 transition-colors border border-gray-700 md:hidden"
+            className="w-10 h-10 rounded-full bg-gray-800 flex items-center justify-center hover:bg-gray-700 transition-colors border border-gray-700"
         >
             <ArrowLeft size={20} className="text-white" />
         </button>
@@ -74,7 +111,11 @@ const MyOrders: React.FC<MyOrdersProps> = ({ language, onBack }) => {
 
       {/* Order List */}
       <div className="flex-1 p-4 space-y-4">
-         {filteredOrders.length > 0 ? (
+         {loading ? (
+             <div className="flex justify-center pt-20">
+                 <div className="w-8 h-8 border-4 border-red-600 border-t-transparent rounded-full animate-spin"></div>
+             </div>
+         ) : filteredOrders.length > 0 ? (
            filteredOrders.map(order => (
              <div key={order.id} className="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden shadow-lg animate-slide-up">
                 
@@ -82,60 +123,34 @@ const MyOrders: React.FC<MyOrdersProps> = ({ language, onBack }) => {
                 <div className="p-4 border-b border-gray-800 flex justify-between items-center bg-gray-800/30">
                    <div className="flex items-center gap-2">
                       <Package size={16} className="text-gray-400" />
-                      <span className="text-xs text-gray-400 font-mono">{order.id}</span>
+                      <span className="text-xs text-gray-400 font-mono text-ellipsis overflow-hidden max-w-[100px]">{order.id}</span>
                    </div>
                    <span className={`text-xs font-bold px-2.5 py-1 rounded-md border ${getStatusColor(order.status)}`}>
                       {getStatusLabel(order.status)}
                    </span>
                 </div>
 
-                {/* Products */}
-                <div className="p-4 space-y-4">
-                   {order.items.map((item, idx) => (
-                      <div key={`${order.id}-item-${idx}`} className="flex gap-4">
-                         <img src={item.image} className="w-16 h-16 rounded-md object-cover bg-gray-800 flex-shrink-0" />
-                         <div className="flex-1 min-w-0">
-                            <h4 className="text-sm text-white font-medium line-clamp-1">{item.name}</h4>
-                            <div className="text-xs text-gray-500 mt-1 flex gap-2">
-                               <span>{item.color}</span>
-                               <span>{item.size}</span>
-                               <span>x{item.quantity}</span>
-                            </div>
-                            <div className="text-right mt-1">
-                               <span className="text-sm font-bold text-white">฿{item.price.toLocaleString()}</span>
-                            </div>
-                         </div>
-                      </div>
-                   ))}
+                {/* Products Placeholder since we don't fetch items yet */}
+                <div className="p-4">
+                   <p className="text-sm text-gray-400">Items info loading...</p>
                 </div>
 
                 {/* Footer / Actions */}
                 <div className="p-4 border-t border-gray-800 bg-gray-950/30">
                    <div className="flex justify-between items-center mb-4">
-                      <span className="text-xs text-gray-400">{order.items.length} items</span>
+                      <span className="text-xs text-gray-400">Total</span>
                       <div className="flex items-center gap-2">
-                         <span className="text-xs text-gray-400">{t.orderTotal}:</span>
                          <span className="text-lg font-bold text-yellow-400 font-athletic">฿{order.totalPrice.toLocaleString()}</span>
                       </div>
                    </div>
                    
                    <div className="flex gap-3 justify-end">
-                      {order.status === 'delivered' && (
-                         <button className="px-4 py-2 rounded-lg text-xs font-bold border border-gray-700 text-white hover:bg-gray-800">
-                            {t.buyAgain}
-                         </button>
-                      )}
                       {(order.status === 'shipping' || order.status === 'delivered') && (
                          <button 
                            onClick={() => handleTrackOrder(order)}
                            className="px-4 py-2 rounded-lg text-xs font-bold bg-gray-800 text-white hover:bg-gray-700 flex items-center gap-1.5"
                          >
                             <Truck size={14} /> {t.trackOrder}
-                         </button>
-                      )}
-                      {order.status === 'pending' && (
-                         <button className="px-4 py-2 rounded-lg text-xs font-bold bg-red-600 text-white hover:bg-red-500">
-                            {t.payNow}
                          </button>
                       )}
                    </div>
@@ -150,12 +165,10 @@ const MyOrders: React.FC<MyOrdersProps> = ({ language, onBack }) => {
          )}
       </div>
 
-      {/* --- Tracking Modal --- */}
+      {/* Tracking Modal */}
       {isTrackingOpen && selectedOrder && (
          <div className="fixed inset-0 z-[100] flex items-end md:items-center justify-center bg-black/80 backdrop-blur-sm p-4">
             <div className="relative w-full max-w-md bg-gray-900 rounded-3xl border border-gray-800 shadow-2xl flex flex-col max-h-[85vh] animate-slide-up overflow-hidden">
-                
-                {/* Header */}
                 <div className="p-5 border-b border-gray-800 flex justify-between items-center bg-gray-800/50">
                     <div>
                         <h3 className="text-white font-bold text-lg">{t.trackingTitle}</h3>
@@ -165,52 +178,15 @@ const MyOrders: React.FC<MyOrdersProps> = ({ language, onBack }) => {
                         <X size={20} />
                     </button>
                 </div>
-
-                {/* Map Placeholder (Professional touch) */}
                 <div className="h-32 bg-gray-800 relative overflow-hidden flex items-center justify-center border-b border-gray-800">
-                   <div className="absolute inset-0 opacity-20 bg-[url('https://upload.wikimedia.org/wikipedia/commons/thumb/e/ec/World_map_blank_without_borders.svg/2000px-World_map_blank_without_borders.svg.png')] bg-cover bg-center filter invert"></div>
                    <div className="relative z-10 flex flex-col items-center text-gray-400">
                       <Truck size={32} className="mb-2 text-red-500 animate-pulse" />
                       <span className="text-xs font-bold uppercase tracking-widest">In Transit</span>
                    </div>
                 </div>
-
-                {/* Timeline */}
-                <div className="flex-1 overflow-y-auto p-6 relative">
-                    {/* Vertical Line */}
-                    <div className="absolute left-[44px] top-8 bottom-8 w-0.5 bg-gray-800 z-0"></div>
-
-                    <div className="space-y-8 relative z-10">
-                        {selectedOrder.timeline ? (
-                            selectedOrder.timeline.map((event, index) => (
-                                <div key={event.id} className="flex gap-4 group">
-                                    <div className="flex flex-col items-center">
-                                       <div className={`w-8 h-8 rounded-full flex items-center justify-center border-4 ${
-                                           event.isCompleted 
-                                             ? 'bg-green-500 border-gray-900 text-black' 
-                                             : event.isCurrent 
-                                                ? 'bg-red-600 border-gray-900 text-white shadow-[0_0_10px_rgba(220,38,38,0.6)]'
-                                                : 'bg-gray-800 border-gray-900 text-gray-500'
-                                       }`}>
-                                          {event.isCompleted ? <CheckCircle size={14} /> : event.isCurrent ? <Truck size={14} /> : <Circle size={10} />}
-                                       </div>
-                                    </div>
-                                    <div className={`flex-1 pt-1 ${event.isCompleted || event.isCurrent ? 'opacity-100' : 'opacity-50'}`}>
-                                       <h4 className="text-sm font-bold text-white leading-none mb-1">{event.title}</h4>
-                                       <p className="text-xs text-gray-400 mb-1">{event.description}</p>
-                                       <span className="text-[10px] text-gray-500 font-mono block">{event.date}, {event.time}</span>
-                                    </div>
-                                </div>
-                            ))
-                        ) : (
-                           <div className="text-center text-gray-500 py-10">
-                              <RotateCw size={24} className="mx-auto mb-2 opacity-50" />
-                              <p>Tracking info updating...</p>
-                           </div>
-                        )}
-                    </div>
+                <div className="flex-1 p-6 text-center text-gray-500">
+                    <p>Tracking details coming soon.</p>
                 </div>
-
             </div>
         </div>
       )}

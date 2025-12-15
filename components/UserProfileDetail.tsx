@@ -1,8 +1,9 @@
 
 import React, { useState, useEffect } from 'react';
-import { MapPin, ArrowLeft, MessageCircle, UserPlus, Grid, ChevronLeft, ChevronRight, X, Star, CheckCircle, Share2, MoreVertical, BicepsFlexed, Crown, User, Calendar } from 'lucide-react';
+import { MapPin, ArrowLeft, MessageCircle, UserPlus, Grid, Share2, MoreVertical, BicepsFlexed, Crown, User, Calendar, CheckCircle, X } from 'lucide-react';
 import { Person, Language, UserProfile } from '../types';
-import { TRANSLATIONS } from '../constants';
+import { TRANSLATIONS, DEFAULT_IMAGES } from '../constants';
+import { supabase } from '../lib/supabaseClient';
 
 interface UserProfileDetailProps {
   language: Language;
@@ -14,50 +15,63 @@ interface UserProfileDetailProps {
 const UserProfileDetail: React.FC<UserProfileDetailProps> = ({ language, person, onBack, onChat }) => {
   const t = TRANSLATIONS[language];
   
-  // Mock full profile data
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const randomGallery = Array.from({ length: 15 }).map((_, i) => 
-        `https://picsum.photos/400/600?random=${parseInt(person.id.replace(/\D/g, '')) + i + 100}`
-    );
+    const fetchProfile = async () => {
+        setLoading(true);
+        // Try to fetch full profile details if available in DB
+        const { data, error } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('id', person.id)
+            .single();
 
-    const role = person.role || 'supporter';
-
-    const mockFullProfile: UserProfile = {
-      username: person.username,
-      avatar: person.avatar,
-      coverImage: `https://picsum.photos/800/1200?random=${parseInt(person.id.replace(/\D/g, '')) + 50}`, 
-      role: role,
-      age: 20 + Math.floor(Math.random() * 10),
-      height: 175 + Math.floor(Math.random() * 15),
-      weight: 65 + Math.floor(Math.random() * 15),
-      location: 'Bangkok, Thailand',
-      bio: role === 'model' 
-        ? `Professional Model & Fitness Influencer. \nDM for bookings. Live streaming every night!`
-        : role === 'organizer'
-          ? `Top Event Organizer in Bangkok. Hosting exclusive underwear parties and auctions.`
-          : `Just a fan of cool underwear and fitness. Love watching lives!`,
-      favorites: ['Fashion', 'Runway', 'Fitness', 'Swimwear'],
-      gallery: randomGallery,
-      followers: person.followers || Math.floor(Math.random() * 5000) + 1000,
-      following: Math.floor(Math.random() * 500),
+        if (data) {
+            setProfile({
+                username: data.username,
+                avatar: data.avatar || DEFAULT_IMAGES.AVATAR,
+                coverImage: data.cover_image || DEFAULT_IMAGES.COVER,
+                role: data.role,
+                age: data.age || 0,
+                height: data.height || 0,
+                weight: data.weight || 0,
+                location: data.location || 'Unknown',
+                bio: data.bio || '',
+                favorites: data.favorites || [],
+                gallery: data.gallery || [],
+                followers: data.followers || 0,
+                following: data.following || 0,
+            });
+        } else {
+            // Fallback if not found in DB (e.g. newly created via mock array previously)
+            // Since we removed mocks, this shouldn't happen often if data integrity is good.
+            // But we display what we have from 'person' prop
+            setProfile({
+                username: person.username,
+                avatar: person.avatar,
+                coverImage: DEFAULT_IMAGES.COVER,
+                role: person.role || 'supporter',
+                age: 0,
+                height: 0,
+                weight: 0,
+                location: '',
+                bio: '',
+                favorites: [],
+                gallery: [],
+                followers: person.followers || 0,
+                following: 0,
+            });
+        }
+        setLoading(false);
     };
-    setProfile(mockFullProfile);
+
+    fetchProfile();
   }, [person]);
 
-  if (!profile) return <div className="h-screen bg-black flex items-center justify-center text-white">Loading...</div>;
-
-  const handleNextImage = (e: React.MouseEvent) => {
-      e.stopPropagation();
-      if (lightboxIndex !== null) setLightboxIndex((prev) => (prev! + 1) % profile.gallery.length);
-  };
-
-  const handlePrevImage = (e: React.MouseEvent) => {
-      e.stopPropagation();
-      if (lightboxIndex !== null) setLightboxIndex((prev) => (prev! - 1 + profile.gallery.length) % profile.gallery.length);
-  };
+  if (loading || !profile) return <div className="h-screen bg-black flex items-center justify-center text-white"><div className="w-8 h-8 border-4 border-red-600 border-t-transparent rounded-full animate-spin"></div></div>;
 
   // Helper to render stats
   const renderPhysicalStats = (bgColor: string = 'bg-gray-900') => (
@@ -152,7 +166,6 @@ const UserProfileDetail: React.FC<UserProfileDetailProps> = ({ language, person,
                     </div>
                 </div>
             </div>
-            {/* Lightbox logic remains same */}
             {lightboxIndex !== null && (
                 <div className="fixed inset-0 z-[100] bg-black/95 backdrop-blur-md flex items-center justify-center animate-fade-in" onClick={() => setLightboxIndex(null)}>
                     <img src={profile.gallery[lightboxIndex]} className="max-h-[85vh] max-w-[95vw] object-contain rounded-lg shadow-2xl" />
@@ -163,89 +176,7 @@ const UserProfileDetail: React.FC<UserProfileDetailProps> = ({ language, person,
       );
   }
 
-  // --- ORGANIZER VIEW ---
-  if (profile.role === 'organizer') {
-      return (
-        <div className="h-full overflow-y-auto no-scrollbar pb-24 animate-slide-in bg-gray-900 relative z-30">
-            {/* Nav */}
-            <div className="fixed top-0 left-0 right-0 z-40 px-4 py-3 flex items-center justify-between pointer-events-none">
-                <button onClick={onBack} className="w-10 h-10 rounded-full bg-black/40 backdrop-blur flex items-center justify-center text-white hover:bg-black/60 pointer-events-auto border border-white/10"><ArrowLeft size={22} /></button>
-                <div className="flex gap-2 pointer-events-auto">
-                    <button className="w-10 h-10 rounded-full bg-black/40 backdrop-blur flex items-center justify-center text-white hover:bg-black/60 border border-white/10"><Share2 size={18} /></button>
-                    <button className="w-10 h-10 rounded-full bg-black/40 backdrop-blur flex items-center justify-center text-white hover:bg-black/60 border border-white/10"><MoreVertical size={18} /></button>
-                </div>
-            </div>
-
-            <div className="relative h-56 w-full overflow-hidden">
-               <img src={profile.coverImage} className="w-full h-full object-cover" />
-               <div className="absolute inset-0 bg-gradient-to-b from-yellow-900/40 via-transparent to-gray-900"></div>
-            </div>
-
-            <div className="relative px-4 -mt-20 mb-4 flex flex-col items-center">
-                <div className="relative">
-                    <div className="w-32 h-32 rounded-full p-1 bg-gradient-to-tr from-yellow-300 via-yellow-500 to-yellow-700 shadow-2xl shadow-yellow-900/50">
-                       <div className="w-full h-full rounded-full border-4 border-gray-900 bg-gray-800 overflow-hidden">
-                          <img src={profile.avatar} className="w-full h-full object-cover" />
-                       </div>
-                    </div>
-                    {person.isOnline && (
-                        <div className="absolute bottom-2 right-2 w-5 h-5 bg-green-500 rounded-full border-4 border-gray-900 shadow-lg"></div>
-                    )}
-                </div>
-                
-                <div className="text-center mt-3">
-                   <h1 className="text-2xl font-bold text-white flex items-center gap-2 justify-center">
-                      {profile.username} 
-                      <Crown size={20} className="text-yellow-500 fill-yellow-500" />
-                   </h1>
-                   <div className="inline-block mt-1 px-3 py-0.5 rounded-full bg-yellow-900/30 border border-yellow-600/50 text-yellow-500 text-[10px] font-bold uppercase tracking-wider">
-                      {t.roles.organizer}
-                   </div>
-                   <div className="flex items-center justify-center text-gray-400 text-sm mt-2 gap-1">
-                      <MapPin size={14} /> {profile.location}
-                   </div>
-                </div>
-
-                <div className="flex gap-3 mt-6 w-full max-w-sm">
-                    <button className="flex-1 py-2.5 rounded-xl bg-yellow-600 text-black font-bold text-sm hover:bg-yellow-500 transition-all shadow-lg shadow-yellow-900/20 flex items-center justify-center gap-2">
-                       <UserPlus size={18} /> {t.follow}
-                    </button>
-                    <button onClick={onChat} className="flex-1 py-2.5 rounded-xl bg-gray-800 border border-yellow-600/30 text-white font-bold text-sm hover:bg-gray-700 transition-all flex items-center justify-center gap-2">
-                       <MessageCircle size={18} /> Chat
-                    </button>
-                </div>
-            </div>
-
-            <div className="grid grid-cols-3 gap-2 px-6 mb-6">
-                <div className="bg-gray-800/50 p-3 rounded-2xl text-center border border-gray-700/50"><span className="block text-xl font-bold text-white">24</span><span className="text-[10px] text-gray-500 uppercase">Events</span></div>
-                <div className="bg-gray-800/50 p-3 rounded-2xl text-center border border-gray-700/50"><span className="block text-xl font-bold text-white">{profile.followers.toLocaleString()}</span><span className="text-[10px] text-gray-500 uppercase">{t.followers}</span></div>
-                <div className="bg-gray-800/50 p-3 rounded-2xl text-center border border-gray-700/50"><span className="block text-xl font-bold text-white">5.0</span><span className="text-[10px] text-gray-500 uppercase">Rating</span></div>
-            </div>
-
-            {/* Physical Stats for Organizer */}
-            {renderPhysicalStats('bg-gray-800/30 border-gray-700/50')}
-
-            <div className="px-6 mb-8">
-               <h3 className="text-yellow-500 text-xs font-bold uppercase mb-2 ml-1">About</h3>
-               <p className="text-gray-300 text-sm leading-relaxed bg-gray-800/30 p-4 rounded-xl border border-gray-800">{profile.bio}</p>
-            </div>
-
-            <div className="border-t border-gray-800 pt-6 px-4">
-                <h3 className="text-white font-bold text-lg mb-4 flex items-center gap-2"><Calendar size={18} className="text-yellow-500"/> Past Events</h3>
-                <div className="grid grid-cols-2 gap-3">
-                   {profile.gallery.slice(0,4).map((img, i) => (
-                      <div key={i} className="aspect-video bg-gray-800 rounded-lg overflow-hidden relative group">
-                         <img src={img} className="w-full h-full object-cover" />
-                         <div className="absolute inset-0 bg-black/20 group-hover:bg-transparent transition-colors"></div>
-                      </div>
-                   ))}
-                </div>
-            </div>
-        </div>
-      );
-  }
-
-  // --- STANDARD SUPPORTER VIEW ---
+  // --- ORGANIZER & SUPPORTER VIEWS (Simpler) ---
   return (
     <div className="h-full overflow-y-auto no-scrollbar pb-24 animate-slide-in bg-black relative z-30">
       <div className="fixed top-0 left-0 right-0 z-40 px-4 py-3 flex items-center justify-between pointer-events-none">
@@ -296,7 +227,6 @@ const UserProfileDetail: React.FC<UserProfileDetailProps> = ({ language, person,
            </div>
       </div>
 
-      {/* Physical Stats for Supporter */}
       {renderPhysicalStats('bg-gray-900')}
 
       <div className="px-6 text-center">

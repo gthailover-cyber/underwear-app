@@ -1,0 +1,13 @@
+
+-- เพิ่มคอลัมน์สำหรับเก็บเรทราคาต่างๆ ในตาราง profiles
+-- รันคำสั่งนี้ใน SQL Editor ของ Supabase
+
+ALTER TABLE public.profiles 
+ADD COLUMN IF NOT EXISTS rate_event_live integer DEFAULT 10,
+ADD COLUMN IF NOT EXISTS rate_product_presentation integer DEFAULT 0,
+ADD COLUMN IF NOT EXISTS rate_onsite integer DEFAULT 0;
+
+-- ตรวจสอบว่าคอลัมน์ถูกเพิ่มแล้ว
+SELECT column_name, data_type 
+FROM information_schema.columns 
+WHERE table_name = 'profiles';

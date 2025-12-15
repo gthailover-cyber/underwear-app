@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { ArrowLeft, Search, CheckCheck, BadgeCheck, Users, Lock, Globe, Plus } from 'lucide-react';
 import { Language, MessagePreview, ChatRoom, UserProfile } from '../types';
-import { TRANSLATIONS, MOCK_MESSAGES } from '../constants';
+import { TRANSLATIONS } from '../constants';
 
 interface MessagesProps {
   language: Language;
@@ -24,13 +24,11 @@ const Messages: React.FC<MessagesProps> = ({
   onCreateRoom
 }) => {
   const t = TRANSLATIONS[language];
-  const [activeTab, setActiveTab] = useState<'chats' | 'groups'>('chats');
+  const [activeTab, setActiveTab] = useState<'chats' | 'groups'>('groups'); // Default to groups
   const [searchTerm, setSearchTerm] = useState('');
 
-  const filteredMessages = MOCK_MESSAGES.filter(msg => 
-    msg.username.toLowerCase().includes(searchTerm.toLowerCase()) || 
-    msg.lastMessage.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  // No mock messages for now
+  const filteredMessages: MessagePreview[] = [];
 
   const filteredGroups = chatRooms.filter(room => 
     room.name.toLowerCase().includes(searchTerm.toLowerCase())
@@ -91,60 +89,12 @@ const Messages: React.FC<MessagesProps> = ({
       {/* List */}
       <div className="flex-1 overflow-y-auto no-scrollbar relative">
         {activeTab === 'chats' ? (
-            // --- 1-on-1 Chats ---
-            filteredMessages.length > 0 ? (
-              <div className="divide-y divide-gray-800/50">
-                {filteredMessages.map((msg) => (
-                  <div 
-                    key={msg.id} 
-                    onClick={() => onOpenChat(msg)}
-                    className="flex items-center gap-4 px-4 py-4 hover:bg-gray-900/40 cursor-pointer transition-colors active:bg-gray-900/80 group"
-                  >
-                    {/* Avatar */}
-                    <div className="relative">
-                      <div className="w-14 h-14 rounded-full p-[2px] bg-gradient-to-tr from-gray-700 to-gray-800 group-hover:from-red-900 group-hover:to-red-600 transition-colors">
-                        <img src={msg.avatar} className="w-full h-full rounded-full object-cover border-2 border-black" alt={msg.username} />
-                      </div>
-                      {msg.isOnline && (
-                        <span className="absolute bottom-1 right-1 w-3.5 h-3.5 bg-green-500 border-2 border-black rounded-full"></span>
-                      )}
-                    </div>
-
-                    {/* Content */}
-                    <div className="flex-1 min-w-0">
-                      <div className="flex justify-between items-baseline mb-1">
-                        <h3 className="font-bold text-white flex items-center gap-1 truncate text-base">
-                          {msg.username}
-                          {msg.isVerified && <BadgeCheck size={14} className="text-blue-500 fill-blue-500/10" />}
-                        </h3>
-                        <span className={`text-[10px] font-medium ${msg.unread > 0 ? 'text-red-500' : 'text-gray-500'}`}>
-                          {msg.time}
-                        </span>
-                      </div>
-                      <div className="flex justify-between items-center">
-                        <p className={`truncate text-sm pr-4 ${msg.unread > 0 ? 'text-gray-200 font-medium' : 'text-gray-500'}`}>
-                          {msg.lastMessage}
-                        </p>
-                        {msg.unread > 0 ? (
-                          <div className="min-w-[18px] h-[18px] bg-red-600 rounded-full flex items-center justify-center">
-                            <span className="text-[10px] font-bold text-white">{msg.unread}</span>
-                          </div>
-                        ) : (
-                          <CheckCheck size={14} className="text-gray-600" />
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="flex flex-col items-center justify-center h-[50vh] text-gray-500">
-                 <div className="w-16 h-16 bg-gray-900 rounded-full flex items-center justify-center mb-4">
-                    <Search size={24} className="opacity-50" />
-                 </div>
-                 <p>{t.noMessages}</p>
-              </div>
-            )
+            <div className="flex flex-col items-center justify-center h-[50vh] text-gray-500">
+                <div className="w-16 h-16 bg-gray-900 rounded-full flex items-center justify-center mb-4">
+                <Search size={24} className="opacity-50" />
+                </div>
+                <p>{t.noMessages}</p>
+            </div>
         ) : (
             // --- Group Chats ---
             filteredGroups.length > 0 ? (
@@ -189,7 +139,7 @@ const Messages: React.FC<MessagesProps> = ({
                    <div className="w-16 h-16 bg-gray-900 rounded-full flex items-center justify-center mb-4">
                       <Users size={24} className="opacity-50" />
                    </div>
-                   <p>No groups found</p>
+                   <p>No active groups</p>
                 </div>
             )
         )}

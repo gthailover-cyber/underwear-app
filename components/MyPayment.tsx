@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { ArrowLeft, Plus, CreditCard, Smartphone, Trash2, X, Check } from 'lucide-react';
+import { ArrowLeft, Plus, CreditCard, Smartphone, Trash2, X } from 'lucide-react';
 import { Language } from '../types';
 import { TRANSLATIONS } from '../constants';
 
@@ -12,35 +12,17 @@ interface MyPaymentProps {
 interface PaymentMethod {
   id: string;
   type: 'card' | 'truemoney';
-  name: string; // "Visa ending 1234" or "TrueMoney 081..."
+  name: string;
   detail: string;
   isDefault: boolean;
 }
 
-const MOCK_PAYMENTS: PaymentMethod[] = [
-  {
-    id: '1',
-    type: 'card',
-    name: 'Visa',
-    detail: '**** **** **** 4242',
-    isDefault: true
-  },
-  {
-    id: '2',
-    type: 'truemoney',
-    name: 'TrueMoney Wallet',
-    detail: '081-234-5678',
-    isDefault: false
-  }
-];
-
 const MyPayment: React.FC<MyPaymentProps> = ({ language, onBack }) => {
   const t = TRANSLATIONS[language];
-  const [payments, setPayments] = useState<PaymentMethod[]>(MOCK_PAYMENTS);
+  const [payments, setPayments] = useState<PaymentMethod[]>([]); // Initialize empty
   const [isAdding, setIsAdding] = useState(false);
   const [addType, setAddType] = useState<'none' | 'card' | 'truemoney'>('none');
   
-  // Basic Form State for Demo
   const [cardNumber, setCardNumber] = useState('');
   const [phone, setPhone] = useState('');
 
@@ -78,7 +60,7 @@ const MyPayment: React.FC<MyPaymentProps> = ({ language, onBack }) => {
         <div className="flex items-center gap-3">
             <button 
                 onClick={onBack}
-                className="w-10 h-10 rounded-full bg-gray-800 flex items-center justify-center hover:bg-gray-700 transition-colors border border-gray-700 md:hidden"
+                className="w-10 h-10 rounded-full bg-gray-800 flex items-center justify-center hover:bg-gray-700 transition-colors border border-gray-700"
             >
                 <ArrowLeft size={20} className="text-white" />
             </button>

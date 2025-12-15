@@ -1,0 +1,19 @@
+
+-- 1. Run this script in the Supabase SQL Editor to fix the "Could not find the 'rate_event_live' column" error.
+-- วิธีใช้: ก๊อปปี้โค้ดนี้ไปวางในเมนู SQL Editor ของ Supabase แล้วกด RUN
+
+-- Add the missing columns to the 'profiles' table
+ALTER TABLE public.profiles 
+ADD COLUMN IF NOT EXISTS rate_event_live integer DEFAULT 10,
+ADD COLUMN IF NOT EXISTS rate_product_presentation integer DEFAULT 0,
+ADD COLUMN IF NOT EXISTS rate_onsite integer DEFAULT 0;
+
+-- Force a schema cache reload so the API knows about the new columns immediately
+-- คำสั่งนี้ช่วยให้ API รับรู้คอลัมน์ใหม่ทันทีโดยไม่ต้องรอ
+NOTIFY pgrst, 'reload';
+
+-- Verify the columns were added (ตรวจสอบผลลัพธ์)
+SELECT column_name, data_type 
+FROM information_schema.columns 
+WHERE table_name = 'profiles' 
+AND column_name IN ('rate_event_live', 'rate_product_presentation', 'rate_onsite');

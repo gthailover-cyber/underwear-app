@@ -1,8 +1,9 @@
 
-import React, { useState } from 'react';
-import { Plus, Edit2, Trash2, X, Package, Check, ImagePlus, ArrowLeft } from 'lucide-react';
+import React, { useState, useRef } from 'react';
+import { Plus, Edit2, Trash2, X, Package, Check, ImagePlus, ArrowLeft, Loader2, Save } from 'lucide-react';
 import { Product, Language } from '../types';
 import { TRANSLATIONS } from '../constants';
+import { supabase } from '../lib/supabaseClient';
 
 interface MyProductsProps {
   language: Language;
@@ -27,6 +28,12 @@ const MyProducts: React.FC<MyProductsProps> = ({ language, onBack, products, set
   const t = TRANSLATIONS[language];
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
+  
+  // Image Upload State
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [previewImage, setPreviewImage] = useState<string>('');
 
   // Form State
   const [formData, setFormData] = useState<Partial<Product>>({
@@ -39,48 +46,208 @@ const MyProducts: React.FC<MyProductsProps> = ({ language, onBack, products, set
   });
 
   const handleOpenModal = (product?: Product) => {
+    setImageFile(null); // Reset file
     if (product) {
       setEditingProduct(product);
       setFormData({ ...product });
+      setPreviewImage(product.image);
     } else {
       setEditingProduct(null);
       setFormData({
         name: '',
         price: 0,
-        stock: 0,
+        stock: 1,
         colors: [],
         sizes: [],
-        image: `https://picsum.photos/300/300?random=${Date.now()}`
+        image: ''
       });
+      setPreviewImage('');
     }
     setIsModalOpen(true);
   };
 
   const handleCloseModal = () => {
+    if (isSaving) return;
     setIsModalOpen(false);
     setEditingProduct(null);
   };
 
-  const handleDelete = (id: string) => {
-    if (window.confirm(t.deleteConfirm)) {
-      setProducts(prev => prev.filter(p => p.id !== id));
+  // --- IMAGE HANDLING ---
+  
+  const handleFileClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setImageFile(file);
+      setPreviewImage(URL.createObjectURL(file));
     }
   };
 
-  const handleSave = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (editingProduct) {
-      // Edit
-      setProducts(prev => prev.map(p => (p.id === editingProduct.id ? { ...p, ...formData } as Product : p)));
-    } else {
-      // Create
-      const newProduct: Product = {
-        id: `np-${Date.now()}`,
-        ...formData as Product
+  // Utility to resize image before upload
+  const resizeImage = (file: File, maxWidth: number): Promise<Blob> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const img = new Image();
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          let width = img.width;
+          let height = img.height;
+
+          if (width > maxWidth) {
+            height *= maxWidth / width;
+            width = maxWidth;
+          }
+
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          if (ctx) {
+            ctx.drawImage(img, 0, 0, width, height);
+            canvas.toBlob((blob) => {
+              if (blob) resolve(blob);
+              else reject(new Error('Canvas to Blob failed'));
+            }, 'image/jpeg', 0.85);
+          } else {
+            reject(new Error('Canvas context failed'));
+          }
+        };
+        img.src = e.target?.result as string;
       };
-      setProducts(prev => [newProduct, ...prev]);
+      reader.onerror = error => reject(error);
+      reader.readAsDataURL(file);
+    });
+  };
+
+  const uploadImageToSupabase = async (file: File): Promise<string | null> => {
+      try {
+          const resizedBlob = await resizeImage(file, 800);
+          const fileExt = 'jpg';
+          const fileName = `products/${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
+          
+          const { error: uploadError } = await supabase.storage
+              .from('gunderwear-bucket') 
+              .upload(fileName, resizedBlob, { contentType: 'image/jpeg' });
+
+          if (uploadError) throw uploadError;
+
+          const { data } = supabase.storage.from('gunderwear-bucket').getPublicUrl(fileName);
+          return data.publicUrl;
+      } catch (error: any) {
+          console.error("Error uploading product image:", error);
+          alert(`Failed to upload image: ${error.message}`);
+          return null;
+      }
+  };
+
+  // --- DATABASE ACTIONS ---
+
+  const handleDelete = async (id: string) => {
+    if (!window.confirm(t.deleteConfirm)) return;
+
+    // Optimistic Update
+    const previousProducts = [...products];
+    setProducts(prev => prev.filter(p => p.id !== id));
+
+    try {
+        const { error } = await supabase.from('products').delete().eq('id', id);
+        if (error) throw error;
+    } catch (error: any) {
+        console.error("Error deleting product:", error);
+        alert("Failed to delete product.");
+        setProducts(previousProducts); // Revert
     }
-    handleCloseModal();
+  };
+
+  const handleSave = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSaving(true);
+
+    try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) throw new Error("Not authenticated");
+
+        // 1. Upload Image if new file selected
+        let finalImageUrl = formData.image;
+        if (imageFile) {
+            const uploadedUrl = await uploadImageToSupabase(imageFile);
+            if (uploadedUrl) {
+                finalImageUrl = uploadedUrl;
+            } else {
+                throw new Error("Image upload failed");
+            }
+        }
+
+        // Validate Image
+        if (!finalImageUrl) {
+            alert("Please upload a product image.");
+            setIsSaving(false);
+            return;
+        }
+
+        // 2. Prepare Data Payload
+        const payload = {
+            seller_id: user.id,
+            name: formData.name,
+            price: Number(formData.price),
+            stock: Number(formData.stock),
+            colors: formData.colors,
+            sizes: formData.sizes,
+            image: finalImageUrl,
+            description: formData.description || ''
+        };
+
+        if (editingProduct) {
+            // UPDATE
+            const { data, error } = await supabase
+                .from('products')
+                .update(payload)
+                .eq('id', editingProduct.id)
+                .select()
+                .single();
+
+            if (error) throw error;
+
+            // Update Local State
+            setProducts(prev => prev.map(p => (p.id === editingProduct.id ? { ...p, ...data } as Product : p)));
+
+        } else {
+            // CREATE
+            const { data, error } = await supabase
+                .from('products')
+                .insert(payload)
+                .select()
+                .single();
+
+            if (error) throw error;
+
+            // Update Local State
+            if (data) {
+                const newProduct: Product = {
+                    id: data.id,
+                    name: data.name,
+                    price: data.price,
+                    stock: data.stock,
+                    image: data.image,
+                    colors: data.colors,
+                    sizes: data.sizes,
+                    sold: data.sold
+                };
+                setProducts(prev => [newProduct, ...prev]);
+            }
+        }
+
+        handleCloseModal();
+
+    } catch (error: any) {
+        console.error("Error saving product:", error);
+        alert(`Failed to save product: ${error.message}`);
+    } finally {
+        setIsSaving(false);
+    }
   };
 
   const toggleSize = (size: string) => {
@@ -113,7 +280,7 @@ const MyProducts: React.FC<MyProductsProps> = ({ language, onBack, products, set
         <div className="flex items-center gap-3">
             <button 
                 onClick={onBack}
-                className="w-10 h-10 rounded-full bg-gray-800 flex items-center justify-center hover:bg-gray-700 transition-colors border border-gray-700 md:hidden"
+                className="w-10 h-10 rounded-full bg-gray-800 flex items-center justify-center hover:bg-gray-700 transition-colors border border-gray-700"
             >
                 <ArrowLeft size={20} className="text-white" />
             </button>
@@ -138,7 +305,7 @@ const MyProducts: React.FC<MyProductsProps> = ({ language, onBack, products, set
               </div>
               
               {/* Info */}
-              <div className="flex-1 min-w-0 flex flex-col justify-between">
+              <div className="flex-1 min-w-0 flex flex-col justify-between py-1">
                 <div>
                   <h3 className="font-bold text-white line-clamp-2 leading-tight mb-1">{product.name}</h3>
                   <div className="flex flex-wrap gap-1 mb-2">
@@ -199,18 +366,37 @@ const MyProducts: React.FC<MyProductsProps> = ({ language, onBack, products, set
             {/* Form */}
             <form onSubmit={handleSave} className="overflow-y-auto p-6 space-y-6">
                
-               {/* Image Upload Mock */}
+               {/* Image Upload Area */}
                <div className="flex justify-center">
-                  <div className="relative w-32 h-32 bg-gray-800 rounded-xl overflow-hidden border-2 border-dashed border-gray-700 group cursor-pointer hover:border-red-500 transition-colors">
-                     <img src={formData.image} className="w-full h-full object-cover opacity-60 group-hover:opacity-40" />
-                     <div className="absolute inset-0 flex flex-col items-center justify-center text-gray-400 group-hover:text-white">
-                        <ImagePlus size={24} />
-                        <span className="text-[10px] font-bold mt-1">Upload</span>
-                     </div>
+                  <input 
+                    type="file" 
+                    ref={fileInputRef} 
+                    className="hidden" 
+                    accept="image/*" 
+                    onChange={handleFileChange}
+                  />
+                  <div 
+                    onClick={handleFileClick}
+                    className="relative w-32 h-32 bg-gray-800 rounded-xl overflow-hidden border-2 border-dashed border-gray-700 group cursor-pointer hover:border-red-500 transition-colors"
+                  >
+                     {previewImage ? (
+                        <>
+                           <img src={previewImage} className="w-full h-full object-cover" />
+                           <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity text-white">
+                              <Edit2 size={24} />
+                              <span className="text-[10px] font-bold mt-1">Change</span>
+                           </div>
+                        </>
+                     ) : (
+                        <div className="absolute inset-0 flex flex-col items-center justify-center text-gray-400 group-hover:text-white">
+                           <ImagePlus size={24} />
+                           <span className="text-[10px] font-bold mt-1">Upload</span>
+                        </div>
+                     )}
                   </div>
                </div>
 
-               {/* Name & Desc */}
+               {/* Name */}
                <div className="space-y-4">
                   <div>
                     <label className="text-xs font-bold text-gray-500 uppercase ml-1 block mb-1">{t.productName}</label>
@@ -296,9 +482,18 @@ const MyProducts: React.FC<MyProductsProps> = ({ language, onBack, products, set
                <div className="pt-4">
                  <button 
                    type="submit"
-                   className="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-3 rounded-xl shadow-lg shadow-red-900/30 transition-all active:scale-95"
+                   disabled={isSaving}
+                   className="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-3 rounded-xl shadow-lg shadow-red-900/30 transition-all active:scale-95 disabled:opacity-70 flex items-center justify-center gap-2"
                  >
-                   {t.save}
+                   {isSaving ? (
+                       <>
+                         <Loader2 className="w-5 h-5 animate-spin" /> {t.saving}
+                       </>
+                   ) : (
+                       <>
+                         <Save size={18} /> {t.save}
+                       </>
+                   )}
                  </button>
                </div>
 
