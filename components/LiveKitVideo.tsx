@@ -35,8 +35,8 @@ const LiveKitVideo: React.FC<LiveKitVideoProps> = ({
                 setIsConnecting(true);
                 setError(null);
 
-                // Generate token from backend
-                const token = await generateLiveKitToken({
+                // Generate token AND get serverUrl from backend
+                const { token, serverUrl } = await generateLiveKitToken({
                     apiKey: '', // Will be handled by backend
                     apiSecret: '', // Will be handled by backend
                     roomName,
@@ -44,9 +44,7 @@ const LiveKitVideo: React.FC<LiveKitVideoProps> = ({
                     isHost,
                 });
 
-                const serverUrl = getLiveKitServerUrl();
-
-                // Connect to LiveKit room
+                // Connect to LiveKit room using the URL from Backend
                 const connectedRoom = await liveKitService.connect({
                     serverUrl,
                     token,
