@@ -36,8 +36,6 @@ const StartLiveModal: React.FC<StartLiveModalProps> = ({ language, onClose, onSt
     setTimeout(() => {
       const youtubeId = streamMethod === 'youtube' ? extractYoutubeId(youtubeUrl) : undefined;
 
-      const youtubeId = extractYoutubeId(youtubeUrl);
-
       const newStreamer: Streamer = {
         id: `live-${Date.now()}`,
         name: 'Me (Host)', // In real app, get from user profile
@@ -46,10 +44,10 @@ const StartLiveModal: React.FC<StartLiveModalProps> = ({ language, onClose, onSt
         coverImage: coverImage,
         youtubeId: youtubeId, // Use extracted ID
         useLiveKit: streamMethod === 'livekit', // NEW: Flag to use LiveKit
-        youtubeId: youtubeId || undefined, // Use extracted ID
         itemCount: 0, // Will be populated in App.tsx logic if products selected
         products: [] // Will be populated in App.tsx logic if products selected
       };
+
 
       onStart(newStreamer);
       setIsLoading(false);
