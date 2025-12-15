@@ -155,7 +155,9 @@ const App: React.FC = () => {
           auctionEndTime: room.auction_end_time ? Number(room.auction_end_time) : undefined,
           auctionStartingPrice: room.auction_starting_price,
           currentBid: room.current_bid,
-          topBidder: room.top_bidder_name
+          topBidder: room.top_bidder_name,
+          // Assuming default to LiveKit if no specific video URL is provided, or forcing it for now
+          useLiveKit: !room.video_url && !room.youtube_id,
         }));
         setStreamers(dbStreamers);
       }
