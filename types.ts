@@ -1,0 +1,142 @@
+
+export type Language = 'en' | 'th';
+
+// New: User Roles
+export type UserRole = 'model' | 'organizer' | 'supporter';
+
+export type ApplicationStatus = 'none' | 'pending' | 'approved' | 'rejected';
+
+export interface Product {
+  id: string;
+  name: string;
+  price: number;
+  image: string;
+  stock: number;
+  sold?: number;     // Added: Number of items sold
+  colors?: string[]; // Array of hex codes or color names
+  sizes?: string[];  // Array of size codes (S, M, L, XL)
+  description?: string;
+}
+
+export interface CartItem extends Product {
+  quantity: number;
+  size?: string;
+  color?: string;
+}
+
+export interface Comment {
+  id: string;
+  username: string;
+  message: string;
+  isSystem?: boolean;
+  avatar?: string; // Added avatar field
+}
+
+export interface Streamer {
+  id: string;
+  name: string;
+  title: string;
+  viewerCount: number;
+  coverImage: string;
+  youtubeId?: string; // Added for 100% Free Live Streaming via YouTube Embed
+  videoUrl?: string; // Added for Direct MP4 Streaming (Professional & Reliable)
+  useLiveKit?: boolean; // NEW: Flag to use LiveKit for WebRTC streaming
+  itemCount: number;
+  products: Product[];
+  isAuction?: boolean; // New flag for Auction mode
+  auctionEndTime?: number; // Timestamp for auction end
+  auctionStartingPrice?: number; // Starting price for auction
+  currentBid?: number; // Added: Current highest bid
+  topBidder?: string; // Added: Username of the current top bidder
+}
+
+export interface UserProfile {
+  username: string;
+  avatar: string;
+  coverImage: string;
+  role: UserRole; // Added: User Role
+  modelApplicationStatus?: ApplicationStatus; // Added: Application Status
+  age: number;
+  height: number;
+  weight: number;
+  location: string; // Country, Province
+  bio: string;
+  favorites: string[]; // Favorite underwear types
+  gallery: string[];
+  followers: number; // Added
+  following: number; // Added
+}
+
+export interface Person {
+  id: string;
+  username: string;
+  avatar: string;
+  isOnline: boolean;
+  followers?: number;
+  role?: UserRole; // Added role to Person
+}
+
+export interface MessagePreview {
+  id: string;
+  userId: string;
+  username: string;
+  avatar: string;
+  lastMessage: string;
+  time: string;
+  unread: number;
+  isOnline: boolean;
+  isVerified?: boolean;
+}
+
+export type MessageType = 'text' | 'image' | 'live_share';
+
+export interface ChatMessage {
+  id: string;
+  senderId: string; // 'me' or other userId
+  text?: string;
+  type: MessageType;
+  timestamp: string;
+  read: boolean;
+  // For Live Share
+  sharedStreamerId?: string;
+  sharedStreamer?: Streamer; // In a real app, you'd fetch this by ID
+  // For Group Chat
+  senderName?: string;
+  senderAvatar?: string;
+}
+
+// Group Chat Types
+export interface ChatRoom {
+  id: string;
+  name: string;
+  image: string;
+  type: 'public' | 'private';
+  hostId: string; // ID of the organizer
+  hostName: string;
+  members: number;
+  lastMessage?: string;
+  lastMessageTime?: string;
+}
+
+// Order Types
+export type OrderStatus = 'pending' | 'shipping' | 'delivered' | 'cancelled';
+
+export interface OrderTimeline {
+  id: string;
+  title: string;
+  description: string;
+  date: string;
+  time: string;
+  isCompleted: boolean;
+  isCurrent: boolean;
+}
+
+export interface Order {
+  id: string;
+  items: CartItem[];
+  totalPrice: number;
+  status: OrderStatus;
+  date: string;
+  trackingNumber?: string;
+  timeline?: OrderTimeline[];
+}

@@ -1,0 +1,8 @@
+{
+  "name": "Men's Underwear Live Shop",
+  "description": "A mobile-first live streaming commerce platform for men's underwear featuring real-time interaction, hearts, and product listings.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone"
+  ]
+}

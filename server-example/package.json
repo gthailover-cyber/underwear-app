@@ -1,0 +1,20 @@
+{
+    "name": "livekit-token-server",
+    "version": "1.0.0",
+    "description": "LiveKit Token Generation Server",
+    "type": "module",
+    "main": "livekit-token-server.js",
+    "scripts": {
+        "start": "node livekit-token-server.js",
+        "dev": "nodemon livekit-token-server.js"
+    },
+    "dependencies": {
+        "express": "^4.18.2",
+        "livekit-server-sdk": "^2.9.0",
+        "dotenv": "^16.4.5",
+        "cors": "^2.8.5"
+    },
+    "devDependencies": {
+        "nodemon": "^3.0.2"
+    }
+}
