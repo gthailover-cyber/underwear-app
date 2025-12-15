@@ -347,6 +347,7 @@ const LiveRoom: React.FC<LiveRoomProps> = ({ streamer, isHost = false, onClose, 
             <LiveKitVideo
               roomName={streamer.id}
               isHost={isHost}
+              participantName={isHost ? 'Me (Host)' : 'Guest Viewer'}
               onLeave={onClose}
             />
           ) : (isVideoEnabled || !isHost) && (streamer.videoUrl && !videoError) ? (
@@ -546,8 +547,8 @@ const LiveRoom: React.FC<LiveRoomProps> = ({ streamer, isHost = false, onClose, 
                   </div>
                 ) : (
                   <div className={`px-3 py-1.5 rounded-2xl text-sm break-words shadow-sm backdrop-blur-sm border ${comment.isHost
-                      ? 'bg-red-600/80 border-red-500/50 text-white rounded-br-none self-end'
-                      : 'bg-black/40 border-white/10 text-white rounded-bl-none self-start'
+                    ? 'bg-red-600/80 border-red-500/50 text-white rounded-br-none self-end'
+                    : 'bg-black/40 border-white/10 text-white rounded-bl-none self-start'
                     }`}>
                     <span className={`font-bold mr-2 text-xs opacity-90 ${comment.isHost ? 'text-yellow-300' : 'text-gray-300'}`}>
                       {comment.user}
@@ -747,8 +748,8 @@ const LiveRoom: React.FC<LiveRoomProps> = ({ streamer, isHost = false, onClose, 
                         key={color}
                         onClick={() => setPurchaseConfig(prev => ({ ...prev, color }))}
                         className={`px-3 py-1.5 rounded-lg text-sm border transition-all ${purchaseConfig.color === color
-                            ? 'bg-white text-black border-white font-bold'
-                            : 'bg-gray-800 text-gray-300 border-gray-700 hover:border-gray-500'
+                          ? 'bg-white text-black border-white font-bold'
+                          : 'bg-gray-800 text-gray-300 border-gray-700 hover:border-gray-500'
                           }`}
                       >
                         {color}
