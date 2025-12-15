@@ -18,7 +18,7 @@ export const generateLiveKitToken = async (config: TokenGeneratorConfig): Promis
     // Example: const response = await fetch('/api/livekit/token', { ... });
 
     // For now, we'll use a placeholder that should be replaced with actual backend call
-    const backendUrl = import.meta.env.VITE_LIVEKIT_TOKEN_URL || '/api/livekit/token';
+    const backendUrl = import.meta.env.VITE_LIVEKIT_TOKEN_URL || 'http://localhost:3000/api/livekit/token';
 
     try {
         const response = await fetch(backendUrl, {
