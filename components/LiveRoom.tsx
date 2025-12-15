@@ -501,32 +501,8 @@ const LiveRoom: React.FC<LiveRoomProps> = ({ streamer, onClose, language, wallet
       alert('Added to Cart!');
       setSelectedProductForPurchase(null);
     }
-    if (!selectedProductForPurchase) return;
-
-    const totalCost = selectedProductForPurchase.price * purchaseConfig.quantity;
-
-    if (action === 'buy_now') {
-      if (walletBalance >= totalCost) {
-        onUseCoins(totalCost);
-        alert(`Successfully purchased ${purchaseConfig.quantity}x ${selectedProductForPurchase.name}!`);
-        setSelectedProductForPurchase(null); // Close sheet
-      } else {
-        alert('Insufficient coins!');
-        onOpenWallet();
-      }
-    } else {
-      // Add to Cart
-      const cartItem: CartItem = {
-        ...selectedProductForPurchase,
-        quantity: purchaseConfig.quantity,
-        color: purchaseConfig.color,
-        size: purchaseConfig.size
-      };
-      onAddToCart(cartItem);
-      alert('Added to Cart!');
-      setSelectedProductForPurchase(null);
-    }
   };
+
 
   const isInsufficientFunds = myBidAmount > walletBalance;
 
