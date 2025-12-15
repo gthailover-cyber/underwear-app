@@ -4,11 +4,8 @@ import { Heart, X, Send, ShoppingBag, User, StopCircle, Timer, Minus, Plus, Gave
 import { Streamer, Comment, Language, Product, CartItem } from '../types';
 import { TRANSLATIONS } from '../constants';
 import { socketService } from '../services/socket';
-<<<<<<< HEAD
 import LiveKitVideo from './LiveKitVideo';
 
-=======
->>>>>>> 752a1b3a25bf1dbec06b56f9ec2b0d8b9a81ad85
 
 interface LiveRoomProps {
   streamer: Streamer;
@@ -51,11 +48,8 @@ const LiveRoom: React.FC<LiveRoomProps> = ({ streamer, onClose, language, wallet
   const [isEnding, setIsEnding] = useState(false);
   const [showConfirmEnd, setShowConfirmEnd] = useState(false);
   const [videoError, setVideoError] = useState(false);
-<<<<<<< HEAD
 
-=======
   
->>>>>>> 752a1b3a25bf1dbec06b56f9ec2b0d8b9a81ad85
   // Product Variant Selection State
   const [selectedProductForPurchase, setSelectedProductForPurchase] = useState<Product | null>(null);
   const [purchaseConfig, setPurchaseConfig] = useState<{ color: string; size: string; quantity: number }>({ color: '', size: '', quantity: 1 });
@@ -71,11 +65,8 @@ const LiveRoom: React.FC<LiveRoomProps> = ({ streamer, onClose, language, wallet
   const [topBidder, setTopBidder] = useState<string>(streamer.topBidder || '-');
   const [myBidAmount, setMyBidAmount] = useState<number>(0);
   const [bidSuccess, setBidSuccess] = useState(false);
-<<<<<<< HEAD
 
-=======
   
->>>>>>> 752a1b3a25bf1dbec06b56f9ec2b0d8b9a81ad85
   // Auction Animation State
   const [floatingBids, setFloatingBids] = useState<{ id: number; amount: number }[]>([]);
   const prevBidRef = useRef<number>(streamer.currentBid || streamer.auctionStartingPrice || 0);
@@ -114,11 +105,8 @@ const LiveRoom: React.FC<LiveRoomProps> = ({ streamer, onClose, language, wallet
       const updateTimer = () => {
         const now = Date.now();
         const diff = streamer.auctionEndTime! - now;
-<<<<<<< HEAD
 
-=======
         
->>>>>>> 752a1b3a25bf1dbec06b56f9ec2b0d8b9a81ad85
         if (diff <= 0) {
           setTimeLeft('00:00:00');
           return;
@@ -127,11 +115,8 @@ const LiveRoom: React.FC<LiveRoomProps> = ({ streamer, onClose, language, wallet
         const h = Math.floor(diff / (1000 * 60 * 60));
         const m = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
         const s = Math.floor((diff % (1000 * 60)) / 1000);
-<<<<<<< HEAD
 
-=======
         
->>>>>>> 752a1b3a25bf1dbec06b56f9ec2b0d8b9a81ad85
         setTimeLeft(
           `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`
         );
@@ -147,7 +132,6 @@ const LiveRoom: React.FC<LiveRoomProps> = ({ streamer, onClose, language, wallet
   useEffect(() => {
     // 1. Viewer Mode: Play Video URL
     if (streamer.videoUrl && !isHost) {
-<<<<<<< HEAD
       if (videoRef.current) {
         videoRef.current.play().catch(e => {
           console.log('Autoplay prevented or failed:', e);
@@ -181,7 +165,6 @@ const LiveRoom: React.FC<LiveRoomProps> = ({ streamer, onClose, language, wallet
       if (streamRef.current) {
         streamRef.current.getTracks().forEach(track => track.stop());
       }
-=======
        if (videoRef.current) {
           videoRef.current.play().catch(e => {
             console.log('Autoplay prevented or failed:', e);
@@ -215,13 +198,11 @@ const LiveRoom: React.FC<LiveRoomProps> = ({ streamer, onClose, language, wallet
        if (streamRef.current) {
           streamRef.current.getTracks().forEach(track => track.stop());
        }
->>>>>>> 752a1b3a25bf1dbec06b56f9ec2b0d8b9a81ad85
     };
   }, [streamer.videoUrl, isHost]);
 
   // Handle incoming or sent gifts logic
   const processGift = (gift: typeof GIFTS[0], sender: string) => {
-<<<<<<< HEAD
     // 1. Add to Log (for Host View mainly)
     const newLog: GiftLogItem = {
       id: Date.now().toString() + Math.random(),
@@ -243,7 +224,6 @@ const LiveRoom: React.FC<LiveRoomProps> = ({ streamer, onClose, language, wallet
       // Default: Full Screen Animation
       triggerGiftAnimation(gift, sender);
     }
-=======
       // 1. Add to Log (for Host View mainly)
       const newLog: GiftLogItem = {
         id: Date.now().toString() + Math.random(),
@@ -265,7 +245,6 @@ const LiveRoom: React.FC<LiveRoomProps> = ({ streamer, onClose, language, wallet
           // Default: Full Screen Animation
           triggerGiftAnimation(gift, sender);
       }
->>>>>>> 752a1b3a25bf1dbec06b56f9ec2b0d8b9a81ad85
   };
 
   // --- SOCKET.IO INTEGRATION ---
@@ -282,26 +261,19 @@ const LiveRoom: React.FC<LiveRoomProps> = ({ streamer, onClose, language, wallet
     // 3. Listen for Hearts
     socketService.on('new_heart', (data: { count: number }) => {
       for (let i = 0; i < data.count; i++) {
-<<<<<<< HEAD
         setTimeout(() => addFloatingHeart(), i * 100);
-=======
          setTimeout(() => addFloatingHeart(), i * 100);
->>>>>>> 752a1b3a25bf1dbec06b56f9ec2b0d8b9a81ad85
       }
     });
 
     // 4. Listen for Viewer Count Updates
     socketService.on('viewer_update', (data: { count: number }) => {
-<<<<<<< HEAD
       setViewerCount(data.count);
-=======
        setViewerCount(data.count);
->>>>>>> 752a1b3a25bf1dbec06b56f9ec2b0d8b9a81ad85
     });
 
     // 5. Listen for Bid Updates
     socketService.on('bid_update', (data: { newBid: number, bidder: string }) => {
-<<<<<<< HEAD
       const diff = data.newBid - prevBidRef.current;
       if (diff > 0) {
         const id = Date.now();
@@ -318,7 +290,6 @@ const LiveRoom: React.FC<LiveRoomProps> = ({ streamer, onClose, language, wallet
         setBidSuccess(true);
         setTimeout(() => setBidSuccess(false), 2000);
       }
-=======
        const diff = data.newBid - prevBidRef.current;
        if (diff > 0) {
           const id = Date.now();
@@ -335,31 +306,26 @@ const LiveRoom: React.FC<LiveRoomProps> = ({ streamer, onClose, language, wallet
           setBidSuccess(true);
           setTimeout(() => setBidSuccess(false), 2000);
        }
->>>>>>> 752a1b3a25bf1dbec06b56f9ec2b0d8b9a81ad85
     });
 
     // Mock Activity Interval (Gifts & Bids) - Only if not host for demo purposes
     if (!isHost) {
-<<<<<<< HEAD
       const mockActivityInterval = setInterval(() => {
         // 1. Random Gifts
         if (Math.random() > 0.85) {
           const randomGift = GIFTS[Math.floor(Math.random() * GIFTS.length)];
           const randomUser = ['Alex', 'Mike', 'Sarah', 'TopFan', 'User99'][Math.floor(Math.random() * 5)];
           processGift(randomGift, randomUser);
-=======
         const mockActivityInterval = setInterval(() => {
         // 1. Random Gifts
         if (Math.random() > 0.85) {
             const randomGift = GIFTS[Math.floor(Math.random() * GIFTS.length)];
             const randomUser = ['Alex', 'Mike', 'Sarah', 'TopFan', 'User99'][Math.floor(Math.random() * 5)];
             processGift(randomGift, randomUser);
->>>>>>> 752a1b3a25bf1dbec06b56f9ec2b0d8b9a81ad85
         }
 
         // 2. Random Bids (Only in Auction Mode)
         if (streamer.isAuction && Math.random() > 0.8) {
-<<<<<<< HEAD
           const increment = [50, 100, 200][Math.floor(Math.random() * 3)];
           setCurrentHighestBid(prev => {
             const newVal = prev + increment;
@@ -383,7 +349,6 @@ const LiveRoom: React.FC<LiveRoomProps> = ({ streamer, onClose, language, wallet
         socketService.leaveRoom();
         socketService.disconnect();
       };
-=======
             const increment = [50, 100, 200][Math.floor(Math.random() * 3)];
             setCurrentHighestBid(prev => {
                 const newVal = prev + increment;
@@ -407,18 +372,14 @@ const LiveRoom: React.FC<LiveRoomProps> = ({ streamer, onClose, language, wallet
             socketService.leaveRoom();
             socketService.disconnect();
         };
->>>>>>> 752a1b3a25bf1dbec06b56f9ec2b0d8b9a81ad85
     }
   }, [streamer.id, streamer.isAuction, isHost]);
 
   const addFloatingHeart = () => {
     setHeartCount(prev => prev + 1);
     const id = heartIdCounter.current++;
-<<<<<<< HEAD
     const left = Math.floor(Math.random() * 40) + 50;
-=======
     const left = Math.floor(Math.random() * 40) + 50; 
->>>>>>> 752a1b3a25bf1dbec06b56f9ec2b0d8b9a81ad85
     setFloatingHearts(prev => [...prev, { id, left }]);
     setTimeout(() => {
       setFloatingHearts(prev => prev.filter(h => h.id !== id));
@@ -435,11 +396,8 @@ const LiveRoom: React.FC<LiveRoomProps> = ({ streamer, onClose, language, wallet
 
   const handleSendHeart = () => {
     if (isHost) return;
-<<<<<<< HEAD
     addFloatingHeart();
-=======
     addFloatingHeart(); 
->>>>>>> 752a1b3a25bf1dbec06b56f9ec2b0d8b9a81ad85
     socketService.emit('send_heart', {});
   };
 
@@ -459,11 +417,8 @@ const LiveRoom: React.FC<LiveRoomProps> = ({ streamer, onClose, language, wallet
     setIsEnding(true);
     // Stop camera
     if (streamRef.current) {
-<<<<<<< HEAD
       streamRef.current.getTracks().forEach(track => track.stop());
-=======
        streamRef.current.getTracks().forEach(track => track.stop());
->>>>>>> 752a1b3a25bf1dbec06b56f9ec2b0d8b9a81ad85
     }
     setTimeout(() => {
       onClose();
@@ -473,7 +428,6 @@ const LiveRoom: React.FC<LiveRoomProps> = ({ streamer, onClose, language, wallet
   // Auction Handlers
   const increaseBid = () => setMyBidAmount(prev => prev + 1);
   const decreaseBid = () => {
-<<<<<<< HEAD
     if (myBidAmount - 1 > currentHighestBid) {
       setMyBidAmount(prev => prev - 1);
     }
@@ -488,7 +442,6 @@ const LiveRoom: React.FC<LiveRoomProps> = ({ streamer, onClose, language, wallet
     } else {
       alert(t.bidTooLow);
     }
-=======
       if (myBidAmount - 1 > currentHighestBid) {
           setMyBidAmount(prev => prev - 1);
       }
@@ -503,18 +456,14 @@ const LiveRoom: React.FC<LiveRoomProps> = ({ streamer, onClose, language, wallet
       } else {
           alert(t.bidTooLow);
       }
->>>>>>> 752a1b3a25bf1dbec06b56f9ec2b0d8b9a81ad85
   };
 
   // Gift Handler
   const handleSendGift = (gift: typeof GIFTS[0]) => {
     if (walletBalance >= gift.price) {
       onUseCoins(gift.price);
-<<<<<<< HEAD
 
-=======
       
->>>>>>> 752a1b3a25bf1dbec06b56f9ec2b0d8b9a81ad85
       const giftMsg: Comment = {
         id: Date.now().toString(),
         username: 'Me',
@@ -522,17 +471,14 @@ const LiveRoom: React.FC<LiveRoomProps> = ({ streamer, onClose, language, wallet
         isSystem: false,
         avatar: streamer.coverImage
       };
-<<<<<<< HEAD
 
       setComments(prev => [...prev, giftMsg]);
       socketService.emit('send_comment', { message: `Sent a ${gift.name} ${gift.icon}` });
 
-=======
       
       setComments(prev => [...prev, giftMsg]);
       socketService.emit('send_comment', { message: `Sent a ${gift.name} ${gift.icon}` });
       
->>>>>>> 752a1b3a25bf1dbec06b56f9ec2b0d8b9a81ad85
       processGift(gift, 'Me');
       setShowGifts(false);
     }
@@ -540,7 +486,6 @@ const LiveRoom: React.FC<LiveRoomProps> = ({ streamer, onClose, language, wallet
 
   // Buy Now Logic - Step 1: Open Selection Sheet
   const handleBuyClick = (product: Product) => {
-<<<<<<< HEAD
     setSelectedProductForPurchase(product);
     setPurchaseConfig({
       color: product.colors && product.colors.length > 0 ? product.colors[0] : '',
@@ -549,7 +494,6 @@ const LiveRoom: React.FC<LiveRoomProps> = ({ streamer, onClose, language, wallet
     });
     // Close product list
     setShowProducts(false);
-=======
      setSelectedProductForPurchase(product);
      setPurchaseConfig({
        color: product.colors && product.colors.length > 0 ? product.colors[0] : '',
@@ -558,12 +502,10 @@ const LiveRoom: React.FC<LiveRoomProps> = ({ streamer, onClose, language, wallet
      });
      // Close product list
      setShowProducts(false);
->>>>>>> 752a1b3a25bf1dbec06b56f9ec2b0d8b9a81ad85
   };
 
   // Buy Now Logic - Step 2: Confirm Purchase (Direct or Cart)
   const handleConfirmPurchase = (action: 'buy_now' | 'add_to_cart') => {
-<<<<<<< HEAD
     if (!selectedProductForPurchase) return;
 
     const totalCost = selectedProductForPurchase.price * purchaseConfig.quantity;
@@ -589,7 +531,6 @@ const LiveRoom: React.FC<LiveRoomProps> = ({ streamer, onClose, language, wallet
       alert('Added to Cart!');
       setSelectedProductForPurchase(null);
     }
-=======
       if (!selectedProductForPurchase) return;
 
       const totalCost = selectedProductForPurchase.price * purchaseConfig.quantity;
@@ -615,7 +556,6 @@ const LiveRoom: React.FC<LiveRoomProps> = ({ streamer, onClose, language, wallet
           alert('Added to Cart!');
           setSelectedProductForPurchase(null);
       }
->>>>>>> 752a1b3a25bf1dbec06b56f9ec2b0d8b9a81ad85
   };
 
   const isInsufficientFunds = myBidAmount > walletBalance;
@@ -667,7 +607,6 @@ const LiveRoom: React.FC<LiveRoomProps> = ({ streamer, onClose, language, wallet
 
       {/* Mobile container */}
       <div className={`relative w-full h-full max-w-md bg-gray-900 overflow-hidden flex flex-col transition-opacity duration-500 ${isEnding ? 'opacity-0' : 'opacity-100'}`}>
-<<<<<<< HEAD
 
         {/* Video Layer */}
         <div className="absolute inset-0 bg-black">
@@ -728,7 +667,6 @@ const LiveRoom: React.FC<LiveRoomProps> = ({ streamer, onClose, language, wallet
               alt="Live Stream"
               className="w-full h-full object-cover opacity-80"
             />
-=======
         
         {/* Video Layer */}
         <div className="absolute inset-0 bg-black">
@@ -771,14 +709,12 @@ const LiveRoom: React.FC<LiveRoomProps> = ({ streamer, onClose, language, wallet
                alt="Live Stream" 
                className="w-full h-full object-cover opacity-80"
              />
->>>>>>> 752a1b3a25bf1dbec06b56f9ec2b0d8b9a81ad85
           )}
           <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-transparent to-black/80 pointer-events-none"></div>
         </div>
 
         {/* --- Header Area --- */}
         <div className="absolute top-0 left-0 right-0 p-4 pt-6 z-20 flex items-start justify-between">
-<<<<<<< HEAD
 
           <div className="flex flex-col gap-2 relative">
             {/* Host Info */}
@@ -829,7 +765,6 @@ const LiveRoom: React.FC<LiveRoomProps> = ({ streamer, onClose, language, wallet
                 </div>
               </div>
             )}
-=======
           
           <div className="flex flex-col gap-2 relative">
               {/* Host Info */}
@@ -880,12 +815,10 @@ const LiveRoom: React.FC<LiveRoomProps> = ({ streamer, onClose, language, wallet
                       </div>
                   </div>
               )}
->>>>>>> 752a1b3a25bf1dbec06b56f9ec2b0d8b9a81ad85
           </div>
 
           {/* Close / End Button */}
           <div className="flex items-center space-x-2">
-<<<<<<< HEAD
             <div className="flex -space-x-2 overflow-hidden">
               {[1, 2, 3].map(i => (
                 <div key={i} className="inline-block h-6 w-6 rounded-full ring-2 ring-black bg-gray-500">
@@ -909,7 +842,6 @@ const LiveRoom: React.FC<LiveRoomProps> = ({ streamer, onClose, language, wallet
                 <X size={18} />
               </button>
             )}
-=======
              <div className="flex -space-x-2 overflow-hidden">
                 {[1,2,3].map(i => (
                   <div key={i} className="inline-block h-6 w-6 rounded-full ring-2 ring-black bg-gray-500">
@@ -933,13 +865,11 @@ const LiveRoom: React.FC<LiveRoomProps> = ({ streamer, onClose, language, wallet
                  <X size={18} />
                </button>
              )}
->>>>>>> 752a1b3a25bf1dbec06b56f9ec2b0d8b9a81ad85
           </div>
         </div>
 
         {/* ... Rest of the component code (Bids, Gifts, Comments, etc.) ... */}
         {/* Same as previous version, just ensuring logic aligns with real data */}
-<<<<<<< HEAD
 
         {/* --- Right Side Floating Effects (Bids & Roses) --- */}
         <div className="absolute top-24 right-4 z-40 pointer-events-none w-32 flex flex-col items-end">
@@ -973,7 +903,6 @@ const LiveRoom: React.FC<LiveRoomProps> = ({ streamer, onClose, language, wallet
               </div>
             ))}
           </div>
-=======
         
         {/* --- Right Side Floating Effects (Bids & Roses) --- */}
         <div className="absolute top-24 right-4 z-40 pointer-events-none w-32 flex flex-col items-end">
@@ -1007,12 +936,10 @@ const LiveRoom: React.FC<LiveRoomProps> = ({ streamer, onClose, language, wallet
                     </div>
                  ))}
             </div>
->>>>>>> 752a1b3a25bf1dbec06b56f9ec2b0d8b9a81ad85
         </div>
 
         {/* --- NEW: Host Auction Stats (Bottom Right - Enhanced with Avatar) --- */}
         {isHost && streamer.isAuction && (
-<<<<<<< HEAD
           <div className="absolute bottom-24 right-4 z-30 flex flex-col items-end gap-2 pointer-events-none">
 
             {/* Timer */}
@@ -1058,7 +985,6 @@ const LiveRoom: React.FC<LiveRoomProps> = ({ streamer, onClose, language, wallet
               </div>
             </div>
           </div>
-=======
            <div className="absolute bottom-24 right-4 z-30 flex flex-col items-end gap-2 pointer-events-none">
               
               {/* Timer */}
@@ -1104,13 +1030,11 @@ const LiveRoom: React.FC<LiveRoomProps> = ({ streamer, onClose, language, wallet
                   </div>
               </div>
            </div>
->>>>>>> 752a1b3a25bf1dbec06b56f9ec2b0d8b9a81ad85
         )}
 
         {/* --- Host View: Gift Sender Log --- */}
         {isHost && (
           <div className="absolute top-28 left-4 w-60 z-30 flex flex-col gap-2 pointer-events-none">
-<<<<<<< HEAD
             {giftLogs.length > 0 && (
               <div className="flex items-center gap-1.5 text-yellow-500 bg-black/60 backdrop-blur-md px-3 py-1 rounded-full w-fit mb-1 border border-yellow-500/20 animate-fade-in">
                 <Gift size={12} />
@@ -1144,7 +1068,6 @@ const LiveRoom: React.FC<LiveRoomProps> = ({ streamer, onClose, language, wallet
                 </div>
               ))}
             </div>
-=======
              {giftLogs.length > 0 && (
                <div className="flex items-center gap-1.5 text-yellow-500 bg-black/60 backdrop-blur-md px-3 py-1 rounded-full w-fit mb-1 border border-yellow-500/20 animate-fade-in">
                  <Gift size={12} />
@@ -1178,13 +1101,11 @@ const LiveRoom: React.FC<LiveRoomProps> = ({ streamer, onClose, language, wallet
                    </div>
                 ))}
              </div>
->>>>>>> 752a1b3a25bf1dbec06b56f9ec2b0d8b9a81ad85
           </div>
         )}
 
         {/* --- Full Screen Gift Animation Overlay --- */}
         {giftAnimation && (
-<<<<<<< HEAD
           <div className="absolute inset-0 z-[100] flex flex-col items-center justify-center pointer-events-none overflow-hidden">
             <div className={`absolute w-[200%] h-[200%] bg-gradient-to-r ${giftAnimation.color} opacity-20 animate-spin-slow`}
               style={{ maskImage: 'radial-gradient(circle, black 30%, transparent 70%)', WebkitMaskImage: 'radial-gradient(circle, black 30%, transparent 70%)' }}>
@@ -1212,7 +1133,6 @@ const LiveRoom: React.FC<LiveRoomProps> = ({ streamer, onClose, language, wallet
               ))}
             </div>
           </div>
-=======
            <div className="absolute inset-0 z-[100] flex flex-col items-center justify-center pointer-events-none overflow-hidden">
               <div className={`absolute w-[200%] h-[200%] bg-gradient-to-r ${giftAnimation.color} opacity-20 animate-spin-slow`} 
                    style={{ maskImage: 'radial-gradient(circle, black 30%, transparent 70%)', WebkitMaskImage: 'radial-gradient(circle, black 30%, transparent 70%)' }}>
@@ -1240,17 +1160,13 @@ const LiveRoom: React.FC<LiveRoomProps> = ({ streamer, onClose, language, wallet
                  ))}
               </div>
            </div>
->>>>>>> 752a1b3a25bf1dbec06b56f9ec2b0d8b9a81ad85
         )}
 
         {/* --- Floating Hearts --- */}
         <div className="absolute inset-0 pointer-events-none z-10 overflow-hidden">
           {floatingHearts.map(h => (
-<<<<<<< HEAD
             <div
-=======
             <div 
->>>>>>> 752a1b3a25bf1dbec06b56f9ec2b0d8b9a81ad85
               key={h.id}
               className="absolute bottom-24 text-red-500 animate-float"
               style={{ left: `${h.left}%` }}
@@ -1262,16 +1178,12 @@ const LiveRoom: React.FC<LiveRoomProps> = ({ streamer, onClose, language, wallet
 
         {/* --- Bottom Interactive Layer --- */}
         <div className="absolute bottom-0 left-0 right-0 z-20 flex flex-col justify-end pb-4 px-4 pt-20">
-<<<<<<< HEAD
 
-=======
           
->>>>>>> 752a1b3a25bf1dbec06b56f9ec2b0d8b9a81ad85
           {/* Comments - Height adjusted */}
           <div className="h-72 overflow-y-auto no-scrollbar flex flex-col justify-end space-y-2 mb-4" style={{ maskImage: 'linear-gradient(to bottom, transparent 0%, black 15%)', WebkitMaskImage: 'linear-gradient(to bottom, transparent 0%, black 15%)' }}>
             {comments.slice(-5).map((c) => (
               <div key={c.id} className={`flex items-start gap-2 max-w-[85%] ${c.isSystem ? 'w-full max-w-none justify-center' : ''}`}>
-<<<<<<< HEAD
 
                 {!c.isSystem && (
                   <div className="w-8 h-8 rounded-full overflow-hidden border border-white/20 flex-shrink-0 mt-1 shadow-sm">
@@ -1295,7 +1207,6 @@ const LiveRoom: React.FC<LiveRoomProps> = ({ streamer, onClose, language, wallet
                     {c.message}
                   </span>
                 </div>
-=======
                  
                  {!c.isSystem && (
                     <div className="w-8 h-8 rounded-full overflow-hidden border border-white/20 flex-shrink-0 mt-1 shadow-sm">
@@ -1319,7 +1230,6 @@ const LiveRoom: React.FC<LiveRoomProps> = ({ streamer, onClose, language, wallet
                        {c.message}
                     </span>
                  </div>
->>>>>>> 752a1b3a25bf1dbec06b56f9ec2b0d8b9a81ad85
               </div>
             ))}
             <div ref={commentsEndRef} />
@@ -1327,7 +1237,6 @@ const LiveRoom: React.FC<LiveRoomProps> = ({ streamer, onClose, language, wallet
 
           {/* --- Auction Control Panel (Visible if Auction & NOT Host) --- */}
           {streamer.isAuction && !isHost && (
-<<<<<<< HEAD
             <div className="mb-4 bg-gradient-to-br from-yellow-900/40 to-black/40 backdrop-blur-md rounded-2xl border border-yellow-500/30 p-3 shadow-xl">
 
               <div className="flex justify-between items-center mb-3">
@@ -1408,7 +1317,6 @@ const LiveRoom: React.FC<LiveRoomProps> = ({ streamer, onClose, language, wallet
                 </button>
               </div>
             </div>
-=======
              <div className="mb-4 bg-gradient-to-br from-yellow-900/40 to-black/40 backdrop-blur-md rounded-2xl border border-yellow-500/30 p-3 shadow-xl">
                 
                 <div className="flex justify-between items-center mb-3">
@@ -1490,20 +1398,16 @@ const LiveRoom: React.FC<LiveRoomProps> = ({ streamer, onClose, language, wallet
                    </button>
                 </div>
              </div>
->>>>>>> 752a1b3a25bf1dbec06b56f9ec2b0d8b9a81ad85
           )}
 
           {/* Controls */}
           <div className="flex items-center gap-3">
-<<<<<<< HEAD
 
             {!streamer.isAuction && (
               <button
-=======
             
             {!streamer.isAuction && (
               <button 
->>>>>>> 752a1b3a25bf1dbec06b56f9ec2b0d8b9a81ad85
                 onClick={() => setShowProducts(true)}
                 className="relative flex-shrink-0 w-10 h-10 bg-yellow-400 rounded-full flex items-center justify-center text-black shadow-lg shadow-yellow-400/20 active:scale-95"
               >
@@ -1515,7 +1419,6 @@ const LiveRoom: React.FC<LiveRoomProps> = ({ streamer, onClose, language, wallet
             )}
 
             <form onSubmit={handleSendComment} className="flex-1 relative">
-<<<<<<< HEAD
               <input
                 type="text"
                 value={inputMessage}
@@ -1524,7 +1427,6 @@ const LiveRoom: React.FC<LiveRoomProps> = ({ streamer, onClose, language, wallet
                 className="w-full bg-white/10 backdrop-blur border border-white/20 rounded-full py-2.5 pl-4 pr-10 text-white placeholder-gray-400 text-sm focus:outline-none focus:border-yellow-400 focus:ring-1 focus:ring-yellow-400"
               />
               <button
-=======
               <input 
                 type="text" 
                 value={inputMessage}
@@ -1533,7 +1435,6 @@ const LiveRoom: React.FC<LiveRoomProps> = ({ streamer, onClose, language, wallet
                 className="w-full bg-white/10 backdrop-blur border border-white/20 rounded-full py-2.5 pl-4 pr-10 text-white placeholder-gray-400 text-sm focus:outline-none focus:border-yellow-400 focus:ring-1 focus:ring-yellow-400"
               />
               <button 
->>>>>>> 752a1b3a25bf1dbec06b56f9ec2b0d8b9a81ad85
                 type="submit"
                 className="absolute right-1 top-1 w-8 h-8 flex items-center justify-center text-white/80 hover:text-white"
               >
@@ -1543,11 +1444,8 @@ const LiveRoom: React.FC<LiveRoomProps> = ({ streamer, onClose, language, wallet
 
             {/* Gift Button - New Position */}
             {!isHost && (
-<<<<<<< HEAD
               <button
-=======
               <button 
->>>>>>> 752a1b3a25bf1dbec06b56f9ec2b0d8b9a81ad85
                 onClick={() => setShowGifts(true)}
                 className="flex-shrink-0 w-10 h-10 bg-gradient-to-tr from-yellow-600 to-yellow-400 rounded-full flex items-center justify-center text-black shadow-lg shadow-yellow-500/30 active:scale-95 border-2 border-yellow-200/50"
               >
@@ -1555,11 +1453,8 @@ const LiveRoom: React.FC<LiveRoomProps> = ({ streamer, onClose, language, wallet
               </button>
             )}
 
-<<<<<<< HEAD
             <button
-=======
             <button 
->>>>>>> 752a1b3a25bf1dbec06b56f9ec2b0d8b9a81ad85
               onClick={handleSendHeart}
               disabled={isHost}
               className={`flex-shrink-0 w-10 h-10 bg-white/10 backdrop-blur border border-white/20 rounded-full flex items-center justify-center transition-transform ${isHost ? 'text-gray-500 opacity-50 cursor-not-allowed' : 'text-red-500 active:scale-90'}`}
@@ -1571,7 +1466,6 @@ const LiveRoom: React.FC<LiveRoomProps> = ({ streamer, onClose, language, wallet
 
         {/* --- Gift Sheet --- */}
         {showGifts && (
-<<<<<<< HEAD
           <div className="absolute inset-0 z-40 flex flex-col justify-end bg-black/60 backdrop-blur-sm animate-fade-in">
             <div
               className="bg-gray-900/95 backdrop-blur-xl rounded-t-3xl border-t border-gray-700 flex flex-col shadow-2xl pb-4"
@@ -1628,7 +1522,6 @@ const LiveRoom: React.FC<LiveRoomProps> = ({ streamer, onClose, language, wallet
               )}
             </div>
           </div>
-=======
            <div className="absolute inset-0 z-40 flex flex-col justify-end bg-black/60 backdrop-blur-sm animate-fade-in">
               <div 
                 className="bg-gray-900/95 backdrop-blur-xl rounded-t-3xl border-t border-gray-700 flex flex-col shadow-2xl pb-4"
@@ -1686,7 +1579,6 @@ const LiveRoom: React.FC<LiveRoomProps> = ({ streamer, onClose, language, wallet
                  )}
               </div>
            </div>
->>>>>>> 752a1b3a25bf1dbec06b56f9ec2b0d8b9a81ad85
         )}
 
         {/* ... Rest of components ... */}
@@ -1694,7 +1586,6 @@ const LiveRoom: React.FC<LiveRoomProps> = ({ streamer, onClose, language, wallet
         {/* --- Product Sheet --- */}
         {showProducts && !streamer.isAuction && (
           <div className="absolute inset-0 z-30 flex flex-col justify-end bg-black/60 backdrop-blur-sm animate-fade-in">
-<<<<<<< HEAD
             <div
               className="bg-gray-900 rounded-t-3xl border-t border-gray-700 h-[70%] flex flex-col shadow-2xl"
               onClick={(e) => e.stopPropagation()}
@@ -1746,7 +1637,6 @@ const LiveRoom: React.FC<LiveRoomProps> = ({ streamer, onClose, language, wallet
                 ))}
               </div>
             </div>
-=======
              <div 
                className="bg-gray-900 rounded-t-3xl border-t border-gray-700 h-[70%] flex flex-col shadow-2xl"
                onClick={(e) => e.stopPropagation()}
@@ -1798,14 +1688,12 @@ const LiveRoom: React.FC<LiveRoomProps> = ({ streamer, onClose, language, wallet
                   ))}
                 </div>
              </div>
->>>>>>> 752a1b3a25bf1dbec06b56f9ec2b0d8b9a81ad85
           </div>
         )}
 
         {/* --- Product Variant Selection Sheet --- */}
         {selectedProductForPurchase && (
           <div className="absolute inset-0 z-40 flex flex-col justify-end bg-black/60 backdrop-blur-sm animate-fade-in">
-<<<<<<< HEAD
             <div className="bg-gray-900 rounded-t-3xl border-t border-gray-700 flex flex-col shadow-2xl animate-slide-up max-h-[85%]">
 
               {/* Header */}
@@ -1843,7 +1731,6 @@ const LiveRoom: React.FC<LiveRoomProps> = ({ streamer, onClose, language, wallet
                 </button>
               </div>
             </div>
-=======
              <div className="bg-gray-900 rounded-t-3xl border-t border-gray-700 flex flex-col shadow-2xl animate-slide-up max-h-[85%]">
                  
                  {/* Header */}
@@ -1881,13 +1768,11 @@ const LiveRoom: React.FC<LiveRoomProps> = ({ streamer, onClose, language, wallet
                      </button>
                  </div>
              </div>
->>>>>>> 752a1b3a25bf1dbec06b56f9ec2b0d8b9a81ad85
           </div>
         )}
 
         {/* --- End Confirmation Modal --- */}
         {showConfirmEnd && (
-<<<<<<< HEAD
           <div className="absolute inset-0 z-[60] flex items-center justify-center bg-black/80 backdrop-blur-sm animate-fade-in px-6">
             <div className="bg-gray-900 p-6 rounded-2xl border border-gray-700 w-full max-w-sm text-center shadow-2xl">
               <h3 className="text-xl font-bold text-white mb-2">{t.endLiveTitle}</h3>
@@ -1908,7 +1793,6 @@ const LiveRoom: React.FC<LiveRoomProps> = ({ streamer, onClose, language, wallet
               </div>
             </div>
           </div>
-=======
             <div className="absolute inset-0 z-[60] flex items-center justify-center bg-black/80 backdrop-blur-sm animate-fade-in px-6">
                 <div className="bg-gray-900 p-6 rounded-2xl border border-gray-700 w-full max-w-sm text-center shadow-2xl">
                     <h3 className="text-xl font-bold text-white mb-2">{t.endLiveTitle}</h3>
@@ -1929,7 +1813,6 @@ const LiveRoom: React.FC<LiveRoomProps> = ({ streamer, onClose, language, wallet
                     </div>
                 </div>
             </div>
->>>>>>> 752a1b3a25bf1dbec06b56f9ec2b0d8b9a81ad85
         )}
 
       </div>
