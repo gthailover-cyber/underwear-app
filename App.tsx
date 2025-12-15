@@ -395,22 +395,37 @@ const App: React.FC = () => {
 
         // SAVE TO SUPABASE DB (So others can see it)
         if (session?.user) {
+          console.log("Attempting to insert room into DB...", {
+            id: roomId,
+            host_id: session.user.id,
+            title: streamConfig.title
+          });
+
           try {
-            const { error } = await supabase.from('rooms').insert({
+            const { data, error } = await supabase.from('rooms').insert({
               id: roomId,
               host_id: session.user.id,
               title: streamConfig.title || 'Untitled Live',
               cover_image: userProfile.coverImage,
-              video_url: null, // Using LiveKit
-              youtube_id: null,
+              video_url: '', // Empty string instead of null if column is non-nullable text
+              youtube_id: '',
               viewer_count: 0,
               is_auction: false, // Default for now
               created_at: new Date().toISOString()
-            });
-            if (error) console.error("Error creating room in DB:", error);
+            }).select(); // Select to confirm return
+
+            if (error) {
+              console.error("❌ Error creating room in DB:", error.message, error.details, error.hint);
+              alert(`Error starting live in DB: ${error.message}`);
+            } else {
+              console.log("✅ Room successfully inserted:", data);
+            }
           } catch (err) {
-            console.error("Failed to create room:", err);
+            console.error("❌ Failed to create room (Exception):", err);
           }
+        } else {
+          console.error("❌ Cannot insert room: User not authenticated session=", session);
+          alert("You must be logged in to start a live stream.");
         }
       }
     }, 1000);
