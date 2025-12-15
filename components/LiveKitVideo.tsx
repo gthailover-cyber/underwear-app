@@ -58,23 +58,39 @@ const LiveKitVideo: React.FC<LiveKitVideoProps> = ({
                 setRoom(connectedRoom);
 
                 // If host, enable camera and microphone
+                // If host, enable camera and microphone
                 if (isHost) {
+                    console.log("Creating Local Tracks...");
                     await liveKitService.enableCamera(true);
                     await liveKitService.enableMicrophone(true);
 
-                    // Attach local video track to video element
-                    const localVideoTrack = connectedRoom.localParticipant.videoTrackPublications.values().next().value?.track;
-                    if (localVideoTrack && videoRef.current) {
-                        localVideoTrack.attach(videoRef.current);
+                    // Wait for track to be published or find it if already exists
+                    const pubs = Array.from(connectedRoom.localParticipant.videoTrackPublications.values());
+                    const videoPub = pubs.find(p => p.kind === 'video' && p.source === 'camera');
+
+                    if (videoPub && videoPub.track && videoRef.current) {
+                        console.log("Attaching existing local video track");
+                        videoPub.track.attach(videoRef.current);
                     }
+
+                    // Also Listen for future publish events (Just in case it wasn't ready above)
+                    liveKitService.on('local_track_published', ({ publication }: any) => {
+                        if (publication.kind === 'video' && videoRef.current) {
+                            console.log("Attaching new local video track");
+                            publication.track?.attach(videoRef.current);
+                        }
+                    });
+
                 } else {
                     // Viewer: Listen for remote tracks
-                    connectedRoom.remoteParticipants.forEach((participant) => {
+                    const participants = Array.from(connectedRoom.remoteParticipants.values());
+                    participants.forEach((participant) => {
                         attachParticipantTracks(participant);
                     });
 
-                    // Listen for new participants
+                    // Listen for new tracks
                     liveKitService.on('track_subscribed', ({ track, participant }: any) => {
+                        console.log("Remote track subscribed:", track.kind);
                         if (track.kind === Track.Kind.Video && videoRef.current) {
                             track.attach(videoRef.current);
                         }
