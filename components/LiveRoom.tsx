@@ -412,21 +412,8 @@ const LiveRoom: React.FC<LiveRoomProps> = ({ streamer, onClose, language, wallet
     } else {
       alert(t.bidTooLow);
     }
-    if (myBidAmount - 1 > currentHighestBid) {
-      setMyBidAmount(prev => prev - 1);
-    }
   };
-  const placeBid = () => {
-    if (walletBalance < myBidAmount) {
-      onOpenWallet();
-      return;
-    }
-    if (myBidAmount > currentHighestBid) {
-      socketService.emit('place_bid', { amount: myBidAmount });
-    } else {
-      alert(t.bidTooLow);
-    }
-  };
+
 
   // Gift Handler
   const handleSendGift = (gift: typeof GIFTS[0]) => {
