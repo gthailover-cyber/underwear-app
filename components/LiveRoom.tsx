@@ -349,12 +349,12 @@ const LiveRoom: React.FC<LiveRoomProps> = ({ streamer, onClose, language, wallet
     setHeartCount(prev => prev + 1);
     const id = heartIdCounter.current++;
     const left = Math.floor(Math.random() * 40) + 50;
-    const left = Math.floor(Math.random() * 40) + 50;
     setFloatingHearts(prev => [...prev, { id, left }]);
     setTimeout(() => {
       setFloatingHearts(prev => prev.filter(h => h.id !== id));
     }, 1500);
   };
+
 
   const triggerGiftAnimation = (gift: typeof GIFTS[0], sender: string) => {
     const id = Date.now();
