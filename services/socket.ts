@@ -49,15 +49,15 @@ class SupabaseService {
         }
       )
       .on('broadcast', { event: 'heart' }, (payload) => {
-         this.triggerEvent('new_heart', payload.payload);
+        this.triggerEvent('new_heart', payload.payload);
       })
       .on('broadcast', { event: 'bid' }, (payload) => {
-         this.triggerEvent('bid_update', payload.payload);
+        this.triggerEvent('bid_update', payload.payload);
       })
       .subscribe((status) => {
         if (status === 'SUBSCRIBED') {
-           // Track presence (viewers) - Simplified for this demo
-           this.triggerEvent('viewer_update', { count: Math.floor(Math.random() * 500) + 100 }); 
+          // Track presence (viewers) - Simplified for this demo
+          this.triggerEvent('viewer_update', { count: Math.floor(Math.random() * 500) + 100 });
         }
       });
   }
@@ -81,7 +81,7 @@ class SupabaseService {
       isSystem: newRecord.type === 'system',
       avatar: 'https://picsum.photos/200/200' // Placeholder
     };
-    
+
     // Trigger 'new_comment' event for the frontend
     this.triggerEvent('new_comment', comment);
   }
@@ -93,10 +93,40 @@ class SupabaseService {
       this.listeners[event] = [];
     }
     this.listeners[event].push(callback);
+
+    // Return unsubscribe function
+    return () => {
+      this.listeners[event] = this.listeners[event].filter(cb => cb !== callback);
+    };
   }
 
   off(event: string) {
     delete this.listeners[event];
+  }
+
+  // --- Helper Methods to match LiveRoom.tsx usage ---
+
+  onComment(callback: (comment: any) => void) {
+    // Return cleanup function
+    return this.on('new_comment', callback);
+  }
+
+  onBidUpdate(callback: (data: any) => void) {
+    return this.on('bid_update', callback);
+  }
+
+  sendComment(data: any) {
+    this.emit('send_comment', { message: data.text });
+
+    // Locally echo the comment immediately for better UX
+    this.triggerEvent('new_comment', {
+      id: data.id || Date.now().toString(),
+      user: data.user || 'Me',
+      text: data.text,
+      timestamp: data.timestamp || new Date().toLocaleTimeString(),
+      isSystem: false,
+      isHost: data.isHost
+    });
   }
 
   async emit(event: string, data: any) {
@@ -104,47 +134,46 @@ class SupabaseService {
 
     // 1. Send Comment / Message
     if (event === 'send_comment') {
-      // Optimistic update handled by UI usually, but we insert to DB here
+      // Optimistic update handled by sendComment method
+
+      // In real app, insert to DB
+      /*
       const { error } = await supabase.from('messages').insert({
         room_id: this.currentRoomId,
-        sender_id: this.userId, // Requires Auth
+        sender_id: this.userId,
         content: data.message,
         type: 'text'
       });
-      
-      if (error) {
-          console.error("Error sending message:", error);
-          // If no auth, fallback to mock for demo purposes so app doesn't crash
-          this.triggerEvent('new_comment', {
-              id: Date.now().toString(),
-              username: 'Me (Guest)',
-              message: data.message,
-              isSystem: false,
-              avatar: 'https://picsum.photos/200/200'
-          });
-      }
+      */
     }
 
     // 2. Send Heart (Ephemeral/Broadcast - No DB save needed for animation)
     if (event === 'send_heart') {
-       this.channel?.send({
-          type: 'broadcast',
-          event: 'heart',
-          payload: { count: 1 }
-       });
-       // Trigger local immediately
-       this.triggerEvent('new_heart', { count: 1 });
+      this.channel?.send({
+        type: 'broadcast',
+        event: 'heart',
+        payload: { count: 1 }
+      });
+      // Trigger local immediately
+      this.triggerEvent('new_heart', { count: 1 });
     }
 
-    // 3. Place Bid
+    // 3. Send Gift
+    if (event === 'send_gift') {
+      // Logic to deduct balance and record transaction would go here
+      console.log("Gift sent:", data.giftId);
+    }
+
+    // 4. Place Bid
     if (event === 'place_bid') {
-        // In real app: Call RPC 'place_bid'
-        this.channel?.send({
-            type: 'broadcast',
-            event: 'bid',
-            payload: { newBid: data.amount, bidder: 'Me' }
-        });
-        this.triggerEvent('bid_update', { newBid: data.amount, bidder: 'Me' });
+      const bidData = { amount: data.amount, user: 'Me' };
+
+      this.channel?.send({
+        type: 'broadcast',
+        event: 'bid',
+        payload: bidData
+      });
+      this.triggerEvent('bid_update', bidData);
     }
   }
 

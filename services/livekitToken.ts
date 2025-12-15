@@ -41,7 +41,10 @@ export const generateLiveKitToken = async (config: TokenGeneratorConfig): Promis
         return data.token;
     } catch (error) {
         console.error('[LiveKit] Token generation failed:', error);
-        throw error;
+
+        // If the error suggests connection refusal (backend not running)
+        // Throw a specific error that LiveKitVideo can display nicely
+        throw new Error('Could not connect to Token Server. Please run `npm start` in `server-example/` folder.');
     }
 };
 

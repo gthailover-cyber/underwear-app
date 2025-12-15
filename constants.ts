@@ -1,5 +1,7 @@
 
+import React from 'react'; // Ensure React is imported for ReactNode types if needed by GIFTS
 import { Streamer, Product, Language, UserProfile, MessagePreview, ChatMessage, Person, Order, ChatRoom, UserRole } from './types';
+import { Gift, Heart, Star, Sparkles, Zap, Crown, Diamond } from 'lucide-react';
 
 // Theme-matched default images
 export const DEFAULT_IMAGES = {
@@ -8,6 +10,16 @@ export const DEFAULT_IMAGES = {
   // Abstract dark geometric/sporty background
   COVER: 'https://images.unsplash.com/photo-1614850523060-8da1d56ae167?w=1200&q=80'
 };
+
+export const GIFTS = [
+  { id: '1', name: 'Heart', icon: '❤️', price: 10, color: 'red' },
+  { id: '2', name: 'Rose', icon: '🌹', price: 50, color: 'pink' },
+  { id: '3', name: 'Fire', icon: '🔥', price: 100, color: 'orange' },
+  { id: '4', name: 'Party', icon: '🎉', price: 200, color: 'yellow' },
+  { id: '5', name: 'Diamond', icon: '💎', price: 500, color: 'blue' },
+  { id: '6', name: 'Rocket', icon: '🚀', price: 1000, color: 'purple' },
+  { id: '7', name: 'Crown', icon: '👑', price: 5000, color: 'yellow' },
+];
 
 export const TRANSLATIONS = {
   en: {
@@ -542,8 +554,8 @@ export const MOCK_USER_PROFILE: UserProfile = {
   username: 'New User',
   avatar: DEFAULT_IMAGES.AVATAR,
   coverImage: DEFAULT_IMAGES.COVER,
-  role: 'supporter', 
-  modelApplicationStatus: 'none', 
+  role: 'supporter',
+  modelApplicationStatus: 'none',
   age: 0,
   height: 0,
   weight: 0,
@@ -553,6 +565,11 @@ export const MOCK_USER_PROFILE: UserProfile = {
   gallery: [],
   followers: 0,
   following: 0,
+  youtubeStats: {
+    views: 0,
+    subscribers: 0,
+    videos: 0
+  }
 };
 
 export const DISCOVER_TAGS = [
