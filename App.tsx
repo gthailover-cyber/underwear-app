@@ -378,7 +378,8 @@ const App: React.FC = () => {
         clearInterval(timer);
         setIsCountdownActive(false);
 
-        const roomId = `live-${session?.user?.id || Date.now()}`;
+        // Generate a valid UUID for the room ID (Required by Supabase 'uuid' column type)
+        const roomId = crypto.randomUUID();
 
         // Construct Final Stream Object
         const myStream: Streamer = {
