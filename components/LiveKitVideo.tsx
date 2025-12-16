@@ -66,11 +66,7 @@ const LiveKitVideo: React.FC<LiveKitVideoProps> = ({
 
                 // --- HOST LOGIC ---
                 if (isHost) {
-                    await liveKitService.enableCamera(true, {
-                        resolution: { width: 960, height: 540 },
-                        frameRate: 24,
-                        // facingMode: 'user' // or 'environment' for back camera
-                    });
+                    await liveKitService.enableCamera(true);
                     await liveKitService.enableMicrophone(true);
 
                     setTimeout(() => {
