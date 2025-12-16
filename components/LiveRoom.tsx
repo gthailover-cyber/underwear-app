@@ -97,7 +97,7 @@ const LiveRoom: React.FC<LiveRoomProps> = ({ streamer, isHost = false, onClose, 
       const newComment: Comment = {
         id: Date.now().toString(),
         username: data.user,
-        message: `placed a bid of ฿${data.amount.toLocaleString()}`,
+        message: `placed a bid of ฿${(data.amount || 0).toLocaleString()}`,
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
         isSystem: true // Add styling for system messages
       };
