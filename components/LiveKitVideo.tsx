@@ -191,10 +191,22 @@ const LiveKitVideo: React.FC<LiveKitVideoProps> = ({
                 <p>Status: {isConnecting ? 'Connecting...' : 'Connected'}</p>
                 <p>Role: {isHost ? 'Host' : 'Viewer'}</p>
                 <p>Room: {room?.name || roomName}</p>
-                <p>Participant: {room?.localParticipant?.identity}</p>
-                <p>Remote Participants: {room?.remoteParticipants.size}</p>
-                <p>Local Video Tracks: {room?.localParticipant?.videoTrackPublications.size}</p>
+                <p>Part: {room?.localParticipant?.identity}</p>
+                <p>LocalTracks: {room?.localParticipant?.videoTrackPublications.size}</p>
+                <p>Ref: {videoRef.current ? 'OK' : 'NULL'}</p>
             </div>
+            {/* Force user interaction button if autoplay blocked */}
+            <button
+                className="absolute bottom-20 left-4 z-50 bg-blue-500 text-white px-2 py-1 text-xs rounded"
+                onClick={() => {
+                    if (videoRef.current) {
+                        videoRef.current.play().catch(e => alert("Play error: " + e));
+                        videoRef.current.muted = true;
+                    }
+                }}
+            >
+                Force Play
+            </button>
         </div>
     );
 };
