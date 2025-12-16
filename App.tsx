@@ -1303,6 +1303,7 @@ const App: React.FC = () => {
       {currentStreamer && (
         <LiveRoom
           streamer={currentStreamer}
+          isHost={currentStreamer.hostId === session?.user?.id}
           onClose={handleCloseStream}
           language={language}
           walletBalance={walletBalance}
