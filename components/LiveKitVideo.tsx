@@ -140,28 +140,23 @@ const LiveKitVideo: React.FC<LiveKitVideoProps> = ({
     // 1. Error / Fallback State (Mock Mode)
     if (error) {
         return (
-            <div className={`relative flex items-center justify-center bg-gray-900 ${className} overflow-hidden group`}>
-                {/* Mock Video Background */}
-                <video
-                    src="https://assets.mixkit.co/videos/preview/mixkit-man-working-out-in-a-gym-22606-large.mp4"
-                    autoPlay
-                    muted
-                    loop
-                    playsInline
-                    className="absolute inset-0 w-full h-full object-cover opacity-50"
-                />
-
-                <div className="absolute inset-0 flex flex-col items-center justify-center z-10">
-                    <div className="bg-black/60 backdrop-blur-md p-4 rounded-xl border border-red-500/30 text-center max-w-[80%]">
-                        <div className="text-red-400 font-bold mb-1">Demo Mode (Offline)</div>
-                        <p className="text-gray-300 text-xs mb-2">
-                            LiveKit credentials missing or invalid.
-                            <br />Showing demo video instead.
-                        </p>
-                        <div className="bg-black/40 p-2 rounded text-[10px] text-gray-500 font-mono text-left">
+            <div className={`relative flex items-center justify-center bg-black ${className} overflow-hidden`}>
+                <div className="flex flex-col items-center justify-center z-10 p-6 bg-red-900/40 backdrop-blur-md rounded-2xl border border-red-500 m-4">
+                    <div className="text-red-400 font-bold text-xl mb-2">Connection Failed</div>
+                    <p className="text-white text-sm mb-4 text-center">
+                        Unable to connect to the live server.
+                    </p>
+                    <div className="bg-black/60 p-3 rounded-lg w-full">
+                        <code className="text-[10px] text-red-300 font-mono break-all block">
                             {error}
-                        </div>
+                        </code>
                     </div>
+                    <button
+                        onClick={() => window.location.reload()}
+                        className="mt-4 px-4 py-2 bg-red-600 rounded-lg text-white text-sm font-bold hover:bg-red-700 transition"
+                    >
+                        Retry Connection
+                    </button>
                 </div>
             </div>
         );
