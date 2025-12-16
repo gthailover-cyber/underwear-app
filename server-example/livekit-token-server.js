@@ -60,8 +60,11 @@ app.post('/api/livekit/token', async (req, res) => {
         }
 
         // Create access token
+        // IMPORTANT: If Viewer, append random suffix to identity to prevent kicking out other sessions of same user
+        const identity = isHost ? participantName : `${participantName}_${Math.random().toString(36).substr(2, 6)}`;
+
         const at = new AccessToken(apiKey, apiSecret, {
-            identity: participantName,
+            identity: identity,
             // Token expires in 6 hours
             ttl: '6h',
         });

@@ -1,4 +1,4 @@
-import { Room, RoomEvent, RemoteParticipant, LocalParticipant, Track } from 'livekit-client';
+import { Room, RoomEvent, RemoteParticipant, LocalParticipant, Track, VideoCaptureOptions } from 'livekit-client';
 
 export interface LiveKitConfig {
   serverUrl: string;
@@ -28,7 +28,7 @@ class LiveKitService {
 
       // Connect to the room
       await this.room.connect(config.serverUrl, config.token);
-      
+
       console.log('[LiveKit] Connected to room:', this.room.name);
       return this.room;
     } catch (error) {
@@ -69,11 +69,11 @@ class LiveKitService {
       });
   }
 
-  async enableCamera(enable: boolean = true) {
+  async enableCamera(enable: boolean = true, options?: VideoCaptureOptions) {
     if (!this.room) return;
-    
+
     try {
-      await this.room.localParticipant.setCameraEnabled(enable);
+      await this.room.localParticipant.setCameraEnabled(enable, options);
       console.log('[LiveKit] Camera enabled:', enable);
     } catch (error) {
       console.error('[LiveKit] Failed to enable camera:', error);
@@ -83,7 +83,7 @@ class LiveKitService {
 
   async enableMicrophone(enable: boolean = true) {
     if (!this.room) return;
-    
+
     try {
       await this.room.localParticipant.setMicrophoneEnabled(enable);
       console.log('[LiveKit] Microphone enabled:', enable);
@@ -95,7 +95,7 @@ class LiveKitService {
 
   async sendMessage(message: string) {
     if (!this.room) return;
-    
+
     try {
       const encoder = new TextEncoder();
       const data = encoder.encode(message);
