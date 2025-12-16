@@ -20,7 +20,7 @@ export const generateLiveKitToken = async (config: TokenGeneratorConfig): Promis
 
     // For now, we'll use a placeholder that should be replaced with actual backend call
     // Note: Pointing to port 3000 where backend server runs
-    const backendUrl = import.meta.env.VITE_LIVEKIT_TOKEN_URL || 'http://localhost:3000/api/livekit/token';
+    const backendUrl = import.meta.env.VITE_LIVEKIT_TOKEN_URL || 'https://gunderwear-server.onrender.com/api/livekit/token';
 
     try {
         const response = await fetch(backendUrl, {

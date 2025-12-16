@@ -95,10 +95,14 @@ app.post('/api/livekit/token', async (req, res) => {
 });
 
 // Start server
-app.listen(PORT, () => {
-    console.log(`🚀 LiveKit Token Server running on port ${PORT}`);
-    console.log(`📡 Health check: http://localhost:${PORT}/health`);
-    console.log(`🎫 Token endpoint: http://localhost:${PORT}/api/livekit/token`);
-});
+// Start server if run directly (not imported)
+// In Vercel, this file is imported, so we don't want to listen()
+if (process.env.VITE_VERCEL_ENV !== 'production' && process.env.VERCEL !== '1') {
+    app.listen(PORT, () => {
+        console.log(`🚀 LiveKit Token Server running on port ${PORT}`);
+        console.log(`📡 Health check: http://localhost:${PORT}/health`);
+        console.log(`🎫 Token endpoint: http://localhost:${PORT}/api/livekit/token`);
+    });
+}
 
 export default app;
