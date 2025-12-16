@@ -1326,13 +1326,7 @@ const App: React.FC = () => {
       {/* Overlays / Modals */}
       {currentStreamer && (
         <>
-          <div className="fixed top-24 left-4 z-[9999] bg-black/90 text-white p-3 text-xs font-mono pointer-events-none border border-red-500 rounded-lg shadow-xl leading-relaxed">
-            <strong className="text-red-400">DEBUG MODE</strong><br />
-            ROLE: <span className="font-bold text-yellow-400">{currentStreamer.hostId === session?.user?.id ? 'HOST' : 'VIEWER'}</span><br />
-            H (Stream): {currentStreamer.hostId || 'undefined'}<br />
-            U (You): {session?.user?.id || 'undefined'}<br />
-            Match: {String(currentStreamer.hostId === session?.user?.id)}
-          </div>
+
           <LiveRoom
             streamer={currentStreamer}
             isHost={currentStreamer.hostId === session?.user?.id}
