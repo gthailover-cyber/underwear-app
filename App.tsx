@@ -158,8 +158,10 @@ const App: React.FC = () => {
         .order('created_at', { ascending: false });
 
       if (!error && data) {
+        console.log("DEBUG: Fetched Rooms", data); // Inspect raw Supabase data
         const dbStreamers: Streamer[] = data.map((room: any) => ({
           id: room.id,
+          hostId: room.host_id, // Explicitly map host_id
           name: room.profiles?.username || 'Unknown Host',
           title: room.title,
           viewerCount: room.viewer_count || 0,
