@@ -463,7 +463,7 @@ const LiveRoom: React.FC<LiveRoomProps> = ({ streamer, isHost = false, onClose, 
                   <h3 className="text-xs font-bold text-white truncate">{streamer.products[0]?.name}</h3>
                   <div className="mt-1 flex items-baseline gap-1">
                     <span className="text-[10px] text-gray-400">Current</span>
-                    <span className="text-sm font-bold text-white">฿{currentHighestBid.toLocaleString()}</span>
+                    <span className="text-sm font-bold text-white">฿{(currentHighestBid || 0).toLocaleString()}</span>
                   </div>
                 </div>
               </div>
@@ -492,7 +492,7 @@ const LiveRoom: React.FC<LiveRoomProps> = ({ streamer, isHost = false, onClose, 
               </div>
               <div className="text-center">
                 <p className="text-xs font-bold text-gray-900 truncate">{streamer.products[0].name}</p>
-                <p className="text-xs text-red-600 font-bold">฿{streamer.products[0].price.toLocaleString()}</p>
+                <p className="text-xs text-red-600 font-bold">฿{(streamer.products[0].price || 0).toLocaleString()}</p>
               </div>
             </div>
           </div>
@@ -655,7 +655,7 @@ const LiveRoom: React.FC<LiveRoomProps> = ({ streamer, isHost = false, onClose, 
               <div className="flex items-center gap-3">
                 <div className="bg-gray-800 px-3 py-1 rounded-full flex items-center gap-1 border border-gray-700">
                   <Wallet size={12} className="text-yellow-500" />
-                  <span className="text-xs font-bold text-yellow-500">฿{walletBalance.toLocaleString()}</span>
+                  <span className="text-xs font-bold text-yellow-500">฿{(walletBalance || 0).toLocaleString()}</span>
                 </div>
                 <button onClick={() => setWalletBalance(prev => prev + 1000)} className="bg-yellow-500/20 text-yellow-500 text-xs px-2 py-1 rounded hover:bg-yellow-500/30">
                   + Add
@@ -707,7 +707,7 @@ const LiveRoom: React.FC<LiveRoomProps> = ({ streamer, isHost = false, onClose, 
                     <h4 className="font-bold text-white text-sm line-clamp-1">{product.name}</h4>
                     <p className="text-xs text-gray-400 mt-1 line-clamp-2">{product.description}</p>
                     <div className="mt-3 flex justify-between items-end">
-                      <span className="text-red-500 font-bold">฿{product.price.toLocaleString()}</span>
+                      <span className="text-red-500 font-bold">฿{(product.price || 0).toLocaleString()}</span>
                       <button
                         onClick={() => handleBuyNow(product)}
                         className="bg-white text-black text-xs font-bold px-3 py-1.5 rounded-lg hover:bg-gray-200 transition-colors"
@@ -739,7 +739,7 @@ const LiveRoom: React.FC<LiveRoomProps> = ({ streamer, isHost = false, onClose, 
                   <h3 className="font-bold text-white text-lg line-clamp-2">{selectedProductForPurchase.name}</h3>
                   <button onClick={() => setSelectedProductForPurchase(null)} className="text-gray-400 hover:text-white"><X size={20} /></button>
                 </div>
-                <p className="text-red-500 text-xl font-bold mt-1">฿{selectedProductForPurchase.price.toLocaleString()}</p>
+                <p className="text-red-500 text-xl font-bold mt-1">฿{(selectedProductForPurchase.price || 0).toLocaleString()}</p>
                 <p className="text-xs text-gray-400 mt-1">Stock: {selectedProductForPurchase.stock} available</p>
               </div>
             </div>
