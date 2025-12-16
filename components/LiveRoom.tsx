@@ -405,7 +405,7 @@ const LiveRoom: React.FC<LiveRoomProps> = ({ streamer, isHost = false, onClose, 
               <div>
                 <h3 className="text-xs font-bold text-white max-w-[100px] truncate">{streamer.name}</h3>
                 <p className="text-[10px] text-gray-300 flex items-center gap-1">
-                  <User size={8} /> {viewerCount.toLocaleString()}
+                  <User size={8} /> {(viewerCount || 0).toLocaleString()}
                 </p>
               </div>
               {!isHost && (
@@ -435,7 +435,7 @@ const LiveRoom: React.FC<LiveRoomProps> = ({ streamer, isHost = false, onClose, 
             <div className="mt-4 flex gap-2 overflow-x-auto pb-2 no-scrollbar">
               <div className="bg-black/40 backdrop-blur-md px-3 py-1.5 rounded-lg border border-white/10 flex items-center gap-2 min-w-max">
                 <Heart size={14} className="text-pink-500 fill-pink-500" />
-                <span className="text-xs font-bold">{heartCount.toLocaleString()} Likes</span>
+                <span className="text-xs font-bold">{(heartCount || 0).toLocaleString()} Likes</span>
               </div>
               <div className="bg-black/40 backdrop-blur-md px-3 py-1.5 rounded-lg border border-white/10 flex items-center gap-2 min-w-max">
                 <Gift size={14} className="text-purple-400" />
