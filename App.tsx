@@ -1289,12 +1289,16 @@ const App: React.FC = () => {
           </button>
 
           <div className="flex-1 flex justify-center -mt-6">
-            <button
-              onClick={handlePlusClick}
-              className="w-14 h-14 bg-gradient-to-tr from-red-600 to-red-500 rounded-full flex items-center justify-center text-white shadow-lg shadow-red-900/50 border-4 border-black active:scale-95 transition-transform"
-            >
-              <Plus size={28} strokeWidth={3} />
-            </button>
+            {(userProfile.role === 'model' || userProfile.role === 'organizer') ? (
+              <button
+                onClick={handlePlusClick}
+                className="w-14 h-14 bg-gradient-to-tr from-red-600 to-red-500 rounded-full flex items-center justify-center text-white shadow-lg shadow-red-900/50 border-4 border-black active:scale-95 transition-transform"
+              >
+                <Plus size={28} strokeWidth={3} />
+              </button>
+            ) : (
+              <div className="w-14 h-14" /> // Placeholder to keep spacing
+            )}
           </div>
 
           <button
