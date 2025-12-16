@@ -264,15 +264,32 @@ const App: React.FC = () => {
   };
 
   const handleCloseStream = async () => {
-    // If I am the host (check if room host ID matches my User ID)
-    if (session?.user && currentStreamer?.hostId === session.user.id) {
-      try {
-        await supabase.from('rooms').delete().eq('id', currentStreamer.id);
-        console.log("Room deleted from DB");
-      } catch (err) {
-        console.error("Error deleting room:", err);
+    console.log("handleCloseStream Triggered");
+
+    // Check if I am the host
+    if (session?.user && currentStreamer) {
+      console.log("Closing Stream:", {
+        streamId: currentStreamer.id,
+        hostId: currentStreamer.hostId,
+        myId: session.user.id
+      });
+
+      if (currentStreamer.hostId === session.user.id) {
+        try {
+          const { error } = await supabase.from('rooms').delete().eq('id', currentStreamer.id);
+          if (error) {
+            console.error("❌ Error deleting room from DB:", error.message);
+            alert("Failed to end stream on server: " + error.message);
+          } else {
+            console.log("✅ Room successfully deleted from DB");
+          }
+        } catch (err) {
+          console.error("❌ Error running delete command:", err);
+        }
       }
     }
+
+    // Always clear local state to close the modal
     setCurrentStreamer(null);
   };
 
