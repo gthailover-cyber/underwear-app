@@ -129,6 +129,23 @@ const App: React.FC = () => {
 
   }, []);
 
+  // --- REALTIME LISTENER: Auto-refresh when lives start/end ---
+  useEffect(() => {
+    const channel = supabase
+      .channel('public:rooms')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'rooms' }, (payload) => {
+        console.log('Realtime Room Update:', payload);
+        if (session?.user) {
+          fetchGlobalData(session.user.id);
+        }
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [session]);
+
   const fetchGlobalData = async (userId: string) => {
     // 1. Fetch Rooms (Streamers)
     try {
@@ -158,6 +175,7 @@ const App: React.FC = () => {
           topBidder: room.top_bidder_name,
           // Assuming default to LiveKit if no specific video URL is provided, or forcing it for now
           useLiveKit: !room.video_url && !room.youtube_id,
+          hostId: room.host_id,
         }));
         setStreamers(dbStreamers);
       }
@@ -236,12 +254,16 @@ const App: React.FC = () => {
   };
 
   const handleOpenStream = (streamer: Streamer) => {
+    if (session?.user && streamer.hostId === session.user.id && streamer.id !== currentStreamer?.id) {
+      alert(language === 'th' ? "คุณไม่สามารถดูไลฟ์ของตัวเองได้" : "You cannot watch your own live stream.");
+      return;
+    }
     setCurrentStreamer(streamer);
   };
 
   const handleCloseStream = async () => {
-    // If I am the host (check if room ID contains my User ID, based on creation logic)
-    if (session?.user && currentStreamer?.id?.includes(session.user.id)) {
+    // If I am the host (check if room host ID matches my User ID)
+    if (session?.user && currentStreamer?.hostId === session.user.id) {
       try {
         await supabase.from('rooms').delete().eq('id', currentStreamer.id);
         console.log("Room deleted from DB");
@@ -392,6 +414,7 @@ const App: React.FC = () => {
           products: myProducts,
           // Add auction data if needed
           // Add auction data if needed
+          hostId: session.user.id,
         };
 
         setCurrentStreamer(myStream);

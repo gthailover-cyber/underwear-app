@@ -4,7 +4,7 @@ import {
   Heart, Share2, MessageCircle, Gift, ShoppingBag, X,
   Send, DollarSign, User, ChevronRight, Eye, MoreHorizontal,
   Flame, Sparkles, Trophy, Minus, Plus, CreditCard, ShoppingCart,
-  Wallet, Settings, Mic, MicOff, Video, VideoOff
+  Wallet, Settings, Mic, MicOff, Video, VideoOff, LogOut
 } from 'lucide-react';
 import { Streamer, Comment, Product } from '../types';
 import { TRANSLATIONS } from '../constants';
@@ -96,8 +96,8 @@ const LiveRoom: React.FC<LiveRoomProps> = ({ streamer, isHost = false, onClose, 
       // Also animate or show toast
       const newComment: Comment = {
         id: Date.now().toString(),
-        user: data.user,
-        text: `placed a bid of ฿${data.amount.toLocaleString()}`,
+        username: data.user,
+        message: `placed a bid of ฿${data.amount.toLocaleString()}`,
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
         isSystem: true // Add styling for system messages
       };
@@ -107,7 +107,7 @@ const LiveRoom: React.FC<LiveRoomProps> = ({ streamer, isHost = false, onClose, 
     return () => {
       cleanup();
       cleanupBids();
-      socketService.leaveRoom(streamer.id);
+      socketService.leaveRoom();
     };
   }, [streamer.id]);
 
@@ -200,8 +200,8 @@ const LiveRoom: React.FC<LiveRoomProps> = ({ streamer, isHost = false, onClose, 
 
     socketService.sendComment({
       id: Date.now().toString(),
-      user: isHost ? 'Me (Host)' : 'Me',
-      text: newComment,
+      username: isHost ? 'Me (Host)' : 'Me',
+      message: newComment,
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       isHost: isHost
     });
@@ -543,7 +543,7 @@ const LiveRoom: React.FC<LiveRoomProps> = ({ streamer, isHost = false, onClose, 
               <div key={comment.id} className={`flex flex-col items-start max-w-[85%] animate-slide-up ${comment.isSystem ? 'w-full' : ''}`}>
                 {comment.isSystem ? (
                   <div className="bg-white/20 backdrop-blur-md self-center text-white text-xs px-3 py-1 rounded-full font-medium my-1">
-                    {comment.user} {comment.text}
+                    {comment.username} {comment.message}
                   </div>
                 ) : (
                   <div className={`px-3 py-1.5 rounded-2xl text-sm break-words shadow-sm backdrop-blur-sm border ${comment.isHost
@@ -551,9 +551,9 @@ const LiveRoom: React.FC<LiveRoomProps> = ({ streamer, isHost = false, onClose, 
                     : 'bg-black/40 border-white/10 text-white rounded-bl-none self-start'
                     }`}>
                     <span className={`font-bold mr-2 text-xs opacity-90 ${comment.isHost ? 'text-yellow-300' : 'text-gray-300'}`}>
-                      {comment.user}
+                      {comment.username}
                     </span>
-                    {comment.text}
+                    {comment.message}
                   </div>
                 )}
               </div>
@@ -616,6 +616,16 @@ const LiveRoom: React.FC<LiveRoomProps> = ({ streamer, isHost = false, onClose, 
             <div className="flex items-center gap-3">
               <button className="flex-1 bg-black/60 backdrop-blur-md border border-white/20 rounded-xl h-12 flex items-center justify-center gap-2 font-bold text-sm hover:bg-black/80 transition-colors">
                 <Settings size={18} /> Stream Settings
+              </button>
+              <button
+                onClick={() => {
+                  if (window.confirm(language === 'th' ? "ต้องการจบไลฟ์ใช่หรือไม่?" : "Are you sure you want to end the live stream?")) {
+                    onClose();
+                  }
+                }}
+                className="flex-1 bg-red-600 backdrop-blur-md border border-red-500 rounded-xl h-12 flex items-center justify-center gap-2 font-bold text-sm hover:bg-red-700 transition-colors shadow-lg shadow-red-900/40"
+              >
+                <LogOut size={18} /> {language === 'th' ? "จบไลฟ์" : "End Live"}
               </button>
               <button className="w-12 h-12 flex items-center justify-center bg-black/60 backdrop-blur-md rounded-xl border border-white/20 hover:bg-black/80">
                 <Mic size={20} />

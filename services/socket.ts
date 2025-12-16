@@ -116,13 +116,13 @@ class SupabaseService {
   }
 
   sendComment(data: any) {
-    this.emit('send_comment', { message: data.text });
+    this.emit('send_comment', { message: data.message });
 
     // Locally echo the comment immediately for better UX
     this.triggerEvent('new_comment', {
       id: data.id || Date.now().toString(),
-      user: data.user || 'Me',
-      text: data.text,
+      username: data.username || 'Me',
+      message: data.message,
       timestamp: data.timestamp || new Date().toLocaleTimeString(),
       isSystem: false,
       isHost: data.isHost
