@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Room, Track, RemoteTrackPublication, RemoteParticipant } from 'livekit-client';
+import { Room, Track, RemoteTrackPublication, RemoteParticipant, LocalTrackPublication } from 'livekit-client';
 import { liveKitService } from '../services/livekit';
-import { generateLiveKitToken, getLiveKitServerUrl } from '../services/livekitToken';
+import { generateLiveKitToken } from '../services/livekitToken';
 
 interface LiveKitVideoProps {
     roomName: string;
@@ -35,16 +35,14 @@ const LiveKitVideo: React.FC<LiveKitVideoProps> = ({
                 setIsConnecting(true);
                 setError(null);
 
-                // Generate token AND get serverUrl from backend
                 const { token, serverUrl } = await generateLiveKitToken({
-                    apiKey: '', // Will be handled by backend
-                    apiSecret: '', // Will be handled by backend
+                    apiKey: '',
+                    apiSecret: '',
                     roomName,
                     participantName,
                     isHost,
                 });
 
-                // Connect to LiveKit room using the URL from Backend
                 const connectedRoom = await liveKitService.connect({
                     serverUrl,
                     token,
@@ -57,40 +55,48 @@ const LiveKitVideo: React.FC<LiveKitVideoProps> = ({
 
                 setRoom(connectedRoom);
 
-                // If host, enable camera and microphone
-                // If host, enable camera and microphone
+                // --- HOST LOGIC ---
                 if (isHost) {
-                    console.log("Creating Local Tracks...");
+                    console.log("[LiveKit] Host Mode: Enabling Camera/Mic...");
                     await liveKitService.enableCamera(true);
                     await liveKitService.enableMicrophone(true);
 
-                    // Wait for track to be published or find it if already exists
-                    const pubs = Array.from(connectedRoom.localParticipant.videoTrackPublications.values());
-                    const videoPub = pubs.find(p => p.kind === 'video' && p.source === 'camera');
+                    // Retry attachment after 1s to ensure video element is ready
+                    setTimeout(() => {
+                        if (!connectedRoom.localParticipant) return;
+                        const pubs = Array.from(connectedRoom.localParticipant.videoTrackPublications.values());
+                        const videoPub = pubs.find(p => p.kind === 'video');
+                        if (videoPub && videoPub.track && videoRef.current) {
+                            console.log("[LiveKit] Attaching Local Video (Initial)");
+                            videoPub.track.attach(videoRef.current);
+                        }
+                    }, 1000);
 
-                    if (videoPub && videoPub.track && videoRef.current) {
-                        console.log("Attaching existing local video track");
-                        videoPub.track.attach(videoRef.current);
-                    }
-
-                    // Also Listen for future publish events (Just in case it wasn't ready above)
-                    liveKitService.on('local_track_published', ({ publication }: any) => {
+                    // Listen for future publish events
+                    liveKitService.on('local_track_published', ({ publication }: { publication: LocalTrackPublication }) => {
                         if (publication.kind === 'video' && videoRef.current) {
-                            console.log("Attaching new local video track");
+                            console.log("[LiveKit] Attaching Local Video (Event)");
                             publication.track?.attach(videoRef.current);
                         }
                     });
+                }
+                // --- VIEWER LOGIC ---
+                else {
+                    console.log("[LiveKit] Viewer Mode: Listening for tracks...");
 
-                } else {
-                    // Viewer: Listen for remote tracks
+                    // Attach existing remote tracks
                     const participants = Array.from(connectedRoom.remoteParticipants.values());
                     participants.forEach((participant) => {
-                        attachParticipantTracks(participant);
+                        participant.trackPublications.forEach((publication) => {
+                            if (publication.track && publication.track.kind === Track.Kind.Video && videoRef.current) {
+                                publication.track.attach(videoRef.current);
+                            }
+                        });
                     });
 
-                    // Listen for new tracks
-                    liveKitService.on('track_subscribed', ({ track, participant }: any) => {
-                        console.log("Remote track subscribed:", track.kind);
+                    // Listen for NEW tracks
+                    liveKitService.on('track_subscribed', ({ track }: { track: Track }) => {
+                        console.log("[LiveKit] Remote track subscribed:", track.kind);
                         if (track.kind === Track.Kind.Video && videoRef.current) {
                             track.attach(videoRef.current);
                         }
@@ -102,11 +108,10 @@ const LiveKitVideo: React.FC<LiveKitVideoProps> = ({
 
             } catch (err) {
                 console.error('[LiveKit] Connection error:', err);
-                const errorMessage = err instanceof Error ? err.message : 'Failed to connect to live stream';
+                const errorMessage = err instanceof Error ? err.message : 'Failed to connect';
 
-                // If it's a client disconnect (often React Strict Mode double-invoke), ignore it or retry quietly
+                // Ignore intentional disconnects
                 if (errorMessage.includes('Client initiated disconnect') || errorMessage.includes('cancelled')) {
-                    console.log('[LiveKit] Ignored intentional disconnect during mount/unmount cycle.');
                     return;
                 }
 
@@ -116,17 +121,8 @@ const LiveKitVideo: React.FC<LiveKitVideoProps> = ({
             }
         };
 
-        const attachParticipantTracks = (participant: RemoteParticipant) => {
-            participant.trackPublications.forEach((publication: RemoteTrackPublication) => {
-                if (publication.track && publication.track.kind === Track.Kind.Video && videoRef.current) {
-                    publication.track.attach(videoRef.current);
-                }
-            });
-        };
-
         connectToRoom();
 
-        // Cleanup
         return () => {
             mounted = false;
             liveKitService.disconnect().then(() => {
@@ -135,77 +131,90 @@ const LiveKitVideo: React.FC<LiveKitVideoProps> = ({
         };
     }, [roomName, isHost, participantName]);
 
-    // --- RENDER ---
+    // Force Retry Handler
+    const handleForcePlay = () => {
+        if (!videoRef.current || !room) return;
 
-    // 1. Error / Fallback State (Mock Mode)
+        console.log("[LiveKit] Force Video Attachment Triggered");
+
+        if (isHost) {
+            const pubs = Array.from(room.localParticipant.videoTrackPublications.values());
+            pubs.forEach(p => {
+                if (p.track) {
+                    p.track.attach(videoRef.current!);
+                    console.log("Attached Local Track manually");
+                }
+            });
+        } else {
+            const participants = Array.from(room.remoteParticipants.values());
+            participants.forEach(p => {
+                Array.from(p.videoTrackPublications.values()).forEach(tp => {
+                    if (tp.track) {
+                        tp.track.attach(videoRef.current!);
+                        console.log("Attached Remote Track manually");
+                    }
+                });
+            });
+        }
+
+        videoRef.current.play()
+            .then(() => console.log("Video playing forced success"))
+            .catch(e => alert("Play Error: " + e.message));
+
+        // Unmute for viewer to hear audio
+        if (!isHost) {
+            videoRef.current.muted = false;
+        }
+    };
+
+    // --- RENDER ---
     if (error) {
         return (
-            <div className={`relative flex items-center justify-center bg-black ${className} overflow-hidden`}>
-                <div className="flex flex-col items-center justify-center z-10 p-6 bg-red-900/40 backdrop-blur-md rounded-2xl border border-red-500 m-4">
-                    <div className="text-red-400 font-bold text-xl mb-2">Connection Failed</div>
-                    <p className="text-white text-sm mb-4 text-center">
-                        Unable to connect to the live server.
-                    </p>
-                    <div className="bg-black/60 p-3 rounded-lg w-full">
-                        <code className="text-[10px] text-red-300 font-mono break-all block">
-                            {error}
-                        </code>
-                    </div>
-                    <button
-                        onClick={() => window.location.reload()}
-                        className="mt-4 px-4 py-2 bg-red-600 rounded-lg text-white text-sm font-bold hover:bg-red-700 transition"
-                    >
-                        Retry Connection
-                    </button>
+            <div className={`relative flex items-center justify-center bg-black ${className}`}>
+                <div className="flex flex-col items-center justify-center p-6 bg-red-900/40 backdrop-blur-md rounded-2xl border border-red-500 m-4">
+                    <div className="text-red-400 font-bold mb-2">Connection Failed</div>
+                    <code className="text-[10px] text-red-300 bg-black/60 p-2 rounded block mb-4">{error}</code>
+                    <button onClick={() => window.location.reload()} className="bg-red-600 px-4 py-2 rounded text-white font-bold">Retry</button>
                 </div>
             </div>
         );
     }
 
-    // 2. Connecting State
     if (isConnecting) {
         return (
             <div className={`flex items-center justify-center bg-gray-900 ${className}`}>
                 <div className="text-center">
-                    <div className="w-12 h-12 border-4 border-red-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-                    <div className="text-white font-bold">Connecting to live stream...</div>
-                    <div className="text-gray-400 text-sm mt-2">Please wait</div>
+                    <div className="w-10 h-10 border-4 border-red-600 border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
+                    <div className="text-white text-sm">Connecting...</div>
                 </div>
             </div>
         );
     }
 
-    // 3. Connected State (Real LiveKit Video)
     return (
         <div className={`relative w-full h-full bg-black ${className}`}>
             <video
                 ref={videoRef}
                 autoPlay
                 playsInline
-                muted={isHost} // Mute local video to prevent echo
+                muted={isHost} // Host mutes local video
                 className={`w-full h-full object-cover ${isHost ? 'scale-x-[-1]' : ''}`}
             />
 
-            {/* DEBUG INFO (Temporary) */}
+            {/* DEBUG INFO */}
             <div className="absolute top-2 left-2 bg-black/50 text-white text-[10px] p-2 rounded pointer-events-none font-mono z-50">
-                <p>Status: {isConnecting ? 'Connecting...' : 'Connected'}</p>
+                <p>Status: Connected</p>
                 <p>Role: {isHost ? 'Host' : 'Viewer'}</p>
-                <p>Room: {room?.name || roomName}</p>
                 <p>Part: {room?.localParticipant?.identity}</p>
-                <p>LocalTracks: {room?.localParticipant?.videoTrackPublications.size}</p>
-                <p>Ref: {videoRef.current ? 'OK' : 'NULL'}</p>
+                <p>Tracks: {room?.localParticipant?.videoTrackPublications.size}</p>
             </div>
-            {/* Force user interaction button if autoplay blocked */}
+
+            {/* FORCE PLAY BUTTON */}
             <button
-                className="absolute bottom-20 left-4 z-50 bg-blue-500 text-white px-2 py-1 text-xs rounded"
-                onClick={() => {
-                    if (videoRef.current) {
-                        videoRef.current.play().catch(e => alert("Play error: " + e));
-                        videoRef.current.muted = true;
-                    }
-                }}
+                className="absolute bottom-24 right-4 z-[9999] bg-blue-600 text-white px-4 py-2 text-sm font-bold rounded-full shadow-lg active:scale-95 flex items-center gap-2 hover:bg-blue-500 transition-colors cursor-pointer"
+                onClick={handleForcePlay}
             >
-                Force Play
+                <span>▶ Force Video</span>
             </button>
         </div>
     );
