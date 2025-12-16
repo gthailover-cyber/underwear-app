@@ -54,8 +54,8 @@ const LiveRoom: React.FC<LiveRoomProps> = ({ streamer, isHost = false, onClose, 
   const [giftAnimation, setGiftAnimation] = useState<{ id: number, icon: React.ReactNode, name: string, sender: string, color: string } | null>(null);
 
   // Auction State
-  const [currentHighestBid, setCurrentHighestBid] = useState(streamer.currentBid || streamer.startingBid || 0);
-  const [myBidAmount, setMyBidAmount] = useState((streamer.currentBid || streamer.startingBid || 0) + 50);
+  const [currentHighestBid, setCurrentHighestBid] = useState(streamer.currentBid || streamer.auctionStartingPrice || 0);
+  const [myBidAmount, setMyBidAmount] = useState((streamer.currentBid || streamer.auctionStartingPrice || 0) + 50);
   const [auctionTimeLeft, setAuctionTimeLeft] = useState<string>('');
   const [showBidModal, setShowBidModal] = useState(false);
 
