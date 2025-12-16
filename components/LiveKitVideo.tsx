@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Room, Track, RemoteTrackPublication, RemoteParticipant, LocalTrackPublication } from 'livekit-client';
+import { Room, Track, LocalTrackPublication } from 'livekit-client';
 import { liveKitService } from '../services/livekit';
 import { generateLiveKitToken } from '../services/livekitToken';
 
@@ -28,7 +28,6 @@ const LiveKitVideo: React.FC<LiveKitVideoProps> = ({
 
     useEffect(() => {
         let mounted = true;
-        let room: Room | null = null;
 
         const connectToRoom = async () => {
             try {
@@ -53,19 +52,16 @@ const LiveKitVideo: React.FC<LiveKitVideoProps> = ({
                     return;
                 }
 
-                room = connectedRoom;
-
                 // --- TRACK ATTACH HELPER ---
                 const tryAttach = (track: Track) => {
                     if (track.kind === Track.Kind.Video && videoRef.current) {
+                        // CRITICAL: Ensure muted is set before attach on mobile
+                        videoRef.current.muted = true;
+
                         track.attach(videoRef.current);
-                        // Auto-play attempt
+
                         videoRef.current.play().catch(e => {
-                            console.log("Autoplay blocked/failed, retrying muted:", e);
-                            if (videoRef.current) {
-                                videoRef.current.muted = true;
-                                videoRef.current.play().catch(e2 => console.error("Muted autoplay also failed:", e2));
-                            }
+                            console.warn("Autoplay failed (will wait for user interaction):", e);
                         });
                     }
                 };
@@ -75,7 +71,6 @@ const LiveKitVideo: React.FC<LiveKitVideoProps> = ({
                     await liveKitService.enableCamera(true);
                     await liveKitService.enableMicrophone(true);
 
-                    // Retry attachment check
                     setTimeout(() => {
                         if (!connectedRoom.localParticipant) return;
                         const pubs = Array.from(connectedRoom.localParticipant.videoTrackPublications.values());
@@ -93,7 +88,6 @@ const LiveKitVideo: React.FC<LiveKitVideoProps> = ({
                 }
                 // --- VIEWER LOGIC ---
                 else {
-                    // Existing Tracks
                     const participants = Array.from(connectedRoom.remoteParticipants.values());
                     participants.forEach((participant) => {
                         participant.trackPublications.forEach((publication) => {
@@ -103,7 +97,6 @@ const LiveKitVideo: React.FC<LiveKitVideoProps> = ({
                         });
                     });
 
-                    // New Tracks
                     liveKitService.on('track_subscribed', ({ track }: { track: Track }) => {
                         if (track.kind === Track.Kind.Video) {
                             tryAttach(track);
@@ -135,7 +128,16 @@ const LiveKitVideo: React.FC<LiveKitVideoProps> = ({
         };
     }, [roomName, isHost, participantName]);
 
-    // --- RENDER ---
+    // Handle tap to unmute
+    const handleVideoClick = () => {
+        if (videoRef.current) {
+            if (videoRef.current.paused) {
+                videoRef.current.play();
+            }
+            videoRef.current.muted = !videoRef.current.muted;
+        }
+    };
+
     if (error) {
         return (
             <div className={`relative flex items-center justify-center bg-black ${className}`}>
@@ -151,9 +153,7 @@ const LiveKitVideo: React.FC<LiveKitVideoProps> = ({
     if (isConnecting) {
         return (
             <div className={`flex items-center justify-center bg-gray-900 ${className}`}>
-                <div className="text-center">
-                    <div className="w-8 h-8 border-2 border-red-600 border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
-                </div>
+                <div className="w-8 h-8 border-2 border-red-600 border-t-transparent rounded-full animate-spin"></div>
             </div>
         );
     }
@@ -164,7 +164,9 @@ const LiveKitVideo: React.FC<LiveKitVideoProps> = ({
                 ref={videoRef}
                 autoPlay
                 playsInline
-                muted={isHost} // Host mutes local video initially. Viewer tries unmuted, falls back to muted.
+                muted={true} // ALWAYS start muted
+                onClick={handleVideoClick}
+                itemProp="video" // Help Safari identify it
                 className={`w-full h-full object-cover ${isHost ? 'scale-x-[-1]' : ''}`}
             />
         </div>
