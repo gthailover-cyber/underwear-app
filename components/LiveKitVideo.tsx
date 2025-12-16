@@ -104,8 +104,40 @@ const LiveKitVideo: React.FC<LiveKitVideoProps> = ({
                     });
                 }
 
+                // --- POLLING FALLBACK (Robust Auto-Play) ---
+                // Checks every 1s: If tracks exist but video isn't playing, force attach & play.
+                const pollInterval = setInterval(() => {
+                    if (!videoRef.current || !connectedRoom) return;
+
+                    // If video is technically "playing" and has a source, we might be good...
+                    // BUT sometimes it's stuck. So we re-check if track is attached.
+                    if (!videoRef.current.paused && videoRef.current.srcObject) return;
+
+                    // console.log("Polling: Checking for tracks to attach...");
+
+                    if (isHost) {
+                        // Host re-check
+                        const pub = Array.from(connectedRoom.localParticipant.videoTrackPublications.values()).find(p => p.kind === 'video');
+                        if (pub?.track) tryAttach(pub.track);
+                    } else {
+                        // Viewer re-check
+                        const participants = Array.from(connectedRoom.remoteParticipants.values());
+                        for (const p of participants) {
+                            const pub = Array.from(p.videoTrackPublications.values()).find(t => t.kind === 'video');
+                            if (pub?.track) {
+                                // console.log("Polling: Found remote track, forcing attach...");
+                                tryAttach(pub.track);
+                                return;
+                            }
+                        }
+                    }
+                }, 1000);
+
                 setIsConnecting(false);
                 onConnected?.();
+
+                // Cleanup polling on unmount
+                return () => clearInterval(pollInterval);
 
             } catch (err) {
                 const errorMessage = err instanceof Error ? err.message : 'Failed to connect';
