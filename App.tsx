@@ -1239,7 +1239,9 @@ const App: React.FC = () => {
             <button onClick={() => setIsMenuOpen(true)} className="active:scale-90 transition-transform">
               <Menu className="text-white" size={24} />
             </button>
-            <h1 className="text-lg font-athletic text-white tracking-wider">UNDERWEAR<span className="text-red-600">LIVE</span></h1>
+            <h1 className="text-lg font-bold font-athletic text-white tracking-wider flex items-center">
+              GUNDERWEAR<span className="text-red-600">.LIVE</span>
+            </h1>
           </div>
 
           <div className="flex items-center gap-3">
@@ -1288,18 +1290,17 @@ const App: React.FC = () => {
             <span className="text-[10px] font-bold">{t.discover}</span>
           </button>
 
-          <div className="flex-1 flex justify-center -mt-6">
-            {(userProfile.role === 'model' || userProfile.role === 'organizer') ? (
+          {/* Center Button (Conditional) */}
+          {(userProfile.role === 'model' || userProfile.role === 'organizer') && (
+            <div className="flex-1 flex justify-center -mt-6">
               <button
                 onClick={handlePlusClick}
                 className="w-14 h-14 bg-gradient-to-tr from-red-600 to-red-500 rounded-full flex items-center justify-center text-white shadow-lg shadow-red-900/50 border-4 border-black active:scale-95 transition-transform"
               >
                 <Plus size={28} strokeWidth={3} />
               </button>
-            ) : (
-              <div className="w-14 h-14" /> // Placeholder to keep spacing
-            )}
-          </div>
+            </div>
+          )}
 
           <button
             onClick={() => setActiveTab('people')}
