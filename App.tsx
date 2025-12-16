@@ -177,7 +177,7 @@ const App: React.FC = () => {
           topBidder: room.top_bidder_name,
           // Assuming default to LiveKit if no specific video URL is provided, or forcing it for now
           useLiveKit: !room.video_url && !room.youtube_id,
-          hostId: room.host_id,
+          // hostId is already mapped above
         }));
         setStreamers(dbStreamers);
       }
@@ -416,7 +416,7 @@ const App: React.FC = () => {
           products: myProducts,
           // Add auction data if needed
           // Add auction data if needed
-          hostId: session.user.id,
+          hostId: session.user.id, // Explicitly enforce session ID
         };
 
         setCurrentStreamer(myStream);
