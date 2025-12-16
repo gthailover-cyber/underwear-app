@@ -57,9 +57,7 @@ const LiveKitVideo: React.FC<LiveKitVideoProps> = ({
                     if (track.kind === Track.Kind.Video && videoRef.current) {
                         // CRITICAL: Ensure muted is set before attach on mobile
                         videoRef.current.muted = true;
-
                         track.attach(videoRef.current);
-
                         videoRef.current.play().catch(e => {
                             console.warn("Autoplay failed (will wait for user interaction):", e);
                         });
@@ -90,14 +88,22 @@ const LiveKitVideo: React.FC<LiveKitVideoProps> = ({
                 else {
                     const participants = Array.from(connectedRoom.remoteParticipants.values());
                     participants.forEach((participant) => {
-                        participant.trackPublications.forEach((publication) => {
+                        participant.videoTrackPublications.forEach((publication) => {
+                            // Prioritize Camera tracks, but accept any video track if needed
+                            // We check `source === Track.Source.Camera` to be safe, but fallback to any video
                             if (publication.track && publication.track.kind === Track.Kind.Video) {
-                                tryAttach(publication.track);
+                                if (publication.source === Track.Source.Camera) {
+                                    tryAttach(publication.track); // Best case
+                                } else {
+                                    // Screen share etc.
+                                    tryAttach(publication.track);
+                                }
                             }
                         });
                     });
 
-                    liveKitService.on('track_subscribed', ({ track }: { track: Track }) => {
+                    // Listen for NEW tracks
+                    liveKitService.on('track_subscribed', (track: Track, publication: any) => {
                         if (track.kind === Track.Kind.Video) {
                             tryAttach(track);
                         }
@@ -108,26 +114,28 @@ const LiveKitVideo: React.FC<LiveKitVideoProps> = ({
                 // Checks every 1s: If tracks exist but video isn't playing, force attach & play.
                 const pollInterval = setInterval(() => {
                     if (!videoRef.current || !connectedRoom) return;
-
-                    // If video is technically "playing" and has a source, we might be good...
-                    // BUT sometimes it's stuck. So we re-check if track is attached.
                     if (!videoRef.current.paused && videoRef.current.srcObject) return;
 
-                    // console.log("Polling: Checking for tracks to attach...");
-
                     if (isHost) {
-                        // Host re-check
                         const pub = Array.from(connectedRoom.localParticipant.videoTrackPublications.values()).find(p => p.kind === 'video');
                         if (pub?.track) tryAttach(pub.track);
                     } else {
-                        // Viewer re-check
+                        // Iterate ALL remote participants to find ANY video track
                         const participants = Array.from(connectedRoom.remoteParticipants.values());
                         for (const p of participants) {
-                            const pub = Array.from(p.videoTrackPublications.values()).find(t => t.kind === 'video');
+                            // Try to find Camera track first
+                            let pub = Array.from(p.videoTrackPublications.values())
+                                .find(t => t.kind === 'video' && t.source === Track.Source.Camera);
+
+                            // If no camera, take any video track
+                            if (!pub) {
+                                pub = Array.from(p.videoTrackPublications.values())
+                                    .find(t => t.kind === 'video');
+                            }
+
                             if (pub?.track) {
-                                // console.log("Polling: Found remote track, forcing attach...");
                                 tryAttach(pub.track);
-                                return;
+                                return; // Found one, good enough
                             }
                         }
                     }
@@ -142,7 +150,6 @@ const LiveKitVideo: React.FC<LiveKitVideoProps> = ({
             } catch (err) {
                 const errorMessage = err instanceof Error ? err.message : 'Failed to connect';
                 if (errorMessage.includes('Client initiated disconnect') || errorMessage.includes('cancelled')) return;
-
                 console.error('[LiveKit] Connect Error:', err);
                 setError(errorMessage);
                 setIsConnecting(false);
