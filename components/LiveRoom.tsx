@@ -494,21 +494,10 @@ const LiveRoom: React.FC<LiveRoomProps> = ({ streamer, isHost = false, onClose, 
           </div>
         )}
 
-        {/* Featured Product Pin (If not auction) */}
-        {!streamer.isAuction && streamer.products.length > 0 && !showProducts && (
-          <div className="absolute top-24 right-4 z-20 animate-slide-in max-w-[160px]">
-            <div className="bg-white/90 backdrop-blur-md rounded-xl p-2 shadow-xl cursor-pointer hover:scale-105 transition-transform" onClick={() => handleBuyNow(streamer.products[0])}>
-              <div className="relative aspect-square rounded-lg overflow-hidden mb-2">
-                <img src={streamer.products[0].image} className="w-full h-full object-cover" alt="Product" />
-                <div className="absolute bottom-0 left-0 right-0 bg-red-600 text-white text-[10px] font-bold text-center py-0.5">
-                  Show Now
-                </div>
-              </div>
-              <div className="text-center">
-                <p className="text-xs font-bold text-gray-900 truncate">{streamer.products[0].name}</p>
-                <p className="text-xs text-red-600 font-bold">฿{(streamer.products[0].price || 0).toLocaleString()}</p>
-              </div>
-            </div>
+        {/* Featured Product Pin (Removed as per request) */}
+        {!streamer.isAuction && streamer.products.length > 0 && !showProducts && !isHost && (
+          <div className="hidden absolute top-24 right-4 z-20 animate-slide-in max-w-[160px]">
+            {/* Hidden by default now, or just logic removed */}
           </div>
         )}
 
@@ -621,7 +610,7 @@ const LiveRoom: React.FC<LiveRoomProps> = ({ streamer, isHost = false, onClose, 
                   onClick={handleLike}
                   className="w-10 h-10 flex items-center justify-center bg-black/40 backdrop-blur-md rounded-full border border-white/20 text-white hover:bg-white/10 active:scale-90 transition-all"
                 >
-                  <Share2 size={20} />
+                  <Heart size={20} className={heartCount > streamer.likes ? "fill-pink-500 text-pink-500" : ""} />
                 </button>
               </div>
             </div>
@@ -741,18 +730,31 @@ const LiveRoom: React.FC<LiveRoomProps> = ({ streamer, isHost = false, onClose, 
               {streamer.products.map(product => (
                 <div key={product.id} className="bg-gray-800 rounded-xl p-3 flex gap-3 border border-gray-700">
                   <img src={product.image} className="w-20 h-20 rounded-lg object-cover bg-gray-700" alt={product.name} />
-                  <div className="flex-1">
+                  <div className="flex-1 min-w-0">
                     <h4 className="font-bold text-white text-sm line-clamp-1">{product.name}</h4>
                     <p className="text-xs text-gray-400 mt-1 line-clamp-2">{product.description}</p>
-                    <div className="mt-3 flex justify-between items-end">
-                      <span className="text-red-500 font-bold">฿{(product.price || 0).toLocaleString()}</span>
-                      <button
-                        onClick={() => handleBuyNow(product)}
-                        className="bg-white text-black text-xs font-bold px-3 py-1.5 rounded-lg hover:bg-gray-200 transition-colors"
-                      >
-                        Buy Now
-                      </button>
-                    </div>
+
+                    {isHost ? (
+                      // Host View: Stock & Sales Stats
+                      <div className="mt-3 flex justify-between items-end">
+                        <div className="flex flex-col">
+                          <span className="text-xs text-gray-400">Sold: <span className="text-white font-bold">12</span></span>
+                          <span className="text-xs text-gray-400">Stock: <span className="text-white font-bold">{product.stock}</span></span>
+                        </div>
+                        <span className="text-red-500 font-bold">฿{(product.price || 0).toLocaleString()}</span>
+                      </div>
+                    ) : (
+                      // Viewer View: Price & Buy Button
+                      <div className="mt-3 flex justify-between items-end">
+                        <span className="text-red-500 font-bold text-lg">฿{(product.price || 0).toLocaleString()}</span>
+                        <button
+                          onClick={() => handleBuyNow(product)}
+                          className="bg-white text-black text-xs font-bold px-4 py-2 rounded-lg hover:bg-gray-200 transition-colors shadow-sm"
+                        >
+                          Buy Now
+                        </button>
+                      </div>
+                    )}
                   </div>
                 </div>
               ))}
