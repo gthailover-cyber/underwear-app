@@ -74,6 +74,7 @@ const App: React.FC = () => {
   // Live Setup State
   const [selectionMode, setSelectionMode] = useState<'multiple' | 'single'>('multiple');
   const [auctionSelectedProduct, setAuctionSelectedProduct] = useState<Product | null>(null);
+  const [liveSelectedProducts, setLiveSelectedProducts] = useState<Product[]>([]);
 
   // Countdown State
   const [isCountdownActive, setIsCountdownActive] = useState(false);
@@ -158,7 +159,30 @@ const App: React.FC = () => {
         .order('created_at', { ascending: false });
 
       if (!error && data) {
-        console.log("DEBUG: Fetched Rooms", data); // Inspect raw Supabase data
+        console.log("DEBUG: Fetched Rooms", data);
+
+        // 1.1 Fetch Products for these hosts (Since we don't have a room_products join table yet, we show all host products)
+        const hostIds = data.map((r: any) => r.host_id).filter(Boolean);
+        let productsMap: Record<string, Product[]> = {};
+
+        if (hostIds.length > 0) {
+          try {
+            const { data: productsData } = await supabase
+              .from('products')
+              .select('*')
+              .in('seller_id', hostIds);
+
+            if (productsData) {
+              productsData.forEach((p: any) => {
+                if (!productsMap[p.seller_id]) productsMap[p.seller_id] = [];
+                productsMap[p.seller_id].push(p);
+              });
+            }
+          } catch (err) {
+            console.error("Error fetching room products:", err);
+          }
+        }
+
         const dbStreamers: Streamer[] = data.map((room: any) => ({
           id: room.id,
           hostId: room.host_id, // Explicitly map host_id
@@ -168,8 +192,8 @@ const App: React.FC = () => {
           coverImage: room.cover_image || DEFAULT_IMAGES.COVER,
           videoUrl: room.video_url,
           youtubeId: room.youtube_id,
-          itemCount: 0, // Need to join products if possible, or fetch separate
-          products: [], // Populate if needed
+          itemCount: productsMap[room.host_id]?.length || 0, // Populated
+          products: productsMap[room.host_id] || [], // Populated
           isAuction: room.is_auction,
           auctionEndTime: room.auction_end_time ? Number(room.auction_end_time) : undefined,
           auctionStartingPrice: room.auction_starting_price,
@@ -388,10 +412,12 @@ const App: React.FC = () => {
     setIsProductSelectionOpen(false);
 
     if (selectionMode === 'multiple') {
+      setLiveSelectedProducts(selectedProducts);
       // Go straight to start live modal
       setIsStartLiveModalOpen(true);
     } else {
       if (selectedProducts.length > 0) {
+        setLiveSelectedProducts(selectedProducts); // Also set for auction single product
         setAuctionSelectedProduct(selectedProducts[0]);
         setIsAuctionSetupOpen(true);
       }
@@ -430,7 +456,7 @@ const App: React.FC = () => {
           id: roomId,
           name: userProfile.username,
           coverImage: streamConfig.coverImage || userProfile.coverImage,
-          products: myProducts,
+          products: liveSelectedProducts.length > 0 ? liveSelectedProducts : myProducts, // Use selected products if available
           // Add auction data if needed
           // Add auction data if needed
           hostId: session.user.id, // Explicitly enforce session ID
