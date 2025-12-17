@@ -105,8 +105,8 @@ const MyOrders: React.FC<MyOrdersProps> = ({ language, onBack }) => {
                      key={tab}
                      onClick={() => setActiveTab(tab)}
                      className={`px-4 py-2 rounded-full text-sm font-bold transition-all border ${activeTab === tab
-                           ? 'bg-red-600 border-red-600 text-white'
-                           : 'bg-gray-900 border-gray-800 text-gray-400 hover:bg-gray-800'
+                        ? 'bg-red-600 border-red-600 text-white'
+                        : 'bg-gray-900 border-gray-800 text-gray-400 hover:bg-gray-800'
                         }`}
                   >
                      {/* @ts-ignore */}
@@ -130,7 +130,7 @@ const MyOrders: React.FC<MyOrdersProps> = ({ language, onBack }) => {
                      <div className="p-4 border-b border-gray-800 flex justify-between items-center bg-gray-800/30">
                         <div className="flex items-center gap-2">
                            <Package size={16} className="text-gray-400" />
-                           <span className="text-xs text-gray-400 font-mono text-ellipsis overflow-hidden max-w-[100px]">{order.id}</span>
+                           <span className="text-sm text-gray-200 font-bold">{order.date}</span>
                         </div>
                         <span className={`text-xs font-bold px-2.5 py-1 rounded-md border ${getStatusColor(order.status)}`}>
                            {getStatusLabel(order.status)}

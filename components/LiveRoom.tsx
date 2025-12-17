@@ -365,7 +365,7 @@ const LiveRoom: React.FC<LiveRoomProps> = ({
           const { error } = await supabase.from('orders').insert({
             buyer_id: user.id,
             total_amount: total,
-            status: 'pending',
+            status: 'shipping', // Paid immediately in live -> To Ship
             shipping_address: userAddress,
             // tracking_number: null // Allow check constraint or default
           });
