@@ -372,6 +372,7 @@ const LiveRoom: React.FC<LiveRoomProps> = ({
 
           if (error) {
             console.error("Error creating order:", error);
+            alert(`Failed to create order: ${error.message}`);
             // Verify if error is ignored or alerts user. 
             // Depending on robust requirements, we might want to refund coins if order fails.
             // For now, simplicity: just log.
