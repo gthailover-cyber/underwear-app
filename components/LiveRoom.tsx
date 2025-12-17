@@ -147,6 +147,28 @@ const LiveRoom: React.FC<LiveRoomProps> = ({
     commentsEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [comments]);
 
+  // Fetch User Address on Mount
+  useEffect(() => {
+    const fetchAddress = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { data } = await supabase
+          .from('addresses')
+          .select('*')
+          .eq('user_id', user.id)
+          .order('is_default', { ascending: false })
+          .limit(1)
+          .single();
+
+        if (data) {
+          const formatted = `${data.name} ${data.phone}\n${data.address} ${data.province} ${data.postal_code}`;
+          setUserAddress(formatted);
+        }
+      }
+    };
+    fetchAddress();
+  }, []);
+
   // Initial Setup & Socket Listeners
   useEffect(() => {
     socketService.joinRoom(streamer.id);
