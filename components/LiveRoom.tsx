@@ -17,6 +17,12 @@ interface LiveRoomProps {
   isHost?: boolean;
   onClose: () => void;
   language: 'th' | 'en';
+  // Props passed from App.tsx handling global state
+  walletBalance?: number;
+  onUseCoins?: (amount: number) => void;
+  onOpenWallet?: () => void;
+  onAddToCart?: (item: CartItem) => void;
+  onNewOrder?: () => void;
 }
 
 interface FloatingHeart {
@@ -40,8 +46,59 @@ interface GiftLogItem {
   timestamp: Date;
 }
 
-const LiveRoom: React.FC<LiveRoomProps> = ({ streamer, isHost = false, onClose, language }) => {
+const LiveRoom: React.FC<LiveRoomProps> = ({
+  streamer,
+  isHost = false,
+  onClose,
+  language,
+  walletBalance: propWalletBalance = 0, // Default to 0 if not passed
+  onUseCoins,
+  onOpenWallet: propOnOpenWallet,
+  onAddToCart: propOnAddToCart,
+  onNewOrder
+}) => {
   const t = TRANSLATIONS[language];
+
+  // Initialize local wallet balance from prop if available, else usage internal mock (which was 5000)
+  // For consistency with App.tsx which holds the truth, we should prefer prop.
+  // But given existing code uses 'walletBalance' state initialized to 5000, 
+  // let's sync it.
+  const [walletBalance, setWalletBalance] = useState(propWalletBalance || 5000);
+
+  // Update internal balance when prop changes (if real-time updates come from App)
+  useEffect(() => {
+    if (propWalletBalance !== undefined) {
+      setWalletBalance(propWalletBalance);
+    }
+  }, [propWalletBalance]);
+
+  // Wrapper for actions that might use parent handlers
+  const onOpenWallet = () => {
+    if (propOnOpenWallet) propOnOpenWallet();
+    else setShowWalletModal(true);
+  };
+
+  const onUseCoinsLocal = (amount: number) => {
+    if (onUseCoins) {
+      onUseCoins(amount);
+      // prop update will sync via useEffect, but for instant UI:
+      setWalletBalance(prev => prev - amount);
+    } else {
+      setWalletBalance(prev => prev - amount);
+    }
+  };
+
+  const onAddToCartLocal = (item: CartItem) => {
+    if (propOnAddToCart) propOnAddToCart(item);
+    // Also keep local cart or just rely on parent? 
+    // The current LiveRoom has its own local 'cart' state.
+    // Let's keep using local cart state for the UI inside LiveRoom for now as refactoring entire logic might break things.
+    // The user just asked for "Add to Cart" notification essentially. 
+    // Wait, the previous request added a full Cart Modal inside LiveRoom. 
+    // So LiveRoom HAS a local cart.
+    setCart(prev => [...prev, item]);
+    setHeartCount(prev => prev + 1);
+  };
 
   // State
   const [comments, setComments] = useState<Comment[]>([]);
@@ -62,7 +119,7 @@ const LiveRoom: React.FC<LiveRoomProps> = ({ streamer, isHost = false, onClose, 
   // Commerce State
   const [selectedProductForPurchase, setSelectedProductForPurchase] = useState<Product | null>(null);
   const [purchaseConfig, setPurchaseConfig] = useState({ quantity: 1, color: '', size: '' });
-  const [walletBalance, setWalletBalance] = useState(5000); // Mock wallet
+  // walletBalance removed (duplicate)
   const [showWalletModal, setShowWalletModal] = useState(false);
   const [showCart, setShowCart] = useState(false);
   const [cart, setCart] = useState<CartItem[]>([]);
@@ -250,7 +307,7 @@ const LiveRoom: React.FC<LiveRoomProps> = ({ streamer, isHost = false, onClose, 
     }
 
     // Deduct balance
-    setWalletBalance(prev => prev - gift.price);
+    onUseCoinsLocal(gift.price);
     setShowGiftSelector(false);
 
     // Trigger Animation locally
@@ -298,10 +355,11 @@ const LiveRoom: React.FC<LiveRoomProps> = ({ streamer, isHost = false, onClose, 
     }
 
     if (walletBalance >= total) {
-      onUseCoins(total);
+      onUseCoinsLocal(total);
       alert(`Payment successful! Items will be shipped to: ${userAddress}`);
       setCart([]);
       setShowCheckoutModal(false);
+      onNewOrder?.();
     } else {
       alert('Insufficient coins. Please top up.');
       onOpenWallet();
@@ -334,7 +392,7 @@ const LiveRoom: React.FC<LiveRoomProps> = ({ streamer, isHost = false, onClose, 
 
     if (action === 'buy_now') {
       if (walletBalance >= totalCost) {
-        onUseCoins(totalCost); // Deduct coins
+        onUseCoinsLocal(totalCost); // Deduct coins
         alert(`Successfully purchased ${purchaseConfig.quantity}x ${selectedProductForPurchase.name}!`);
         setSelectedProductForPurchase(null); // Close sheet
       } else {
@@ -349,7 +407,7 @@ const LiveRoom: React.FC<LiveRoomProps> = ({ streamer, isHost = false, onClose, 
         color: purchaseConfig.color,
         size: purchaseConfig.size
       };
-      onAddToCart(cartItem);
+      onAddToCartLocal(cartItem);
       alert('Added to Cart!');
       setSelectedProductForPurchase(null);
     }
@@ -357,15 +415,7 @@ const LiveRoom: React.FC<LiveRoomProps> = ({ streamer, isHost = false, onClose, 
 
   const isInsufficientFunds = myBidAmount > walletBalance;
 
-  // Mock functions for cart/wallet interactions
-  const onAddToCart = (item: CartItem) => {
-    setCart(prev => [...prev, item]);
-    setHeartCount(prev => prev + 1); // easter egg
-  };
-  const onUseCoins = (amount: number) => {
-    setWalletBalance(prev => prev - amount);
-  };
-  const onOpenWallet = () => setShowWalletModal(true);
+  // Mock functions removed (using onUseCoinsLocal / onAddToCartLocal)
 
   // Handle incoming or sent gifts logic (Mock processing for host view)
   const processGift = (gift: typeof GIFTS[0], sender: string) => {

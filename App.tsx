@@ -90,6 +90,7 @@ const App: React.FC = () => {
 
   // Cart State (In real app, fetch from DB order_items with status 'in_cart' if implemented)
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
+  const [hasNewOrders, setHasNewOrders] = useState(false);
 
   const t = TRANSLATIONS[language];
 
@@ -628,6 +629,7 @@ const App: React.FC = () => {
     } else if (id === 'my_orders') {
       setActiveTab('my_orders');
       setIsMenuOpen(false);
+      setHasNewOrders(false);
     }
   };
 
@@ -1244,7 +1246,12 @@ const App: React.FC = () => {
                   </div>
                   <span className="font-medium text-lg text-gray-200 group-hover:text-white">{item.label}</span>
                 </div>
-                <ChevronRight size={18} className="text-gray-600 group-hover:text-white" />
+                <div className="flex items-center gap-2">
+                  {item.id === 'my_orders' && hasNewOrders && (
+                    <div className="w-2.5 h-2.5 bg-red-600 rounded-full animate-pulse shadow-sm shadow-red-500/50"></div>
+                  )}
+                  <ChevronRight size={18} className="text-gray-600 group-hover:text-white" />
+                </div>
               </button>
             ))}
           </div>
@@ -1362,6 +1369,7 @@ const App: React.FC = () => {
             onUseCoins={handleUseCoins}
             onOpenWallet={() => setIsWalletOpen(true)}
             onAddToCart={handleAddToCart}
+            onNewOrder={() => setHasNewOrders(true)}
           />
         </>
       )}
