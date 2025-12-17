@@ -603,8 +603,8 @@ const App: React.FC = () => {
 
   // Menu items
   const menuItems = [
-    { id: 'profile', icon: User, label: t.profile },
     { id: 'my_orders', icon: ShoppingBag, label: t.myOrders },
+    { id: 'profile', icon: User, label: t.profile },
     { id: 'address', icon: MapPin, label: t.myAddress },
     { id: 'payment', icon: CreditCard, label: t.myPayment },
     { id: 'wallet', icon: Wallet, label: t.myWallet },
@@ -1269,8 +1269,11 @@ const App: React.FC = () => {
       {showTopNav && (
         <div className="fixed top-0 left-0 right-0 z-40 bg-black/95 backdrop-blur-md px-4 py-3 border-b border-gray-800 flex justify-between items-center shadow-md">
           <div className="flex items-center gap-3">
-            <button onClick={() => setIsMenuOpen(true)} className="active:scale-90 transition-transform">
+            <button onClick={() => setIsMenuOpen(true)} className="active:scale-90 transition-transform relative">
               <Menu className="text-white" size={24} />
+              {hasNewOrders && (
+                <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-600 rounded-full border-2 border-black animate-pulse"></span>
+              )}
             </button>
             <h1 className="text-lg font-bold font-athletic text-white tracking-wider flex items-center">
               GUNDERWEAR<span className="text-red-600">.LIVE</span>
