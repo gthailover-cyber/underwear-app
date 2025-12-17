@@ -359,27 +359,49 @@ const LiveRoom: React.FC<LiveRoomProps> = ({
       onUseCoinsLocal(total);
 
       // Create Order in Supabase
+      // Create Order in Supabase
       try {
         const { data: { user } } = await supabase.auth.getUser();
         if (user) {
-          const { error } = await supabase.from('orders').insert({
-            buyer_id: user.id,
-            total_amount: total,
-            status: 'shipping', // Paid immediately in live -> To Ship
-            shipping_address: userAddress,
-            // tracking_number: null // Allow check constraint or default
-          });
+          // 1. Insert Order
+          const { data: orderData, error: orderError } = await supabase
+            .from('orders')
+            .insert({
+              buyer_id: user.id,
+              total_amount: total,
+              status: 'shipping', // Paid immediately
+              shipping_address: userAddress,
+            })
+            .select()
+            .single();
 
-          if (error) {
-            console.error("Error creating order:", error);
-            alert(`Failed to create order: ${error.message}`);
-            // Verify if error is ignored or alerts user. 
-            // Depending on robust requirements, we might want to refund coins if order fails.
-            // For now, simplicity: just log.
+          if (orderError) throw orderError;
+
+          if (orderData) {
+            // 2. Insert Order Items
+            const itemsToInsert = cart.map(item => ({
+              order_id: orderData.id,
+              product_id: item.id,
+              product_name: item.name,
+              product_image: item.image,
+              quantity: item.quantity,
+              price: item.price,
+              color: item.color,
+              size: item.size
+            }));
+
+            const { error: itemsError } = await supabase
+              .from('order_items')
+              .insert(itemsToInsert);
+
+            if (itemsError) throw itemsError;
           }
         }
-      } catch (err) {
+      } catch (err: any) {
         console.error("Exception creating order:", err);
+        alert(`Failed to create order: ${err.message || err}`);
+        // Consider whether to revert coin deduction here, but keeping it simple for now
+        return;
       }
 
       alert(`Payment successful! Items will be shipped to: ${userAddress}`);
