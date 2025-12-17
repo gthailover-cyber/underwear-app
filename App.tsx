@@ -1372,7 +1372,7 @@ const App: React.FC = () => {
             onUseCoins={handleUseCoins}
             onOpenWallet={() => setIsWalletOpen(true)}
             onAddToCart={handleAddToCart}
-            onNewOrder={() => setHasNewOrders(true)}
+            onNewOrder={() => { setHasNewOrders(true); setCartItems([]); }}
           />
         </>
       )}
