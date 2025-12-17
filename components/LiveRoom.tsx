@@ -766,7 +766,7 @@ const LiveRoom: React.FC<LiveRoomProps> = ({ streamer, isHost = false, onClose, 
       {/* 3. Buy Now / Confirm Purchase Modal */}
       {selectedProductForPurchase && (
         <div className="absolute inset-0 z-[60] flex items-end sm:items-center justify-center pointer-events-none">
-          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm pointer-events-auto" onClick={() => setSelectedProductForPurchase(null)} />
+          <div className="absolute inset-0 bg-black/60 pointer-events-auto" onClick={() => setSelectedProductForPurchase(null)} />
           <div className="w-full sm:max-w-md bg-gray-900 rounded-t-2xl sm:rounded-2xl border border-gray-800 pointer-events-auto animate-slide-up p-4 space-y-4">
 
             {/* Product Summary */}
