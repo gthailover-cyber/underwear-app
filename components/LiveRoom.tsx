@@ -259,6 +259,38 @@ const LiveRoom: React.FC<LiveRoomProps> = ({ streamer, isHost = false, onClose, 
     }
   };
 
+  // Cart Management
+  const handleUpdateCartQuantity = (index: number, delta: number) => {
+    setCart(prev => {
+      const newCart = [...prev];
+      const item = newCart[index];
+      const newQuantity = item.quantity + delta;
+      if (newQuantity <= 0) {
+        // Remove if quantity becomes 0? Or just min 1
+        return newCart.filter((_, i) => i !== index);
+      }
+      item.quantity = newQuantity;
+      return newCart;
+    });
+  };
+
+  const handleRemoveCartItem = (index: number) => {
+    setCart(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const handleCheckoutCart = () => {
+    const total = cart.reduce((acc, item) => acc + (item.price * item.quantity), 0);
+    if (walletBalance >= total) {
+      onUseCoins(total);
+      alert(`Checkout successful! Paid ฿${total.toLocaleString()}`);
+      setCart([]);
+      setShowCart(false);
+    } else {
+      alert('Insufficient coins!');
+      onOpenWallet();
+    }
+  };
+
   // Buy Now Logic - Step 1: Open Selection Sheet
   const handleBuyNow = (product: Product) => {
     setShowProducts(false); // Close list to "replace" with purchase modal
@@ -723,9 +755,22 @@ const LiveRoom: React.FC<LiveRoomProps> = ({ streamer, isHost = false, onClose, 
               <h3 className="font-bold text-white flex items-center gap-2">
                 <ShoppingBag className="text-red-500" size={18} /> Featured Products
               </h3>
-              <button onClick={() => setShowProducts(false)} className="bg-gray-800 p-2 rounded-full text-gray-400 hover:text-white">
-                <X size={20} />
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => { setShowProducts(false); setShowCart(true); }}
+                  className="relative bg-gray-800 p-2 rounded-full text-white hover:bg-gray-700 transition-colors border border-gray-700"
+                >
+                  <ShoppingCart size={20} />
+                  {cart.length > 0 && (
+                    <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-600 rounded-full text-[10px] flex items-center justify-center font-bold border border-black">
+                      {cart.length}
+                    </span>
+                  )}
+                </button>
+                <button onClick={() => setShowProducts(false)} className="bg-gray-800 p-2 rounded-full text-gray-400 hover:text-white border border-gray-700">
+                  <X size={20} />
+                </button>
+              </div>
             </div>
             <div className="flex-1 overflow-y-auto p-4 space-y-4 pb-safe-bottom">
               {streamer.products.map(product => (
@@ -760,6 +805,76 @@ const LiveRoom: React.FC<LiveRoomProps> = ({ streamer, isHost = false, onClose, 
                 </div>
               ))}
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* 2.5 My Cart Modal */}
+      {showCart && (
+        <div className="absolute inset-0 z-50">
+          <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setShowCart(false)} />
+          <div className="absolute bottom-0 left-0 right-0 bg-gray-900 rounded-t-3xl border-t border-gray-800 animate-slide-up h-[70vh] flex flex-col">
+            <div className="p-4 border-b border-gray-800 flex justify-between items-center">
+              <h3 className="font-bold text-white flex items-center gap-2">
+                <ShoppingCart className="text-yellow-500" size={18} /> My Cart
+              </h3>
+              <button onClick={() => setShowCart(false)} className="bg-gray-800 p-2 rounded-full text-gray-400 hover:text-white border border-gray-700">
+                <X size={20} />
+              </button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto p-4 space-y-4">
+              {cart.length === 0 ? (
+                <div className="flex flex-col items-center justify-center h-full text-gray-500 pb-20">
+                  <ShoppingCart size={48} className="mb-4 opacity-50" />
+                  <p>Your cart is empty</p>
+                  <button onClick={() => { setShowCart(false); setShowProducts(true); }} className="mt-4 text-red-500 font-bold hover:underline">
+                    Go Shopping
+                  </button>
+                </div>
+              ) : (
+                cart.map((item, index) => (
+                  <div key={`${item.id}-${index}`} className="bg-gray-800 rounded-xl p-3 flex gap-3 border border-gray-700 relative">
+                    <img src={item.image} className="w-20 h-20 rounded-lg object-cover bg-gray-700" alt={item.name} />
+                    <div className="flex-1 min-w-0">
+                      <h4 className="font-bold text-white text-sm line-clamp-1">{item.name}</h4>
+                      <div className="flex items-center gap-2 text-xs text-gray-400 mt-0.5 mb-2">
+                        {item.color && <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full" style={{ backgroundColor: item.color }}></span> {item.color}</span>}
+                        {item.size && <span>Size: {item.size}</span>}
+                      </div>
+
+                      <div className="flex justify-between items-end">
+                        <span className="text-red-500 font-bold">฿{(item.price * item.quantity).toLocaleString()}</span>
+
+                        <div className="flex items-center gap-2 bg-gray-700 rounded-lg p-0.5 border border-gray-600">
+                          <button onClick={() => handleUpdateCartQuantity(index, -1)} className="w-6 h-6 flex items-center justify-center hover:bg-gray-600 rounded text-white"><Minus size={12} /></button>
+                          <span className="text-xs font-bold w-4 text-center">{item.quantity}</span>
+                          <button onClick={() => handleUpdateCartQuantity(index, 1)} className="w-6 h-6 flex items-center justify-center hover:bg-gray-600 rounded text-white"><Plus size={12} /></button>
+                        </div>
+                      </div>
+                    </div>
+                    <button onClick={() => handleRemoveCartItem(index)} className="absolute top-2 right-2 text-gray-500 hover:text-red-500">
+                      <X size={16} />
+                    </button>
+                  </div>
+                ))
+              )}
+            </div>
+
+            {cart.length > 0 && (
+              <div className="p-4 border-t border-gray-800 bg-gray-900 pb-safe-bottom">
+                <div className="flex justify-between items-center mb-4">
+                  <span className="text-gray-400">Total</span>
+                  <span className="text-xl font-bold text-white">฿{cart.reduce((acc, item) => acc + (item.price * item.quantity), 0).toLocaleString()}</span>
+                </div>
+                <button
+                  onClick={handleCheckoutCart}
+                  className="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-3 rounded-xl shadow-lg shadow-red-900/40 transition-all active:scale-95"
+                >
+                  Checkout ({cart.length} items)
+                </button>
+              </div>
+            )}
           </div>
         </div>
       )}
