@@ -148,7 +148,15 @@ const MyOrders: React.FC<MyOrdersProps> = ({ language, onBack }) => {
                               <div className="flex-1 min-w-0">
                                  <h4 className="text-white text-sm font-bold line-clamp-1">{item.name}</h4>
                                  <div className="text-xs text-gray-500 mt-1 flex gap-2">
-                                    {item.colors?.[0] && <span>Color: {item.colors[0]}</span>}
+                                    {item.colors?.[0] && (
+                                       <div className="flex items-center gap-1">
+                                          <span>Color:</span>
+                                          <div
+                                             className="w-3 h-3 rounded-full border border-gray-600"
+                                             style={{ backgroundColor: item.colors[0] }}
+                                          />
+                                       </div>
+                                    )}
                                     {item.sizes?.[0] && <span>Size: {item.sizes[0]}</span>}
                                  </div>
                                  <div className="flex justify-between items-end mt-2">
