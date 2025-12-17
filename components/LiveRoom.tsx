@@ -158,7 +158,7 @@ const LiveRoom: React.FC<LiveRoomProps> = ({
           .eq('user_id', user.id)
           .order('is_default', { ascending: false })
           .limit(1)
-          .single();
+          .maybeSingle();
 
         if (data) {
           const formatted = `${data.name} ${data.phone}\n${data.address} ${data.province} ${data.postal_code}`;
