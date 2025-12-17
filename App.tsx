@@ -429,7 +429,7 @@ const App: React.FC = () => {
           ...streamConfig,
           id: roomId,
           name: userProfile.username,
-          coverImage: userProfile.coverImage,
+          coverImage: streamConfig.coverImage || userProfile.coverImage,
           products: myProducts,
           // Add auction data if needed
           // Add auction data if needed
@@ -451,7 +451,7 @@ const App: React.FC = () => {
               id: roomId,
               host_id: session.user.id,
               title: streamConfig.title || 'Untitled Live',
-              cover_image: userProfile.coverImage,
+              cover_image: streamConfig.coverImage || userProfile.coverImage,
               video_url: '', // Empty string instead of null if column is non-nullable text
               youtube_id: '',
               viewer_count: 0,
