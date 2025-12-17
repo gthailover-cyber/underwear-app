@@ -4,7 +4,7 @@ import {
   Heart, Share2, MessageCircle, Gift, ShoppingBag, X,
   Send, DollarSign, User, ChevronRight, Eye, MoreHorizontal,
   Flame, Sparkles, Trophy, Minus, Plus, CreditCard, ShoppingCart,
-  Wallet, Settings, Mic, MicOff, Video, VideoOff, LogOut
+  Wallet, Settings, Mic, MicOff, Video, VideoOff, LogOut, Check
 } from 'lucide-react';
 import { Streamer, Comment, Product } from '../types';
 import { TRANSLATIONS } from '../constants';
@@ -261,6 +261,7 @@ const LiveRoom: React.FC<LiveRoomProps> = ({ streamer, isHost = false, onClose, 
 
   // Buy Now Logic - Step 1: Open Selection Sheet
   const handleBuyNow = (product: Product) => {
+    setShowProducts(false); // Close list to "replace" with purchase modal
     setSelectedProductForPurchase(product);
     setPurchaseConfig({
       quantity: 1,
@@ -789,20 +790,43 @@ const LiveRoom: React.FC<LiveRoomProps> = ({ streamer, isHost = false, onClose, 
             {/* Options */}
             <div className="space-y-4">
               {/* Color */}
-              {selectedProductForPurchase.colors && (
+              {selectedProductForPurchase.colors && selectedProductForPurchase.colors.length > 0 && (
                 <div className="space-y-2">
                   <label className="text-xs font-bold text-gray-400 uppercase">Color</label>
+                  <div className="flex flex-wrap gap-3">
+                    {selectedProductForPurchase.colors.map(color => {
+                      const isSelected = purchaseConfig.color === color;
+                      return (
+                        <button
+                          key={color}
+                          onClick={() => setPurchaseConfig(prev => ({ ...prev, color }))}
+                          className={`w-8 h-8 rounded-full border-2 relative transition-transform ${isSelected ? 'border-white scale-110' : 'border-transparent hover:scale-105'}`}
+                          style={{ backgroundColor: color }}
+                          title={color}
+                        >
+                          {isSelected && <Check size={14} className={`absolute inset-0 m-auto ${['#FFFFFF', '#ffffff', '#FFFF00', '#ffff00', 'white', 'yellow'].includes(color) ? 'text-black' : 'text-white'}`} />}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* Size */}
+              {selectedProductForPurchase.sizes && selectedProductForPurchase.sizes.length > 0 && (
+                <div className="space-y-2">
+                  <label className="text-xs font-bold text-gray-400 uppercase">Size</label>
                   <div className="flex flex-wrap gap-2">
-                    {selectedProductForPurchase.colors.map(color => (
+                    {selectedProductForPurchase.sizes.map(size => (
                       <button
-                        key={color}
-                        onClick={() => setPurchaseConfig(prev => ({ ...prev, color }))}
-                        className={`px-3 py-1.5 rounded-lg text-sm border transition-all ${purchaseConfig.color === color
-                          ? 'bg-white text-black border-white font-bold'
-                          : 'bg-gray-800 text-gray-300 border-gray-700 hover:border-gray-500'
+                        key={size}
+                        onClick={() => setPurchaseConfig(prev => ({ ...prev, size }))}
+                        className={`w-10 h-10 rounded-lg font-bold text-sm transition-all border ${purchaseConfig.size === size
+                            ? 'bg-red-600 border-red-600 text-white'
+                            : 'bg-gray-800 border-gray-700 text-gray-400 hover:border-gray-500'
                           }`}
                       >
-                        {color}
+                        {size}
                       </button>
                     ))}
                   </div>
@@ -810,20 +834,19 @@ const LiveRoom: React.FC<LiveRoomProps> = ({ streamer, isHost = false, onClose, 
               )}
 
               {/* Quantity */}
-              <div className="flex justify-between items-center bg-gray-800 rounded-xl p-3 border border-gray-700">
-                <span className="text-sm font-bold text-white">Quantity</span>
-                <div className="flex items-center gap-3">
+              <div className="space-y-2">
+                <label className="text-xs font-bold text-gray-400 uppercase">Quantity</label>
+                <div className="flex items-center gap-3 bg-gray-800 rounded-xl p-1 w-fit border border-gray-700">
                   <button
                     onClick={() => setPurchaseConfig(prev => ({ ...prev, quantity: Math.max(1, prev.quantity - 1) }))}
-                    className="w-8 h-8 rounded-full bg-gray-700 flex items-center justify-center text-white hover:bg-gray-600 disabled:opacity-50"
-                    disabled={purchaseConfig.quantity <= 1}
+                    className="w-8 h-8 flex items-center justify-center text-white hover:bg-gray-700 rounded-lg transition-colors"
                   >
                     <Minus size={16} />
                   </button>
-                  <span className="w-8 text-center font-bold">{purchaseConfig.quantity}</span>
+                  <span className="w-8 text-center font-bold text-white">{purchaseConfig.quantity}</span>
                   <button
-                    onClick={() => setPurchaseConfig(prev => ({ ...prev, quantity: Math.min(selectedProductForPurchase.stock, prev.quantity + 1) }))}
-                    className="w-8 h-8 rounded-full bg-gray-700 flex items-center justify-center text-white hover:bg-gray-600"
+                    onClick={() => setPurchaseConfig(prev => ({ ...prev, quantity: prev.quantity + 1 }))}
+                    className="w-8 h-8 flex items-center justify-center text-white hover:bg-gray-700 rounded-lg transition-colors"
                   >
                     <Plus size={16} />
                   </button>
