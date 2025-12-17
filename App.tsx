@@ -318,14 +318,27 @@ const App: React.FC = () => {
     setCurrentStreamer(null);
   };
 
-  const handleTopUp = (amount: number) => {
+  const handleTopUp = async (amount: number) => {
     setWalletBalance(prev => prev + amount);
-    // In real app, call Supabase to update balance here
+    if (session?.user) {
+      const { error } = await supabase.rpc('add_coins', { amount });
+      if (error) {
+        console.error("Error adding coins:", error);
+        // Optional: Revert on error
+        // setWalletBalance(prev => prev - amount);
+      }
+    }
   };
 
-  const handleUseCoins = (amount: number) => {
+  const handleUseCoins = async (amount: number) => {
     setWalletBalance(prev => Math.max(0, prev - amount));
-    // In real app, call Supabase to update balance here
+    if (session?.user) {
+      const { error } = await supabase.rpc('deduct_coins', { amount });
+      if (error) {
+        console.error("Error deducting coins:", error);
+        // Optional: Revert
+      }
+    }
   };
 
   // --- PROFILE UPDATE LOGIC ---
