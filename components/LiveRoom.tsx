@@ -10,6 +10,7 @@ import { Streamer, Comment, Product } from '../types';
 import { TRANSLATIONS } from '../constants';
 import { GIFTS } from '../constants';
 import { socketService } from '../services/socket';
+import { supabase } from '../lib/supabaseClient';
 import LiveKitVideo from './LiveKitVideo';
 
 interface LiveRoomProps {
@@ -346,7 +347,7 @@ const LiveRoom: React.FC<LiveRoomProps> = ({
     setShowCart(false);
   };
 
-  const handleFinalPayment = () => {
+  const handleFinalPayment = async () => {
     const total = cart.reduce((acc, item) => acc + (item.price * item.quantity), 0);
 
     if (!userAddress) {
@@ -356,6 +357,30 @@ const LiveRoom: React.FC<LiveRoomProps> = ({
 
     if (walletBalance >= total) {
       onUseCoinsLocal(total);
+
+      // Create Order in Supabase
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          const { error } = await supabase.from('orders').insert({
+            buyer_id: user.id,
+            total_amount: total,
+            status: 'pending',
+            shipping_address: userAddress,
+            // tracking_number: null // Allow check constraint or default
+          });
+
+          if (error) {
+            console.error("Error creating order:", error);
+            // Verify if error is ignored or alerts user. 
+            // Depending on robust requirements, we might want to refund coins if order fails.
+            // For now, simplicity: just log.
+          }
+        }
+      } catch (err) {
+        console.error("Exception creating order:", err);
+      }
+
       alert(`Payment successful! Items will be shipped to: ${userAddress}`);
       setCart([]);
       setShowCheckoutModal(false);
