@@ -768,7 +768,7 @@ const LiveRoom: React.FC<LiveRoomProps> = ({ streamer, isHost = false, onClose, 
       {selectedProductForPurchase && (
         <div className="absolute inset-0 z-[60] flex items-end sm:items-center justify-center pointer-events-none">
           <div className="absolute inset-0 bg-black/60 pointer-events-auto" onClick={() => setSelectedProductForPurchase(null)} />
-          <div className="w-full sm:max-w-md bg-gray-900 rounded-t-2xl sm:rounded-2xl border border-gray-800 pointer-events-auto animate-slide-up p-4 space-y-4">
+          <div className="relative z-10 w-full sm:max-w-md bg-gray-900 rounded-t-2xl sm:rounded-2xl border border-gray-800 pointer-events-auto animate-slide-up p-4 space-y-4">
 
             {/* Product Summary */}
             <div className="flex gap-4">
@@ -822,8 +822,8 @@ const LiveRoom: React.FC<LiveRoomProps> = ({ streamer, isHost = false, onClose, 
                         key={size}
                         onClick={() => setPurchaseConfig(prev => ({ ...prev, size }))}
                         className={`w-10 h-10 rounded-lg font-bold text-sm transition-all border ${purchaseConfig.size === size
-                            ? 'bg-red-600 border-red-600 text-white'
-                            : 'bg-gray-800 border-gray-700 text-gray-400 hover:border-gray-500'
+                          ? 'bg-red-600 border-red-600 text-white'
+                          : 'bg-gray-800 border-gray-700 text-gray-400 hover:border-gray-500'
                           }`}
                       >
                         {size}
