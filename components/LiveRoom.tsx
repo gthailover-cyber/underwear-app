@@ -424,9 +424,23 @@ const LiveRoom: React.FC<LiveRoomProps> = ({ streamer, isHost = false, onClose, 
                   <span className="text-sm font-mono font-bold text-white tabular-nums">{auctionTimeLeft}</span>
                 </div>
               )}
-              <button onClick={onClose} className="w-9 h-9 flex items-center justify-center bg-black/30 backdrop-blur-md rounded-full text-white hover:bg-black/50 transition-colors">
-                <X size={20} />
-              </button>
+              {isHost ? (
+                <button
+                  onClick={() => {
+                    if (window.confirm(language === 'th' ? "ต้องการจบไลฟ์ใช่หรือไม่?" : "Are you sure you want to end the live stream?")) {
+                      onClose();
+                    }
+                  }}
+                  className="bg-red-600 hover:bg-red-700 text-white text-xs font-bold px-4 py-2 rounded-full transition-colors shadow-lg shadow-red-900/40 flex items-center gap-2"
+                >
+                  <span className="w-2 h-2 bg-white rounded-full animate-pulse"></span>
+                  {language === 'th' ? "จบไลฟ์" : "END LIVE"}
+                </button>
+              ) : (
+                <button onClick={onClose} className="w-9 h-9 flex items-center justify-center bg-black/30 backdrop-blur-md rounded-full text-white hover:bg-black/50 transition-colors">
+                  <X size={20} />
+                </button>
+              )}
             </div>
           </div>
 
@@ -612,66 +626,51 @@ const LiveRoom: React.FC<LiveRoomProps> = ({ streamer, isHost = false, onClose, 
               </div>
             </div>
           ) : (
-            // Host Controls
-            <div className="flex flex-col gap-3">
-              {/* Row 1: Chat Input */}
-              <div className="flex items-center gap-2 w-full">
-                <div className="flex-1 bg-black/40 backdrop-blur-md border border-white/20 rounded-full flex items-center px-2 py-1 focus-within:border-white/50 focus-within:bg-black/60 transition-all">
-                  <input
-                    type="text"
-                    value={newComment}
-                    onChange={(e) => setNewComment(e.target.value)}
-                    placeholder={t.saySomething}
-                    className="flex-1 bg-transparent border-none text-white text-sm px-3 focus:outline-none placeholder-gray-400 h-10"
-                    onKeyDown={(e) => e.key === 'Enter' && handleSendMessage(e)}
-                  />
-                  <button
-                    onClick={handleSendMessage}
-                    disabled={!newComment.trim()}
-                    className="w-8 h-8 flex items-center justify-center bg-white/10 rounded-full text-white hover:bg-white/20 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-                  >
-                    <Send size={16} />
-                  </button>
-                </div>
+            // Host Controls (Professional UX)
+            <div className="flex items-center gap-2 w-full">
+              {/* Product Button */}
+              <button
+                onClick={() => setShowProducts(true)}
+                className="flex-shrink-0 w-10 h-10 flex items-center justify-center bg-black/40 backdrop-blur-md rounded-full border border-white/20 text-white hover:bg-white/10 transition-all relative"
+              >
+                <ShoppingBag size={20} />
+                {streamer.products.length > 0 && (
+                  <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-600 rounded-full text-[10px] flex items-center justify-center font-bold border border-black">
+                    {streamer.products.length}
+                  </span>
+                )}
+              </button>
+
+              {/* Chat Input (Flex Grow) */}
+              <div className="flex-1 bg-black/40 backdrop-blur-md border border-white/20 rounded-full flex items-center px-2 py-1 focus-within:border-white/50 focus-within:bg-black/60 transition-all">
+                <input
+                  type="text"
+                  value={newComment}
+                  onChange={(e) => setNewComment(e.target.value)}
+                  placeholder={t.saySomething}
+                  className="flex-1 bg-transparent border-none text-white text-sm px-3 focus:outline-none placeholder-gray-400 h-10"
+                  onKeyDown={(e) => e.key === 'Enter' && handleSendMessage(e)}
+                />
+                <button
+                  onClick={handleSendMessage}
+                  disabled={!newComment.trim()}
+                  className="w-8 h-8 flex items-center justify-center bg-white/10 rounded-full text-white hover:bg-white/20 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                >
+                  <Send size={16} />
+                </button>
               </div>
 
-              {/* Row 2: Controls with Product Button at Left */}
-              <div className="flex items-center gap-2 overflow-x-auto pb-1 no-scrollbar">
-                {/* Product Show Button (New - Bottom Left) */}
-                <button
-                  onClick={() => setShowProducts(true)}
-                  className="flex-shrink-0 w-12 h-12 flex items-center justify-center bg-black/60 backdrop-blur-md rounded-xl border border-white/20 text-white hover:bg-white/10 transition-all relative"
-                >
-                  <ShoppingBag size={20} />
-                  {streamer.products.length > 0 && (
-                    <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-600 rounded-full text-[10px] flex items-center justify-center font-bold border-2 border-black">
-                      {streamer.products.length}
-                    </span>
-                  )}
-                </button>
+              {/* Hardware Controls (Mic & Cam) */}
+              <button
+                onClick={() => setIsAudioEnabled(!isAudioEnabled)}
+                className={`w-10 h-10 flex items-center justify-center backdrop-blur-md rounded-full border transition-all ${!isAudioEnabled ? 'bg-red-500/80 border-red-500 text-white' : 'bg-black/40 border-white/20 text-white hover:bg-white/10'}`}
+              >
+                {isAudioEnabled ? <Mic size={20} /> : <MicOff size={20} />}
+              </button>
 
-                <button className="flex-1 min-w-[140px] bg-black/60 backdrop-blur-md border border-white/20 rounded-xl h-12 flex items-center justify-center gap-2 font-bold text-sm hover:bg-black/80 transition-colors whitespace-nowrap px-4">
-                  <Settings size={18} /> Stream Settings
-                </button>
-
-                <button className="w-12 h-12 flex-shrink-0 flex items-center justify-center bg-black/60 backdrop-blur-md rounded-xl border border-white/20 hover:bg-black/80">
-                  <Mic size={20} />
-                </button>
-                <button className="w-12 h-12 flex-shrink-0 flex items-center justify-center bg-black/60 backdrop-blur-md rounded-xl border border-white/20 hover:bg-black/80">
-                  <CameraSwitchIcon />
-                </button>
-
-                <button
-                  onClick={() => {
-                    if (window.confirm(language === 'th' ? "ต้องการจบไลฟ์ใช่หรือไม่?" : "Are you sure you want to end the live stream?")) {
-                      onClose();
-                    }
-                  }}
-                  className="px-4 h-12 flex-shrink-0 flex items-center justify-center gap-2 bg-red-600 backdrop-blur-md border border-red-500 rounded-xl font-bold text-sm hover:bg-red-700 transition-colors shadow-lg shadow-red-900/40"
-                >
-                  <LogOut size={18} /> {language === 'th' ? "จบไลฟ์" : "End"}
-                </button>
-              </div>
+              <button className="w-10 h-10 flex items-center justify-center bg-black/40 backdrop-blur-md rounded-full border border-white/20 text-white hover:bg-white/10 transition-all">
+                <CameraSwitchIcon />
+              </button>
             </div>
           )}
         </div>
