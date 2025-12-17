@@ -4,7 +4,7 @@ import {
   Heart, Share2, MessageCircle, Gift, ShoppingBag, X,
   Send, DollarSign, User, ChevronRight, Eye, MoreHorizontal,
   Flame, Sparkles, Trophy, Minus, Plus, CreditCard, ShoppingCart,
-  Wallet, Settings, Mic, MicOff, Video, VideoOff, LogOut, Check
+  Wallet, Settings, Mic, MicOff, Video, VideoOff, LogOut, Check, MapPin
 } from 'lucide-react';
 import { Streamer, Comment, Product } from '../types';
 import { TRANSLATIONS } from '../constants';
@@ -66,6 +66,12 @@ const LiveRoom: React.FC<LiveRoomProps> = ({ streamer, isHost = false, onClose, 
   const [showWalletModal, setShowWalletModal] = useState(false);
   const [showCart, setShowCart] = useState(false);
   const [cart, setCart] = useState<CartItem[]>([]);
+
+  // Checkout State
+  const [showCheckoutModal, setShowCheckoutModal] = useState(false);
+  const [userAddress, setUserAddress] = useState<string | null>(null);
+  const [isEditingAddress, setIsEditingAddress] = useState(false);
+  const [tempAddress, setTempAddress] = useState('');
 
   // Host Controls
   const [giftLogs, setGiftLogs] = useState<GiftLogItem[]>([]);
@@ -279,15 +285,33 @@ const LiveRoom: React.FC<LiveRoomProps> = ({ streamer, isHost = false, onClose, 
   };
 
   const handleCheckoutCart = () => {
+    setShowCheckoutModal(true);
+    setShowCart(false);
+  };
+
+  const handleFinalPayment = () => {
     const total = cart.reduce((acc, item) => acc + (item.price * item.quantity), 0);
+
+    if (!userAddress) {
+      alert("Please add a shipping address.");
+      return;
+    }
+
     if (walletBalance >= total) {
       onUseCoins(total);
-      alert(`Checkout successful! Paid ฿${total.toLocaleString()}`);
+      alert(`Payment successful! Items will be shipped to: ${userAddress}`);
       setCart([]);
-      setShowCart(false);
+      setShowCheckoutModal(false);
     } else {
-      alert('Insufficient coins!');
+      alert('Insufficient coins. Please top up.');
       onOpenWallet();
+    }
+  };
+
+  const handleSaveAddress = () => {
+    if (tempAddress.trim()) {
+      setUserAddress(tempAddress);
+      setIsEditingAddress(false);
     }
   };
 
@@ -878,192 +902,295 @@ const LiveRoom: React.FC<LiveRoomProps> = ({ streamer, isHost = false, onClose, 
           </div>
         </div>
       )}
+      {/* 2.6 Checkout Modal */}
+      {
+        showCheckoutModal && (
+          <div className="absolute inset-0 z-[60] flex items-center justify-center p-4">
+            <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setShowCheckoutModal(false)} />
+            <div className="relative bg-gray-900 rounded-2xl w-full max-w-sm border border-gray-800 p-6 animate-slide-up shadow-2xl">
+              <div className="flex justify-between items-center mb-6">
+                <h3 className="text-xl font-bold text-white flex items-center gap-2">Checkout</h3>
+                <button onClick={() => setShowCheckoutModal(false)} className="text-gray-400 hover:text-white"><X size={20} /></button>
+              </div>
+
+              {/* Address Section */}
+              <div className="mb-6">
+                <div className="flex justify-between items-center mb-2">
+                  <label className="text-xs font-bold text-gray-400 uppercase flex items-center gap-1">
+                    <MapPin size={12} /> Shipping Address
+                  </label>
+                  {userAddress && !isEditingAddress && (
+                    <button onClick={() => { setIsEditingAddress(true); setTempAddress(userAddress); }} className="text-xs text-red-500 font-bold hover:underline">
+                      Change
+                    </button>
+                  )}
+                </div>
+
+                {!userAddress || isEditingAddress ? (
+                  <div className="space-y-2">
+                    <textarea
+                      value={tempAddress}
+                      onChange={(e) => setTempAddress(e.target.value)}
+                      placeholder="Enter your shipping address..."
+                      className="w-full bg-gray-800 border border-gray-700 rounded-xl p-3 text-sm text-white focus:border-white focus:outline-none min-h-[80px]"
+                    />
+                    <div className="flex gap-2">
+                      <button
+                        onClick={handleSaveAddress}
+                        disabled={!tempAddress.trim()}
+                        className="flex-1 bg-white text-black font-bold py-2 rounded-lg text-xs disabled:opacity-50"
+                      >
+                        Save Address
+                      </button>
+                      {userAddress && (
+                        <button onClick={() => setIsEditingAddress(false)} className="px-4 py-2 bg-gray-800 rounded-lg text-xs text-white">Cancel</button>
+                      )}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="bg-gray-800 rounded-xl p-3 border border-gray-700">
+                    <p className="text-sm text-white">{userAddress}</p>
+                  </div>
+                )}
+              </div>
+
+              {/* Order Summary */}
+              <div className="space-y-3 mb-6">
+                <div className="flex justify-between items-center text-gray-400 text-sm">
+                  <span>Total Items</span>
+                  <span>{cart.reduce((acc, item) => acc + item.quantity, 0)}</span>
+                </div>
+                <div className="flex justify-between items-center text-white font-bold text-lg">
+                  <span>Total Amount</span>
+                  <span>฿{cart.reduce((acc, item) => acc + (item.price * item.quantity), 0).toLocaleString()}</span>
+                </div>
+              </div>
+
+              <div className="h-px bg-gray-800 my-4" />
+
+              {/* Wallet Check */}
+              <div className="mb-6">
+                <div className="flex justify-between items-center mb-2">
+                  <span className="text-xs font-bold text-gray-400 uppercase">Wallet Balance</span>
+                  <span className={`font-bold ${walletBalance < cart.reduce((acc, item) => acc + (item.price * item.quantity), 0) ? 'text-red-500' : 'text-green-500'}`}>
+                    ฿{walletBalance.toLocaleString()}
+                  </span>
+                </div>
+
+                {walletBalance < cart.reduce((acc, item) => acc + (item.price * item.quantity), 0) && (
+                  <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-3 flex items-center justify-between">
+                    <span className="text-xs text-red-400">Insufficient balance</span>
+                    <button onClick={onOpenWallet} className="bg-red-600 hover:bg-red-700 text-white text-xs font-bold px-3 py-1.5 rounded-lg transition-colors">
+                      Top Up Now
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              {/* Confirm Button */}
+              <button
+                onClick={handleFinalPayment}
+                disabled={!userAddress || walletBalance < cart.reduce((acc, item) => acc + (item.price * item.quantity), 0)}
+                className="w-full bg-gradient-to-r from-red-600 to-red-800 text-white font-bold py-3 rounded-xl shadow-lg shadow-red-900/40 disabled:opacity-50 disabled:grayscale transition-all active:scale-95 flex items-center justify-center gap-2"
+              >
+                Confirm Payment
+              </button>
+            </div>
+          </div>
+        )
+      }
 
       {/* 3. Buy Now / Confirm Purchase Modal */}
-      {selectedProductForPurchase && (
-        <div className="absolute inset-0 z-[60] flex items-end sm:items-center justify-center pointer-events-none">
-          <div className="absolute inset-0 bg-black/60 pointer-events-auto" onClick={() => setSelectedProductForPurchase(null)} />
-          <div className="relative z-10 w-full sm:max-w-md bg-gray-900 rounded-t-2xl sm:rounded-2xl border border-gray-800 pointer-events-auto animate-slide-up p-4 space-y-4">
+      {
+        selectedProductForPurchase && (
+          <div className="absolute inset-0 z-[60] flex items-end sm:items-center justify-center pointer-events-none">
+            <div className="absolute inset-0 bg-black/60 pointer-events-auto" onClick={() => setSelectedProductForPurchase(null)} />
+            <div className="relative z-10 w-full sm:max-w-md bg-gray-900 rounded-t-2xl sm:rounded-2xl border border-gray-800 pointer-events-auto animate-slide-up p-4 space-y-4">
 
-            {/* Product Summary */}
-            <div className="flex gap-4">
-              <div className="w-24 h-24 rounded-xl overflow-hidden bg-gray-800 border border-gray-700">
-                <img src={selectedProductForPurchase.image} className="w-full h-full object-cover" alt="Product" />
-              </div>
-              <div className="flex-1">
-                <div className="flex justify-between items-start">
-                  <h3 className="font-bold text-white text-lg line-clamp-2">{selectedProductForPurchase.name}</h3>
-                  <button onClick={() => setSelectedProductForPurchase(null)} className="text-gray-400 hover:text-white"><X size={20} /></button>
+              {/* Product Summary */}
+              <div className="flex gap-4">
+                <div className="w-24 h-24 rounded-xl overflow-hidden bg-gray-800 border border-gray-700">
+                  <img src={selectedProductForPurchase.image} className="w-full h-full object-cover" alt="Product" />
                 </div>
-                <p className="text-red-500 text-xl font-bold mt-1">฿{(selectedProductForPurchase.price || 0).toLocaleString()}</p>
-                <p className="text-xs text-gray-400 mt-1">Stock: {selectedProductForPurchase.stock} available</p>
+                <div className="flex-1">
+                  <div className="flex justify-between items-start">
+                    <h3 className="font-bold text-white text-lg line-clamp-2">{selectedProductForPurchase.name}</h3>
+                    <button onClick={() => setSelectedProductForPurchase(null)} className="text-gray-400 hover:text-white"><X size={20} /></button>
+                  </div>
+                  <p className="text-red-500 text-xl font-bold mt-1">฿{(selectedProductForPurchase.price || 0).toLocaleString()}</p>
+                  <p className="text-xs text-gray-400 mt-1">Stock: {selectedProductForPurchase.stock} available</p>
+                </div>
               </div>
-            </div>
 
-            <div className="h-px bg-gray-800 my-2" />
+              <div className="h-px bg-gray-800 my-2" />
 
-            {/* Options */}
-            <div className="space-y-4">
-              {/* Color */}
-              {selectedProductForPurchase.colors && selectedProductForPurchase.colors.length > 0 && (
-                <div className="space-y-2">
-                  <label className="text-xs font-bold text-gray-400 uppercase">Color</label>
-                  <div className="flex flex-wrap gap-3">
-                    {selectedProductForPurchase.colors.map(color => {
-                      const isSelected = purchaseConfig.color === color;
-                      return (
+              {/* Options */}
+              <div className="space-y-4">
+                {/* Color */}
+                {selectedProductForPurchase.colors && selectedProductForPurchase.colors.length > 0 && (
+                  <div className="space-y-2">
+                    <label className="text-xs font-bold text-gray-400 uppercase">Color</label>
+                    <div className="flex flex-wrap gap-3">
+                      {selectedProductForPurchase.colors.map(color => {
+                        const isSelected = purchaseConfig.color === color;
+                        return (
+                          <button
+                            key={color}
+                            onClick={() => setPurchaseConfig(prev => ({ ...prev, color }))}
+                            className={`w-8 h-8 rounded-full border-2 relative transition-transform ${isSelected ? 'border-white scale-110' : 'border-transparent hover:scale-105'}`}
+                            style={{ backgroundColor: color }}
+                            title={color}
+                          >
+                            {isSelected && <Check size={14} className={`absolute inset-0 m-auto ${['#FFFFFF', '#ffffff', '#FFFF00', '#ffff00', 'white', 'yellow'].includes(color) ? 'text-black' : 'text-white'}`} />}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {/* Size */}
+                {selectedProductForPurchase.sizes && selectedProductForPurchase.sizes.length > 0 && (
+                  <div className="space-y-2">
+                    <label className="text-xs font-bold text-gray-400 uppercase">Size</label>
+                    <div className="flex flex-wrap gap-2">
+                      {selectedProductForPurchase.sizes.map(size => (
                         <button
-                          key={color}
-                          onClick={() => setPurchaseConfig(prev => ({ ...prev, color }))}
-                          className={`w-8 h-8 rounded-full border-2 relative transition-transform ${isSelected ? 'border-white scale-110' : 'border-transparent hover:scale-105'}`}
-                          style={{ backgroundColor: color }}
-                          title={color}
+                          key={size}
+                          onClick={() => setPurchaseConfig(prev => ({ ...prev, size }))}
+                          className={`w-10 h-10 rounded-lg font-bold text-sm transition-all border ${purchaseConfig.size === size
+                            ? 'bg-red-600 border-red-600 text-white'
+                            : 'bg-gray-800 border-gray-700 text-gray-400 hover:border-gray-500'
+                            }`}
                         >
-                          {isSelected && <Check size={14} className={`absolute inset-0 m-auto ${['#FFFFFF', '#ffffff', '#FFFF00', '#ffff00', 'white', 'yellow'].includes(color) ? 'text-black' : 'text-white'}`} />}
+                          {size}
                         </button>
-                      );
-                    })}
+                      ))}
+                    </div>
                   </div>
-                </div>
-              )}
+                )}
 
-              {/* Size */}
-              {selectedProductForPurchase.sizes && selectedProductForPurchase.sizes.length > 0 && (
+                {/* Quantity */}
                 <div className="space-y-2">
-                  <label className="text-xs font-bold text-gray-400 uppercase">Size</label>
-                  <div className="flex flex-wrap gap-2">
-                    {selectedProductForPurchase.sizes.map(size => (
-                      <button
-                        key={size}
-                        onClick={() => setPurchaseConfig(prev => ({ ...prev, size }))}
-                        className={`w-10 h-10 rounded-lg font-bold text-sm transition-all border ${purchaseConfig.size === size
-                          ? 'bg-red-600 border-red-600 text-white'
-                          : 'bg-gray-800 border-gray-700 text-gray-400 hover:border-gray-500'
-                          }`}
-                      >
-                        {size}
-                      </button>
-                    ))}
+                  <label className="text-xs font-bold text-gray-400 uppercase">Quantity</label>
+                  <div className="flex items-center gap-3 bg-gray-800 rounded-xl p-1 w-fit border border-gray-700">
+                    <button
+                      onClick={() => setPurchaseConfig(prev => ({ ...prev, quantity: Math.max(1, prev.quantity - 1) }))}
+                      className="w-8 h-8 flex items-center justify-center text-white hover:bg-gray-700 rounded-lg transition-colors"
+                    >
+                      <Minus size={16} />
+                    </button>
+                    <span className="w-8 text-center font-bold text-white">{purchaseConfig.quantity}</span>
+                    <button
+                      onClick={() => setPurchaseConfig(prev => ({ ...prev, quantity: prev.quantity + 1 }))}
+                      className="w-8 h-8 flex items-center justify-center text-white hover:bg-gray-700 rounded-lg transition-colors"
+                    >
+                      <Plus size={16} />
+                    </button>
                   </div>
-                </div>
-              )}
-
-              {/* Quantity */}
-              <div className="space-y-2">
-                <label className="text-xs font-bold text-gray-400 uppercase">Quantity</label>
-                <div className="flex items-center gap-3 bg-gray-800 rounded-xl p-1 w-fit border border-gray-700">
-                  <button
-                    onClick={() => setPurchaseConfig(prev => ({ ...prev, quantity: Math.max(1, prev.quantity - 1) }))}
-                    className="w-8 h-8 flex items-center justify-center text-white hover:bg-gray-700 rounded-lg transition-colors"
-                  >
-                    <Minus size={16} />
-                  </button>
-                  <span className="w-8 text-center font-bold text-white">{purchaseConfig.quantity}</span>
-                  <button
-                    onClick={() => setPurchaseConfig(prev => ({ ...prev, quantity: prev.quantity + 1 }))}
-                    className="w-8 h-8 flex items-center justify-center text-white hover:bg-gray-700 rounded-lg transition-colors"
-                  >
-                    <Plus size={16} />
-                  </button>
                 </div>
               </div>
-            </div>
 
-            {/* Footer Actions */}
-            <div className="pt-4 flex gap-3">
-              <button
-                onClick={() => handleConfirmPurchase('add_to_cart')}
-                className="flex-1 bg-gray-800 border border-gray-700 text-white font-bold py-3 rounded-xl hover:bg-gray-700 transition-colors"
-              >
-                Add to Cart
-              </button>
-              <button
-                onClick={() => handleConfirmPurchase('buy_now')}
-                className="flex-1 bg-gradient-to-r from-red-600 to-red-800 text-white font-bold py-3 rounded-xl shadow-lg shadow-red-900/20 hover:from-red-500 hover:to-red-700 active:scale-95 transition-all"
-              >
-                Buy Now • ฿{(selectedProductForPurchase.price * purchaseConfig.quantity).toLocaleString()}
-              </button>
+              {/* Footer Actions */}
+              <div className="pt-4 flex gap-3">
+                <button
+                  onClick={() => handleConfirmPurchase('add_to_cart')}
+                  className="flex-1 bg-gray-800 border border-gray-700 text-white font-bold py-3 rounded-xl hover:bg-gray-700 transition-colors"
+                >
+                  Add to Cart
+                </button>
+                <button
+                  onClick={() => handleConfirmPurchase('buy_now')}
+                  className="flex-1 bg-gradient-to-r from-red-600 to-red-800 text-white font-bold py-3 rounded-xl shadow-lg shadow-red-900/20 hover:from-red-500 hover:to-red-700 active:scale-95 transition-all"
+                >
+                  Buy Now • ฿{(selectedProductForPurchase.price * purchaseConfig.quantity).toLocaleString()}
+                </button>
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        )
+      }
 
       {/* 4. Bid Modal (For Auction) */}
-      {showBidModal && (
-        <div className="absolute inset-0 z-50 flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setShowBidModal(false)} />
-          <div className="relative bg-gray-900 rounded-2xl w-full max-w-sm border border-orange-500/50 p-6 animate-slide-up shadow-2xl shadow-orange-500/10">
-            <button onClick={() => setShowBidModal(false)} className="absolute top-4 right-4 text-gray-400 hover:text-white"><X size={20} /></button>
+      {
+        showBidModal && (
+          <div className="absolute inset-0 z-50 flex items-center justify-center p-4">
+            <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setShowBidModal(false)} />
+            <div className="relative bg-gray-900 rounded-2xl w-full max-w-sm border border-orange-500/50 p-6 animate-slide-up shadow-2xl shadow-orange-500/10">
+              <button onClick={() => setShowBidModal(false)} className="absolute top-4 right-4 text-gray-400 hover:text-white"><X size={20} /></button>
 
-            <div className="text-center mb-6">
-              <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-orange-500/10 mb-4 animate-pulse">
-                <Flame size={32} className="text-orange-500" />
+              <div className="text-center mb-6">
+                <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-orange-500/10 mb-4 animate-pulse">
+                  <Flame size={32} className="text-orange-500" />
+                </div>
+                <h3 className="text-xl font-bold text-white">Place Your Bid</h3>
+                <p className="text-sm text-gray-400 mt-1">Current Highest: <span className="text-orange-500 font-bold">฿{currentHighestBid.toLocaleString()}</span></p>
               </div>
-              <h3 className="text-xl font-bold text-white">Place Your Bid</h3>
-              <p className="text-sm text-gray-400 mt-1">Current Highest: <span className="text-orange-500 font-bold">฿{currentHighestBid.toLocaleString()}</span></p>
-            </div>
 
-            {/* Bid Controls */}
-            <div className="flex items-center justify-center gap-4 mb-8">
-              <button
-                onClick={decreaseBid}
-                disabled={myBidAmount <= currentHighestBid + 50}
-                className="w-12 h-12 rounded-full bg-gray-800 border border-gray-700 flex items-center justify-center text-white hover:bg-gray-700 disabled:opacity-30 transition-colors"
-              >
-                <Minus size={20} />
-              </button>
-              <div className="text-center min-w-[120px]">
-                <span className="block text-3xl font-black text-white">฿{myBidAmount.toLocaleString()}</span>
-                {isInsufficientFunds && <span className="text-[10px] text-red-500 font-bold">Insufficient Funds</span>}
+              {/* Bid Controls */}
+              <div className="flex items-center justify-center gap-4 mb-8">
+                <button
+                  onClick={decreaseBid}
+                  disabled={myBidAmount <= currentHighestBid + 50}
+                  className="w-12 h-12 rounded-full bg-gray-800 border border-gray-700 flex items-center justify-center text-white hover:bg-gray-700 disabled:opacity-30 transition-colors"
+                >
+                  <Minus size={20} />
+                </button>
+                <div className="text-center min-w-[120px]">
+                  <span className="block text-3xl font-black text-white">฿{myBidAmount.toLocaleString()}</span>
+                  {isInsufficientFunds && <span className="text-[10px] text-red-500 font-bold">Insufficient Funds</span>}
+                </div>
+                <button
+                  onClick={increaseBid}
+                  className="w-12 h-12 rounded-full bg-gray-800 border border-gray-700 flex items-center justify-center text-white hover:bg-gray-700 transition-colors"
+                >
+                  <Plus size={20} />
+                </button>
               </div>
+
               <button
-                onClick={increaseBid}
-                className="w-12 h-12 rounded-full bg-gray-800 border border-gray-700 flex items-center justify-center text-white hover:bg-gray-700 transition-colors"
+                onClick={() => { placeBid(); setShowBidModal(false); }}
+                disabled={isInsufficientFunds}
+                className="w-full bg-gradient-to-r from-orange-500 to-red-600 text-white font-bold py-4 rounded-xl shadow-lg shadow-orange-900/20 active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed hover:brightness-110"
               >
-                <Plus size={20} />
+                CONFIRM BID
               </button>
-            </div>
 
-            <button
-              onClick={() => { placeBid(); setShowBidModal(false); }}
-              disabled={isInsufficientFunds}
-              className="w-full bg-gradient-to-r from-orange-500 to-red-600 text-white font-bold py-4 rounded-xl shadow-lg shadow-orange-900/20 active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed hover:brightness-110"
-            >
-              CONFIRM BID
-            </button>
-
-            <div className="mt-4 flex justify-between items-center text-xs text-gray-400 bg-gray-800/50 p-2 rounded-lg">
-              <span>Your Balance: ฿{walletBalance.toLocaleString()}</span>
-              <button onClick={onOpenWallet} className="text-orange-500 font-bold hover:underline">Top Up</button>
+              <div className="mt-4 flex justify-between items-center text-xs text-gray-400 bg-gray-800/50 p-2 rounded-lg">
+                <span>Your Balance: ฿{walletBalance.toLocaleString()}</span>
+                <button onClick={onOpenWallet} className="text-orange-500 font-bold hover:underline">Top Up</button>
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        )
+      }
 
       {/* 5. Wallet Modal (Placeholder) */}
-      {showWalletModal && (
-        <div className="absolute inset-0 z-[70] flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={() => setShowWalletModal(false)} />
-          <div className="relative bg-gray-900 rounded-2xl w-full max-w-sm border border-gray-700 p-6 animate-slide-up">
-            <h3 className="text-xl font-bold text-white mb-4 flex items-center gap-2"><Wallet /> My Wallet</h3>
-            <p className="text-gray-400 mb-6">Insufficient coins. Please top up to continue.</p>
-            <div className="grid grid-cols-2 gap-3 mb-6">
-              {[100, 300, 500, 1000].map(amount => (
-                <button
-                  key={amount}
-                  onClick={() => { setWalletBalance(prev => prev + amount); setShowWalletModal(false); alert(`Top up ${amount} successful!`); }}
-                  className="bg-gray-800 border border-gray-700 rounded-xl p-4 hover:border-yellow-500 hover:bg-yellow-500/10 transition-all flex flex-col items-center gap-1"
-                >
-                  <span className="text-lg font-bold text-white">฿{amount}</span>
-                  <span className="text-xs text-gray-500">{(amount / 35).toFixed(0)} coins</span>
-                </button>
-              ))}
+      {
+        showWalletModal && (
+          <div className="absolute inset-0 z-[70] flex items-center justify-center p-4">
+            <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={() => setShowWalletModal(false)} />
+            <div className="relative bg-gray-900 rounded-2xl w-full max-w-sm border border-gray-700 p-6 animate-slide-up">
+              <h3 className="text-xl font-bold text-white mb-4 flex items-center gap-2"><Wallet /> My Wallet</h3>
+              <p className="text-gray-400 mb-6">Insufficient coins. Please top up to continue.</p>
+              <div className="grid grid-cols-2 gap-3 mb-6">
+                {[100, 300, 500, 1000].map(amount => (
+                  <button
+                    key={amount}
+                    onClick={() => { setWalletBalance(prev => prev + amount); setShowWalletModal(false); alert(`Top up ${amount} successful!`); }}
+                    className="bg-gray-800 border border-gray-700 rounded-xl p-4 hover:border-yellow-500 hover:bg-yellow-500/10 transition-all flex flex-col items-center gap-1"
+                  >
+                    <span className="text-lg font-bold text-white">฿{amount}</span>
+                    <span className="text-xs text-gray-500">{(amount / 35).toFixed(0)} coins</span>
+                  </button>
+                ))}
+              </div>
+              <button onClick={() => setShowWalletModal(false)} className="w-full bg-gray-800 py-3 rounded-xl text-white font-bold">Cancel</button>
             </div>
-            <button onClick={() => setShowWalletModal(false)} className="w-full bg-gray-800 py-3 rounded-xl text-white font-bold">Cancel</button>
           </div>
-        </div>
-      )}
-    </div>
+        )
+      }
+    </div >
   );
 };
 
