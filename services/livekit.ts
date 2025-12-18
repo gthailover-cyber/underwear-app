@@ -14,6 +14,13 @@ class LiveKitService {
       this.room = new Room({
         adaptiveStream: true,
         dynacast: true,
+        publishDefaults: {
+          simulcast: false,
+          videoEncoding: {
+            maxBitrate: 3500000,
+            maxFramerate: 30
+          }
+        },
         videoCaptureDefaults: {
           resolution: {
             width: 1280,
