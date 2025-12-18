@@ -195,9 +195,14 @@ const LiveRoom: React.FC<LiveRoomProps> = ({
       setComments(prev => [...prev, newComment]);
     });
 
+    const cleanupViewers = socketService.on('viewer_update', (data: any) => {
+      setViewerCount(data.count);
+    });
+
     return () => {
       cleanup();
       cleanupBids();
+      cleanupViewers();
       socketService.leaveRoom();
     };
   }, [streamer.id, currentUser]);
