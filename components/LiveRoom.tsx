@@ -380,70 +380,77 @@ const LiveRoom: React.FC<LiveRoomProps> = ({
     setShowCart(false);
   };
 
-  const handleFinalPayment = async () => {
-    const total = cart.reduce((acc, item) => acc + (item.price * item.quantity), 0);
+  const processOrder = async (items: CartItem[]) => {
+    const total = items.reduce((acc, item) => acc + (item.price * item.quantity), 0);
 
     if (!userAddress) {
-      alert("Please add a shipping address.");
-      return;
+      alert("Please add a shipping address in your profile or use Checkout to enter one.");
+      return false;
     }
 
-    if (walletBalance >= total) {
-      onUseCoinsLocal(total);
+    if (walletBalance < total) {
+      alert('Insufficient coins. Please top up.');
+      onOpenWallet();
+      return false;
+    }
 
-      // Create Order in Supabase
-      // Create Order in Supabase
-      try {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (user) {
-          // 1. Insert Order
-          const { data: orderData, error: orderError } = await supabase
-            .from('orders')
-            .insert({
-              buyer_id: user.id,
-              total_amount: total,
-              status: 'shipping', // Paid immediately
-              shipping_address: userAddress,
-            })
-            .select()
-            .single();
+    // Deduct coins
+    onUseCoinsLocal(total);
 
-          if (orderError) throw orderError;
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        // 1. Insert Order
+        const { data: orderData, error: orderError } = await supabase
+          .from('orders')
+          .insert({
+            buyer_id: user.id,
+            total_amount: total,
+            status: 'shipping', // Paid immediately
+            shipping_address: userAddress,
+          })
+          .select()
+          .single();
 
-          if (orderData) {
-            // 2. Insert Order Items
-            const itemsToInsert = cart.map(item => ({
-              order_id: orderData.id,
-              product_id: item.id,
-              product_name: item.name,
-              product_image: item.image,
-              quantity: item.quantity,
-              price: item.price,
-              color: item.color,
-              size: item.size
-            }));
+        if (orderError) throw orderError;
 
-            const { error: itemsError } = await supabase
-              .from('order_items')
-              .insert(itemsToInsert);
+        if (orderData) {
+          // 2. Insert Order Items
+          const itemsToInsert = items.map(item => ({
+            order_id: orderData.id,
+            product_id: item.id,
+            product_name: item.name,
+            product_image: item.image,
+            quantity: item.quantity,
+            price: item.price,
+            color: item.color,
+            size: item.size
+          }));
 
-            if (itemsError) throw itemsError;
-          }
+          const { error: itemsError } = await supabase
+            .from('order_items')
+            .insert(itemsToInsert);
+
+          if (itemsError) throw itemsError;
         }
-      } catch (err: any) {
-        console.error("Exception creating order:", err);
-        alert(`Failed to create order: ${err.message || err}`);
-        // Consider whether to revert coin deduction here, but keeping it simple for now
-        return;
       }
 
       alert(`Payment successful! Items will be shipped to: ${userAddress}`);
+      onNewOrder?.();
+      return true;
+
+    } catch (err: any) {
+      console.error("Exception creating order:", err);
+      alert(`Failed to create order: ${err.message || err}`);
+      return false;
+    }
+  };
+
+  const handleFinalPayment = async () => {
+    const success = await processOrder(cart);
+    if (success) {
       setCart([]);
       setShowCheckoutModal(false);
-      onNewOrder?.();
-    } else {
-      alert('Insufficient coins. Please top up.');
-      onOpenWallet();
     }
   };
 
@@ -466,19 +473,20 @@ const LiveRoom: React.FC<LiveRoomProps> = ({
   };
 
   // Buy Now Logic - Step 2: Confirm Purchase (Direct or Cart)
-  const handleConfirmPurchase = (action: 'buy_now' | 'add_to_cart') => {
+  const handleConfirmPurchase = async (action: 'buy_now' | 'add_to_cart') => {
     if (!selectedProductForPurchase) return;
 
-    const totalCost = selectedProductForPurchase.price * purchaseConfig.quantity;
-
     if (action === 'buy_now') {
-      if (walletBalance >= totalCost) {
-        onUseCoinsLocal(totalCost); // Deduct coins
-        alert(`Successfully purchased ${purchaseConfig.quantity}x ${selectedProductForPurchase.name}!`);
+      const tempItem: CartItem = {
+        ...selectedProductForPurchase,
+        quantity: purchaseConfig.quantity,
+        color: purchaseConfig.color,
+        size: purchaseConfig.size
+      };
+
+      const success = await processOrder([tempItem]);
+      if (success) {
         setSelectedProductForPurchase(null); // Close sheet
-      } else {
-        alert('Insufficient coins!');
-        onOpenWallet();
       }
     } else {
       // Add to Cart
