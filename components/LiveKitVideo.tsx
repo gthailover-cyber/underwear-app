@@ -65,8 +65,10 @@ const LiveKitVideo: React.FC<LiveKitVideoProps> = ({
                             console.warn("Autoplay failed (will wait for user interaction):", e);
                         });
                     } else if (track.kind === Track.Kind.Audio && !isHost) {
+                        // Check if already attached to prevent echo/duplicates
+                        if (track.attachedElements.length > 0) return;
+
                         // For audio (Viewer only), we let LiveKit create/manage the element
-                        // This prevents echo for the Host
                         const element = track.attach();
                         document.body.appendChild(element);
                     }
