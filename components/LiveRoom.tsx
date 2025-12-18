@@ -1045,17 +1045,23 @@ const LiveRoom: React.FC<LiveRoomProps> = ({
             {selectedProductForPurchase.colors && selectedProductForPurchase.colors.length > 0 && (
               <div>
                 <span className="text-sm text-gray-400 mb-2 block">Color</span>
-                <div className="flex gap-2 flex-wrap">
+                <div className="flex gap-3 flex-wrap">
                   {selectedProductForPurchase.colors.map(color => (
                     <button
                       key={color}
                       onClick={() => setPurchaseConfig(p => ({ ...p, color }))}
-                      className={`px-3 py-1 rounded-full text-xs font-bold border ${purchaseConfig.color === color
-                          ? 'bg-white text-black border-white'
-                          : 'bg-black text-gray-400 border-gray-700 hover:border-gray-500'
+                      className={`w-8 h-8 rounded-full border-2 transition-all shadow-sm ${purchaseConfig.color === color
+                          ? 'border-white scale-110 ring-2 ring-white/30'
+                          : 'border-transparent hover:scale-105'
                         }`}
+                      style={{ backgroundColor: color }}
+                      title={color}
                     >
-                      {color}
+                      {purchaseConfig.color === color && (
+                        <div className="w-full h-full flex items-center justify-center">
+                          <Check size={14} className="text-white drop-shadow-md filter invert grayscale contrast-200" />
+                        </div>
+                      )}
                     </button>
                   ))}
                 </div>
@@ -1099,11 +1105,12 @@ const LiveRoom: React.FC<LiveRoomProps> = ({
           </div>
           <button onClick={() => setSelectedProductForPurchase(null)} className="absolute top-4 right-4 text-white hover:text-gray-300"><X /></button>
         </div>
-      )}
+      )
+      }
 
       <ArrowLeft className="hidden" />
 
-    </div>
+    </div >
   );
 };
 
