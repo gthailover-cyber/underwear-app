@@ -75,9 +75,15 @@ class SupabaseService {
       }
     }
 
-    // Subscribe to the specific room's messages
+    // Subscribe to the specific room's messages & Presence
     this.channel = supabase
-      .channel(`room:${roomId}`)
+      .channel(`room:${roomId}`, {
+        config: {
+          presence: {
+            key: this.userId || `guest-${Date.now()}`,
+          },
+        },
+      })
       .on(
         'postgres_changes',
         {
@@ -96,15 +102,27 @@ class SupabaseService {
       .on('broadcast', { event: 'bid' }, (payload) => {
         this.triggerEvent('bid_update', payload.payload);
       })
-      .subscribe((status) => {
+      .on('presence', { event: 'sync' }, () => {
+        this.handlePresenceSync();
+      })
+      // .on('presence', { event: 'join' }, ({ key, newPresences }) => { console.log('join', key, newPresences); })
+      // .on('presence', { event: 'leave' }, ({ key, leftPresences }) => { console.log('leave', key, leftPresences); })
+      .subscribe(async (status) => {
         if (status === 'SUBSCRIBED') {
-          this.triggerEvent('viewer_update', { count: Math.floor(Math.random() * 500) + 100 });
+          // Track User Presence
+          await this.channel?.track({
+            user_id: this.userId,
+            username: this.userProfile?.username || 'Guest',
+            avatar: this.userProfile?.avatar,
+            online_at: new Date().toISOString(),
+          });
         }
       });
   }
 
   leaveRoom() {
     if (this.channel) {
+      this.channel.untrack();
       supabase.removeChannel(this.channel);
       this.channel = null;
       this.currentRoomId = null;
@@ -114,32 +132,39 @@ class SupabaseService {
 
   // --- Handlers ---
 
-  private handleNewMessage(newRecord: any) {
-    // If it's MY message, check if I should effectively ignore it to prevent duplicates?
-    // LiveRoom appends everything. 
-    // If we use Optimistic UI, we show the message instantly.
-    // Then Realtime comes in 100ms later with the saved message.
-    // Users will see 2 messages.
-    // Simple fix: If sender_id === this.userId, we can choose to IGNORE the realtime event 
-    // IF we are confident the optimistic one is displayed.
-    // BUT the optimistic one has a temp ID. The real one has real ID.
-    // For now, to allow the Host to see *something*, we'll allow duplicates or rely on the fact 
-    // that sometimes Realtime is fast enough / or we just accept it as beta.
-    // Actually, to Fix "Host types nothing", Optimistic UI is required.
-    // To Fix "Duplicates", we can filter in LiveRoom.tsx or here.
-    // Let's Filter Here: If sender_id === me, do NOT trigger event?
-    // NO! Because other clients need it. 
-    // For *this* client, if I sent it, I already showed it.
+  private async handlePresenceSync() {
+    if (!this.channel) return;
 
+    const state = this.channel.presenceState();
+    const uniqueUsers = Object.keys(state).length;
+
+    // Trigger local update for LiveRoom UI (real count)
+    this.triggerEvent('viewer_update', { count: uniqueUsers });
+
+    // If I am the Host, I am responsible for updating the DB source of truth
+    if (this.currentRoomId && this.hostId && this.userId === this.hostId) {
+      this.updateDbViewerCount(this.currentRoomId, uniqueUsers);
+    }
+  }
+
+  // Throttled DB Update to prevent spamming
+  private lastDbUpdate = 0;
+  private async updateDbViewerCount(roomId: string, count: number) {
+    const now = Date.now();
+    if (now - this.lastDbUpdate < 5000) return; // Max once every 5 seconds
+
+    this.lastDbUpdate = now;
+
+    const { error } = await supabase
+      .from('rooms')
+      .update({ viewer_count: count })
+      .eq('id', roomId);
+
+    if (error) console.error("Error updating viewer count:", error);
+  }
+
+  private handleNewMessage(newRecord: any) {
     if (this.userId && newRecord.sender_id === this.userId) {
-      // It's me. I already showed it optimistically.
-      // So we return here to avoid duplicate.
-      // Risk: If optimistic failed or page refreshed, we miss it? No, page refresh reloads from DB (not impl here but usually).
-      // Risk: If I am testing in 2 tabs with SAME user, I won't see messages from Tab A in Tab B?
-      // Yes I will, because Tab B didn't send it optimistically.
-      // Wait, this instance of SupabaseService is per-tab.
-      // SO: If I sent it via *this* instance's `sendComment`, I optimistically showed it.
-      // The Realtime event comes to *this* instance. I should ignore it.
       return;
     }
 
