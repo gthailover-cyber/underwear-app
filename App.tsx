@@ -188,6 +188,7 @@ const App: React.FC = () => {
           id: room.id,
           hostId: room.host_id, // Explicitly map host_id
           name: room.profiles?.username || 'Unknown Host',
+          avatar: room.profiles?.avatar || DEFAULT_IMAGES.AVATAR,
           title: room.title,
           viewerCount: room.viewer_count || 0,
           coverImage: room.cover_image || DEFAULT_IMAGES.COVER,

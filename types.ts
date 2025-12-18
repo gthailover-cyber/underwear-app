@@ -39,6 +39,7 @@ export interface Streamer {
   title: string;
   viewerCount: number;
   coverImage: string;
+  avatar?: string; // Added: Host's avatar image
   youtubeId?: string; // Added for 100% Free Live Streaming via YouTube Embed
   videoUrl?: string; // Added for Direct MP4 Streaming (Professional & Reliable)
   useLiveKit?: boolean; // NEW: Flag to use LiveKit for WebRTC streaming
