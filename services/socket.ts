@@ -6,15 +6,29 @@ class SupabaseService {
   private channel: RealtimeChannel | null = null;
   private listeners: { [key: string]: Function[] } = {};
   private currentRoomId: string | null = null;
-  private userId: string = 'user-id-placeholder'; // In real app, get from auth context
+  private userId: string | null = null;
+  private userProfile: { username: string; avatar: string } | null = null;
+  private hostId: string | null = null;
 
   constructor() {
-    // Check if user is logged in
-    supabase.auth.getUser().then(({ data }) => {
-      if (data.user) {
-        this.userId = data.user.id;
+    this.initUser();
+  }
+
+  async initUser() {
+    const { data } = await supabase.auth.getUser();
+    if (data.user) {
+      this.userId = data.user.id;
+      // Fetch profile for username/avatar
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('username, avatar')
+        .eq('id', this.userId)
+        .single();
+
+      if (profile) {
+        this.userProfile = profile;
       }
-    });
+    }
   }
 
   connect() {
@@ -25,13 +39,24 @@ class SupabaseService {
     this.leaveRoom();
   }
 
-  joinRoom(roomId: string) {
+  async joinRoom(roomId: string) {
     if (this.channel) {
       this.leaveRoom();
     }
 
     this.currentRoomId = roomId;
     console.log(`[Supabase] Joining Room: ${roomId}`);
+
+    // Fetch Host ID to determine isHost for comments
+    const { data: room } = await supabase
+      .from('rooms')
+      .select('host_id')
+      .eq('id', roomId)
+      .single();
+
+    if (room) {
+      this.hostId = room.host_id;
+    }
 
     // Subscribe to the specific room's messages
     this.channel = supabase
@@ -67,6 +92,7 @@ class SupabaseService {
       supabase.removeChannel(this.channel);
       this.channel = null;
       this.currentRoomId = null;
+      this.hostId = null;
     }
   }
 
@@ -76,10 +102,12 @@ class SupabaseService {
     // Convert Supabase DB record to App ChatMessage/Comment format
     const comment = {
       id: newRecord.id,
-      username: 'User', // Needs Join with Profiles in real app, using placeholder
+      username: newRecord.username || 'User',
       message: newRecord.content,
       isSystem: newRecord.type === 'system',
-      avatar: 'https://picsum.photos/200/200' // Placeholder
+      avatar: newRecord.avatar || 'https://picsum.photos/200/200',
+      timestamp: new Date(newRecord.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      isHost: this.hostId && newRecord.sender_id === this.hostId
     };
 
     // Trigger 'new_comment' event for the frontend
@@ -116,17 +144,8 @@ class SupabaseService {
   }
 
   sendComment(data: any) {
+    // Send to Supabase (which will trigger real-time event back to us)
     this.emit('send_comment', { message: data.message });
-
-    // Locally echo the comment immediately for better UX
-    this.triggerEvent('new_comment', {
-      id: data.id || Date.now().toString(),
-      username: data.username || 'Me',
-      message: data.message,
-      timestamp: data.timestamp || new Date().toLocaleTimeString(),
-      isSystem: false,
-      isHost: data.isHost
-    });
   }
 
   async emit(event: string, data: any) {
@@ -134,17 +153,21 @@ class SupabaseService {
 
     // 1. Send Comment / Message
     if (event === 'send_comment') {
-      // Optimistic update handled by sendComment method
+      if (!this.userId) return;
 
-      // In real app, insert to DB
-      /*
+      // Insert to DB (Persistent)
       const { error } = await supabase.from('messages').insert({
         room_id: this.currentRoomId,
         sender_id: this.userId,
         content: data.message,
-        type: 'text'
+        type: 'text',
+        username: this.userProfile?.username || 'User',
+        avatar: this.userProfile?.avatar || ''
       });
-      */
+
+      if (error) {
+        console.error("Error sending message:", error);
+      }
     }
 
     // 2. Send Heart (Ephemeral/Broadcast - No DB save needed for animation)
@@ -166,7 +189,7 @@ class SupabaseService {
 
     // 4. Place Bid
     if (event === 'place_bid') {
-      const bidData = { amount: data.amount, user: 'Me' };
+      const bidData = { amount: data.amount, user: this.userProfile?.username || 'Me' };
 
       this.channel?.send({
         type: 'broadcast',
