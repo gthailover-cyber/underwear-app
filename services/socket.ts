@@ -7,7 +7,7 @@ class SupabaseService {
   private listeners: { [key: string]: Function[] } = {};
   private currentRoomId: string | null = null;
   private userId: string | null = null;
-  private userProfile: { username: string; avatar: string } | null = null;
+  private userProfile: { id: string; username: string; avatar: string } | null = null;
   private hostId: string | null = null;
 
   constructor() {
@@ -18,17 +18,30 @@ class SupabaseService {
     const { data } = await supabase.auth.getUser();
     if (data.user) {
       this.userId = data.user.id;
-      // Fetch profile for username/avatar
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('username, avatar')
-        .eq('id', this.userId)
-        .single();
+      // Fetch profile for username/avatar if not set manually
+      if (!this.userProfile) {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('username, avatar')
+          .eq('id', this.userId)
+          .single();
 
-      if (profile) {
-        this.userProfile = profile;
+        if (profile) {
+          this.userProfile = {
+            id: this.userId,
+            username: profile.username,
+            avatar: profile.avatar
+          };
+        }
       }
     }
+  }
+
+  // Allow manually updating user info (e.g. from App.tsx) to ensure sync
+  updateUser(profile: { id: string; username: string; avatar: string }) {
+    this.userId = profile.id;
+    this.userProfile = profile;
+    console.log('[SupabaseService] User Updated:', this.userProfile);
   }
 
   connect() {
@@ -39,23 +52,27 @@ class SupabaseService {
     this.leaveRoom();
   }
 
-  async joinRoom(roomId: string) {
+  async joinRoom(roomId: string, hostId?: string) {
     if (this.channel) {
       this.leaveRoom();
     }
 
     this.currentRoomId = roomId;
-    console.log(`[Supabase] Joining Room: ${roomId}`);
+    this.hostId = hostId || null;
 
-    // Fetch Host ID to determine isHost for comments
-    const { data: room } = await supabase
-      .from('rooms')
-      .select('host_id')
-      .eq('id', roomId)
-      .single();
+    console.log(`[Supabase] Joining Room: ${roomId}, Host: ${this.hostId}`);
 
-    if (room) {
-      this.hostId = room.host_id;
+    // Fetch Host ID if not provided (fallback)
+    if (!this.hostId) {
+      const { data: room } = await supabase
+        .from('rooms')
+        .select('host_id')
+        .eq('id', roomId)
+        .single();
+
+      if (room) {
+        this.hostId = room.host_id;
+      }
     }
 
     // Subscribe to the specific room's messages
@@ -81,7 +98,6 @@ class SupabaseService {
       })
       .subscribe((status) => {
         if (status === 'SUBSCRIBED') {
-          // Track presence (viewers) - Simplified for this demo
           this.triggerEvent('viewer_update', { count: Math.floor(Math.random() * 500) + 100 });
         }
       });
@@ -99,7 +115,34 @@ class SupabaseService {
   // --- Handlers ---
 
   private handleNewMessage(newRecord: any) {
-    // Convert Supabase DB record to App ChatMessage/Comment format
+    // If it's MY message, check if I should effectively ignore it to prevent duplicates?
+    // LiveRoom appends everything. 
+    // If we use Optimistic UI, we show the message instantly.
+    // Then Realtime comes in 100ms later with the saved message.
+    // Users will see 2 messages.
+    // Simple fix: If sender_id === this.userId, we can choose to IGNORE the realtime event 
+    // IF we are confident the optimistic one is displayed.
+    // BUT the optimistic one has a temp ID. The real one has real ID.
+    // For now, to allow the Host to see *something*, we'll allow duplicates or rely on the fact 
+    // that sometimes Realtime is fast enough / or we just accept it as beta.
+    // Actually, to Fix "Host types nothing", Optimistic UI is required.
+    // To Fix "Duplicates", we can filter in LiveRoom.tsx or here.
+    // Let's Filter Here: If sender_id === me, do NOT trigger event?
+    // NO! Because other clients need it. 
+    // For *this* client, if I sent it, I already showed it.
+
+    if (this.userId && newRecord.sender_id === this.userId) {
+      // It's me. I already showed it optimistically.
+      // So we return here to avoid duplicate.
+      // Risk: If optimistic failed or page refreshed, we miss it? No, page refresh reloads from DB (not impl here but usually).
+      // Risk: If I am testing in 2 tabs with SAME user, I won't see messages from Tab A in Tab B?
+      // Yes I will, because Tab B didn't send it optimistically.
+      // Wait, this instance of SupabaseService is per-tab.
+      // SO: If I sent it via *this* instance's `sendComment`, I optimistically showed it.
+      // The Realtime event comes to *this* instance. I should ignore it.
+      return;
+    }
+
     const comment = {
       id: newRecord.id,
       username: newRecord.username || 'User',
@@ -110,7 +153,6 @@ class SupabaseService {
       isHost: this.hostId && newRecord.sender_id === this.hostId
     };
 
-    // Trigger 'new_comment' event for the frontend
     this.triggerEvent('new_comment', comment);
   }
 
@@ -121,8 +163,6 @@ class SupabaseService {
       this.listeners[event] = [];
     }
     this.listeners[event].push(callback);
-
-    // Return unsubscribe function
     return () => {
       this.listeners[event] = this.listeners[event].filter(cb => cb !== callback);
     };
@@ -132,10 +172,7 @@ class SupabaseService {
     delete this.listeners[event];
   }
 
-  // --- Helper Methods to match LiveRoom.tsx usage ---
-
   onComment(callback: (comment: any) => void) {
-    // Return cleanup function
     return this.on('new_comment', callback);
   }
 
@@ -144,16 +181,38 @@ class SupabaseService {
   }
 
   sendComment(data: any) {
-    // Send to Supabase (which will trigger real-time event back to us)
-    this.emit('send_comment', { message: data.message });
+    // 1. Optimistic Update (Immediate Feedback)
+    const optimisticComment = {
+      id: `temp-${Date.now()}`,
+      username: data.username || this.userProfile?.username || 'Me',
+      message: data.message,
+      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      isSystem: false,
+      isHost: data.isHost,
+      avatar: data.avatar || this.userProfile?.avatar || ''
+    };
+
+    this.triggerEvent('new_comment', optimisticComment);
+
+    // 2. Send to DB
+    this.emit('send_comment', {
+      message: data.message,
+      username: optimisticComment.username,
+      avatar: optimisticComment.avatar
+    });
   }
 
   async emit(event: string, data: any) {
     if (!this.currentRoomId) return;
 
-    // 1. Send Comment / Message
     if (event === 'send_comment') {
-      if (!this.userId) return;
+      // Ensure we have user ID
+      if (!this.userId) await this.initUser();
+
+      if (!this.userId) {
+        console.error("No User ID found, cannot send message.");
+        return;
+      }
 
       // Insert to DB (Persistent)
       const { error } = await supabase.from('messages').insert({
@@ -161,8 +220,8 @@ class SupabaseService {
         sender_id: this.userId,
         content: data.message,
         type: 'text',
-        username: this.userProfile?.username || 'User',
-        avatar: this.userProfile?.avatar || ''
+        username: data.username || 'User', // Use explicit data or fallback
+        avatar: data.avatar || ''
       });
 
       if (error) {
@@ -170,27 +229,21 @@ class SupabaseService {
       }
     }
 
-    // 2. Send Heart (Ephemeral/Broadcast - No DB save needed for animation)
     if (event === 'send_heart') {
       this.channel?.send({
         type: 'broadcast',
         event: 'heart',
         payload: { count: 1 }
       });
-      // Trigger local immediately
       this.triggerEvent('new_heart', { count: 1 });
     }
 
-    // 3. Send Gift
     if (event === 'send_gift') {
-      // Logic to deduct balance and record transaction would go here
       console.log("Gift sent:", data.giftId);
     }
 
-    // 4. Place Bid
     if (event === 'place_bid') {
       const bidData = { amount: data.amount, user: this.userProfile?.username || 'Me' };
-
       this.channel?.send({
         type: 'broadcast',
         event: 'bid',

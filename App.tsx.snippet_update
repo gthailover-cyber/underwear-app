@@ -1,0 +1,17 @@
+
+          <LiveRoom
+            streamer={currentStreamer}
+            isHost={currentStreamer.hostId === session?.user?.id}
+            onClose={handleCloseStream}
+            language={language}
+            walletBalance={walletBalance}
+            onUseCoins={handleUseCoins}
+            onOpenWallet={() => setIsWalletOpen(true)}
+            onAddToCart={handleAddToCart}
+            onNewOrder={() => { setHasNewOrders(true); setCartItems([]); }}
+            currentUser={session?.user ? {
+              id: session.user.id,
+              username: userProfile.username,
+              avatar: userProfile.avatar
+            } : undefined}
+          />

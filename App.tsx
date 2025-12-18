@@ -1386,6 +1386,11 @@ const App: React.FC = () => {
             onOpenWallet={() => setIsWalletOpen(true)}
             onAddToCart={handleAddToCart}
             onNewOrder={() => { setHasNewOrders(true); setCartItems([]); }}
+            currentUser={session?.user ? {
+              id: session.user.id,
+              username: userProfile.username,
+              avatar: userProfile.avatar
+            } : undefined}
           />
         </>
       )}
