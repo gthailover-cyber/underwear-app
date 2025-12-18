@@ -55,12 +55,20 @@ const LiveKitVideo: React.FC<LiveKitVideoProps> = ({
                 // --- TRACK ATTACH HELPER ---
                 const tryAttach = (track: Track) => {
                     if (track.kind === Track.Kind.Video && videoRef.current) {
-                        // CRITICAL: Ensure muted is set before attach on mobile
-                        videoRef.current.muted = true;
+                        // For video, we attach to our specific element
                         track.attach(videoRef.current);
+                        // Only mute if Host (self-view) or explicitly muted
+                        if (videoRef.current.muted && !isHost) {
+                            videoRef.current.muted = false;
+                        }
                         videoRef.current.play().catch(e => {
                             console.warn("Autoplay failed (will wait for user interaction):", e);
                         });
+                    } else if (track.kind === Track.Kind.Audio && !isHost) {
+                        // For audio (Viewer only), we let LiveKit create/manage the element
+                        // This prevents echo for the Host
+                        const element = track.attach();
+                        document.body.appendChild(element);
                     }
                 };
 
@@ -88,25 +96,23 @@ const LiveKitVideo: React.FC<LiveKitVideoProps> = ({
                 else {
                     const participants = Array.from(connectedRoom.remoteParticipants.values());
                     participants.forEach((participant) => {
+                        // 1. Attach Video
                         participant.videoTrackPublications.forEach((publication) => {
-                            // Prioritize Camera tracks, but accept any video track if needed
-                            // We check `source === Track.Source.Camera` to be safe, but fallback to any video
                             if (publication.track && publication.track.kind === Track.Kind.Video) {
-                                if (publication.source === Track.Source.Camera) {
-                                    tryAttach(publication.track); // Best case
-                                } else {
-                                    // Screen share etc.
-                                    tryAttach(publication.track);
-                                }
+                                tryAttach(publication.track);
+                            }
+                        });
+                        // 2. Attach Audio
+                        participant.audioTrackPublications.forEach((publication) => {
+                            if (publication.track && publication.track.kind === Track.Kind.Audio) {
+                                tryAttach(publication.track);
                             }
                         });
                     });
 
                     // Listen for NEW tracks
                     liveKitService.on('track_subscribed', (track: Track, publication: any) => {
-                        if (track.kind === Track.Kind.Video) {
-                            tryAttach(track);
-                        }
+                        tryAttach(track);
                     });
                 }
 
@@ -114,28 +120,22 @@ const LiveKitVideo: React.FC<LiveKitVideoProps> = ({
                 // Checks every 1s: If tracks exist but video isn't playing, force attach & play.
                 const pollInterval = setInterval(() => {
                     if (!videoRef.current || !connectedRoom) return;
-                    if (!videoRef.current.paused && videoRef.current.srcObject) return;
 
-                    if (isHost) {
-                        const pub = Array.from(connectedRoom.localParticipant.videoTrackPublications.values()).find(p => p.kind === 'video');
-                        if (pub?.track) tryAttach(pub.track);
-                    } else {
-                        // Iterate ALL remote participants to find ANY video track
-                        const participants = Array.from(connectedRoom.remoteParticipants.values());
-                        for (const p of participants) {
-                            // Try to find Camera track first
-                            let pub = Array.from(p.videoTrackPublications.values())
-                                .find(t => t.kind === 'video' && t.source === Track.Source.Camera);
+                    // Check Video Playback
+                    if (videoRef.current.paused && !videoRef.current.srcObject) {
+                        if (isHost) {
+                            const pub = Array.from(connectedRoom.localParticipant.videoTrackPublications.values()).find(p => p.kind === 'video');
+                            if (pub?.track) tryAttach(pub.track);
+                        } else {
+                            const participants = Array.from(connectedRoom.remoteParticipants.values());
+                            for (const p of participants) {
+                                // Video
+                                const vidPub = Array.from(p.videoTrackPublications.values()).find(t => t.kind === 'video');
+                                if (vidPub?.track) tryAttach(vidPub.track);
 
-                            // If no camera, take any video track
-                            if (!pub) {
-                                pub = Array.from(p.videoTrackPublications.values())
-                                    .find(t => t.kind === 'video');
-                            }
-
-                            if (pub?.track) {
-                                tryAttach(pub.track);
-                                return; // Found one, good enough
+                                // Audio (Ensure attached)
+                                const audPub = Array.from(p.audioTrackPublications.values()).find(t => t.kind === 'audio');
+                                if (audPub?.track) tryAttach(audPub.track);
                             }
                         }
                     }
@@ -203,7 +203,7 @@ const LiveKitVideo: React.FC<LiveKitVideoProps> = ({
                 ref={videoRef}
                 autoPlay
                 playsInline
-                muted={true} // ALWAYS start muted
+                muted={isHost} // Host is always muted (self-view), Viewer starts unmuted (or handled by tryAttach)
                 onClick={handleVideoClick}
                 itemProp="video" // Help Safari identify it
                 className={`w-full h-full object-cover ${isHost ? 'scale-x-[-1]' : ''}`}
