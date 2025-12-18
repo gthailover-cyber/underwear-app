@@ -1041,6 +1041,48 @@ const LiveRoom: React.FC<LiveRoomProps> = ({
 
           {/* Configuration */}
           <div className="mt-4 space-y-4 text-white">
+            {/* Color Selection */}
+            {selectedProductForPurchase.colors && selectedProductForPurchase.colors.length > 0 && (
+              <div>
+                <span className="text-sm text-gray-400 mb-2 block">Color</span>
+                <div className="flex gap-2 flex-wrap">
+                  {selectedProductForPurchase.colors.map(color => (
+                    <button
+                      key={color}
+                      onClick={() => setPurchaseConfig(p => ({ ...p, color }))}
+                      className={`px-3 py-1 rounded-full text-xs font-bold border ${purchaseConfig.color === color
+                          ? 'bg-white text-black border-white'
+                          : 'bg-black text-gray-400 border-gray-700 hover:border-gray-500'
+                        }`}
+                    >
+                      {color}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Size Selection */}
+            {selectedProductForPurchase.sizes && selectedProductForPurchase.sizes.length > 0 && (
+              <div>
+                <span className="text-sm text-gray-400 mb-2 block">Size</span>
+                <div className="flex gap-2 flex-wrap">
+                  {selectedProductForPurchase.sizes.map(size => (
+                    <button
+                      key={size}
+                      onClick={() => setPurchaseConfig(p => ({ ...p, size }))}
+                      className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold border ${purchaseConfig.size === size
+                          ? 'bg-white text-black border-white'
+                          : 'bg-black text-gray-400 border-gray-700 hover:border-gray-500'
+                        }`}
+                    >
+                      {size}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
             <div className="flex items-center justify-between">
               <span>Quantity</span>
               <div className="flex items-center gap-3 bg-black rounded-lg p-1 border border-gray-700">
