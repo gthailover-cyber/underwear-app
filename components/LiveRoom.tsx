@@ -855,7 +855,20 @@ const LiveRoom: React.FC<LiveRoomProps> = ({
         <div className="absolute inset-0 z-40 bg-black/90 flex flex-col animate-slide-up">
           <div className="flex items-center justify-between p-4 border-b border-gray-800">
             <h2 className="text-lg font-bold text-white">Products ({streamer.products.length})</h2>
-            <button onClick={() => setShowProducts(false)}><X className="text-white" /></button>
+            <div className="flex items-center gap-4">
+              <button
+                onClick={() => { setShowProducts(false); setShowCart(true); }}
+                className="relative p-2 hover:bg-white/10 rounded-full transition-colors"
+              >
+                <ShoppingCart size={24} className="text-white" />
+                {cart.length > 0 && (
+                  <span className="absolute top-0 right-0 w-4 h-4 bg-red-600 rounded-full text-[10px] flex items-center justify-center font-bold border border-black">
+                    {cart.length}
+                  </span>
+                )}
+              </button>
+              <button onClick={() => setShowProducts(false)}><X className="text-white" /></button>
+            </div>
           </div>
           <div className="flex-1 overflow-y-auto p-4 space-y-4">
             {streamer.products.map(p => (
@@ -1051,8 +1064,8 @@ const LiveRoom: React.FC<LiveRoomProps> = ({
                       key={color}
                       onClick={() => setPurchaseConfig(p => ({ ...p, color }))}
                       className={`w-8 h-8 rounded-full border-2 transition-all shadow-sm ${purchaseConfig.color === color
-                          ? 'border-white scale-110 ring-2 ring-white/30'
-                          : 'border-transparent hover:scale-105'
+                        ? 'border-white scale-110 ring-2 ring-white/30'
+                        : 'border-transparent hover:scale-105'
                         }`}
                       style={{ backgroundColor: color }}
                       title={color}
@@ -1078,8 +1091,8 @@ const LiveRoom: React.FC<LiveRoomProps> = ({
                       key={size}
                       onClick={() => setPurchaseConfig(p => ({ ...p, size }))}
                       className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold border ${purchaseConfig.size === size
-                          ? 'bg-white text-black border-white'
-                          : 'bg-black text-gray-400 border-gray-700 hover:border-gray-500'
+                        ? 'bg-white text-black border-white'
+                        : 'bg-black text-gray-400 border-gray-700 hover:border-gray-500'
                         }`}
                     >
                       {size}
