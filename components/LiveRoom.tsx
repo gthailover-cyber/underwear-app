@@ -661,14 +661,6 @@ const LiveRoom: React.FC<LiveRoomProps> = ({
                                 <Heart size={14} className="text-pink-500 fill-pink-500" />
                                 <span className="text-xs font-bold">{(heartCount || 0).toLocaleString()} Likes</span>
                             </div>
-                            <div className="bg-black/40 backdrop-blur-md px-3 py-1.5 rounded-lg border border-white/10 flex items-center gap-2 min-w-max">
-                                <Gift size={14} className="text-purple-400" />
-                                <span className="text-xs font-bold">12 Gifts</span>
-                            </div>
-                            <div className="bg-black/40 backdrop-blur-md px-3 py-1.5 rounded-lg border border-white/10 flex items-center gap-2 min-w-max">
-                                <DollarSign size={14} className="text-green-400" />
-                                <span className="text-xs font-bold">฿15,400 Sales</span>
-                            </div>
                         </div>
                     )}
                 </div>
