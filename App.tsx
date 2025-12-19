@@ -33,7 +33,7 @@ import ModelApplicationModal from './components/ModelApplicationModal';
 import StartLiveModal from './components/StartLiveModal';
 import UpdatePasswordModal from './components/UpdatePasswordModal';
 import { TRANSLATIONS, MOCK_USER_PROFILE, DEFAULT_IMAGES } from './constants';
-import { Streamer, Language, CartItem, UserProfile, MessagePreview, Product, Person, ChatRoom } from './types';
+import { Streamer, Language, CartItem, UserProfile, MessagePreview, Product, Person, ChatRoom, ReceivedGift } from './types';
 
 const App: React.FC = () => {
   // Auth State
@@ -51,7 +51,7 @@ const App: React.FC = () => {
   const [currentStreamer, setCurrentStreamer] = useState<Streamer | null>(null);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [language, setLanguage] = useState<Language>('th');
-  const [activeTab, setActiveTab] = useState<'home' | 'discover' | 'cart' | 'people' | 'profile' | 'all_live' | 'messages' | 'my_products' | 'address' | 'payment' | 'my_orders' | 'organizer_tools' | 'my_rate' | 'my_schedule'>('home');
+  const [activeTab, setActiveTab] = useState<'home' | 'discover' | 'cart' | 'people' | 'profile' | 'all_live' | 'messages' | 'my_products' | 'address' | 'payment' | 'my_orders' | 'organizer_tools' | 'my_rate' | 'my_schedule' | 'my_gifts'>('home');
   const [returnTab, setReturnTab] = useState<string | null>(null); // For navigation history
   const [homeTab, setHomeTab] = useState<'live' | 'rooms' | 'models'>('live'); // New: Sub-tab for Home
   const [selectedChatUser, setSelectedChatUser] = useState<MessagePreview | null>(null);
@@ -88,9 +88,32 @@ const App: React.FC = () => {
   // Wallet State
   const [walletBalance, setWalletBalance] = useState(0);
 
+  // Gifts State
+  const [receivedGifts, setReceivedGifts] = useState<ReceivedGift[]>([]);
+
   // Cart State (In real app, fetch from DB order_items with status 'in_cart' if implemented)
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [hasNewOrders, setHasNewOrders] = useState(false);
+
+  const fetchReceivedGifts = async (userId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('received_gifts')
+        .select(`
+          *,
+          profiles:sender_id (username, avatar)
+        `)
+        .eq('receiver_id', userId)
+        .order('created_at', { ascending: false });
+
+      if (data) {
+        setReceivedGifts(data as ReceivedGift[]);
+      }
+      if (error) console.error('Error fetching gifts:', error);
+    } catch (err) {
+      console.error('Fetch gifts failed:', err);
+    }
+  };
 
   const t = TRANSLATIONS[language];
 
@@ -130,6 +153,13 @@ const App: React.FC = () => {
     return () => subscription.unsubscribe();
 
   }, []);
+
+  // --- REFRESH DATA ON TAB CHANGE ---
+  useEffect(() => {
+    if (activeTab === 'my_gifts' && session?.user) {
+      fetchReceivedGifts(session.user.id);
+    }
+  }, [activeTab, session]);
 
   // --- REALTIME LISTENER: Auto-refresh when lives start/end ---
   useEffect(() => {
@@ -856,13 +886,6 @@ const App: React.FC = () => {
           />
         );
       case 'my_gifts':
-        const receivedGifts = [
-          { id: 1, date: '2025-12-19 14:30', sender: 'JohnDoe', giftName: 'Heart', icon: '❤️', price: 10 },
-          { id: 2, date: '2025-12-19 14:32', sender: 'FanClub007', giftName: 'Rose', icon: '🌹', price: 50 },
-          { id: 3, date: '2025-12-18 20:15', sender: 'Supporter_X', giftName: 'Fire', icon: '🔥', price: 100 },
-          { id: 4, date: '2025-12-18 20:00', sender: 'RichGuy', giftName: 'Diamond', icon: '💎', price: 500 },
-        ];
-
         return (
           <div className="pb-24 animate-fade-in bg-black min-h-screen">
             <div className="flex items-center gap-3 px-4 py-4 sticky top-0 bg-black/90 backdrop-blur z-30 border-b border-gray-800">
@@ -879,15 +902,19 @@ const App: React.FC = () => {
               {receivedGifts.map((log) => (
                 <div key={log.id} className="bg-gray-800/50 rounded-xl p-4 flex items-center justify-between border border-gray-700 hover:bg-gray-800/80 transition-colors">
                   <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 rounded-full bg-black/40 flex items-center justify-center text-3xl border border-white/10 shrink-0">
-                      {log.icon}
+                    <div className="w-12 h-12 rounded-full bg-black/40 flex items-center justify-center text-3xl border border-white/10 shrink-0 overflow-hidden">
+                      {log.profiles?.avatar ? (
+                        <img src={log.profiles.avatar} className="w-full h-full object-cover" alt="" />
+                      ) : (
+                        log.gift_icon
+                      )}
                     </div>
                     <div>
                       <p className="text-white font-bold text-sm">
-                        <span className="text-blue-400">{log.sender}</span> <span className="text-gray-400 font-normal">sent</span> <span className="text-yellow-200">{log.giftName}</span>
+                        <span className="text-blue-400">{log.profiles?.username || 'User'}</span> <span className="text-gray-400 font-normal">sent</span> <span className="text-yellow-200">{log.gift_name}</span>
                       </p>
                       <p className="text-[10px] text-gray-500 mt-0.5 flex items-center gap-1">
-                        <Clock size={10} /> {log.date}
+                        <Clock size={10} /> {new Date(log.created_at).toLocaleString()}
                       </p>
                     </div>
                   </div>

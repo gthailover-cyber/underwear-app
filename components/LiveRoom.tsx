@@ -400,6 +400,25 @@ const LiveRoom: React.FC<LiveRoomProps> = ({
         onUseCoinsLocal(gift.price);
         setShowGiftSelector(false);
 
+        // Record in Database
+        try {
+            supabase
+                .from('received_gifts')
+                .insert({
+                    sender_id: currentUser?.id,
+                    receiver_id: streamer.hostId,
+                    gift_id: gift.id,
+                    gift_name: gift.name,
+                    gift_icon: gift.icon,
+                    price: gift.price
+                })
+                .then(({ error }) => {
+                    if (error) console.error('Error recording gift:', error);
+                });
+        } catch (err) {
+            console.error('Failed to record gift:', err);
+        }
+
         // Trigger Animation locally
         triggerGiftAnimation(gift, 'Me');
 

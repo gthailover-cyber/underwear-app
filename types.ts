@@ -144,3 +144,17 @@ export interface Order {
   trackingNumber?: string;
   timeline?: OrderTimeline[];
 }
+export interface ReceivedGift {
+  id: string;
+  sender_id: string;
+  receiver_id: string;
+  gift_id: string;
+  gift_name: string;
+  gift_icon: string;
+  price: number;
+  created_at: string;
+  profiles?: {
+    username: string;
+    avatar: string;
+  };
+}
