@@ -18,3 +18,9 @@ BEGIN
     WHERE id = auth.uid();
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
+-- Ensure profiles are readable by everyone
+ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Profiles are viewable by everyone" ON public.profiles;
+CREATE POLICY "Profiles are viewable by everyone" ON public.profiles
+FOR SELECT USING (true);

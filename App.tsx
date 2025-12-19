@@ -35,6 +35,7 @@ import UpdatePasswordModal from './components/UpdatePasswordModal';
 import { TRANSLATIONS, MOCK_USER_PROFILE, DEFAULT_IMAGES } from './constants';
 import { Streamer, Language, CartItem, UserProfile, MessagePreview, Product, Person, ChatRoom, ReceivedGift, AppNotification } from './types';
 const HEARTBEAT_INTERVAL = 60 * 1000; // 1 minute
+const UI_REFRESH_INTERVAL = 30 * 1000; // 30 seconds
 
 const App: React.FC = () => {
   // Auth State
@@ -306,7 +307,9 @@ const App: React.FC = () => {
 
     let notificationsChannel: any = null;
     let messagesChannel: any = null;
+    let profilesChannel: any = null;
     let heartbeatId: any = null;
+    let uiRefreshId: any = null;
 
     if (session?.user) {
       notificationsChannel = supabase
@@ -343,11 +346,38 @@ const App: React.FC = () => {
         )
         .subscribe();
 
+      // Listener for profile updates (to see others go online/offline)
+      profilesChannel = supabase
+        .channel('public:profiles_status')
+        .on(
+          'postgres_changes',
+          { event: 'UPDATE', schema: 'public', table: 'profiles' },
+          (payload) => {
+            console.log('Profile update detected:', payload.new.id);
+            // Throttle or just refresh what's needed
+            // For now, refreshing global data is safest
+            fetchGlobalData(session.user.id);
+          }
+        )
+        .subscribe();
+
       // Heartbeat for online status
+      console.log('[Heartbeat] Starting for:', session.user.id);
       supabase.rpc('update_last_seen');
       heartbeatId = setInterval(() => {
+        console.log('[Heartbeat] Updating last seen...');
         supabase.rpc('update_last_seen');
       }, HEARTBEAT_INTERVAL);
+
+      // Periodically refresh UI to update "Online" dots based on current time
+      uiRefreshId = setInterval(() => {
+        if (session.user.id) {
+          // We don't necessarily need to fetch from DB, 
+          // just trigger a re-render to re-calculate isOnline() for existing items
+          setPeople(prev => [...prev]);
+          setStreamers(prev => [...prev]);
+        }
+      }, UI_REFRESH_INTERVAL);
     }
 
     return () => {
@@ -358,8 +388,14 @@ const App: React.FC = () => {
       if (messagesChannel) {
         supabase.removeChannel(messagesChannel);
       }
+      if (profilesChannel) {
+        supabase.removeChannel(profilesChannel);
+      }
       if (heartbeatId) {
         clearInterval(heartbeatId);
+      }
+      if (uiRefreshId) {
+        clearInterval(uiRefreshId);
       }
     };
   }, [session]);
