@@ -104,7 +104,9 @@ const App: React.FC = () => {
     if (!lastSeenAt) return false;
     const lastSeen = new Date(lastSeenAt).getTime();
     const now = new Date().getTime();
-    return (now - lastSeen) < (3 * 60 * 1000); // Online if active in last 3 minutes
+    const diff = now - lastSeen;
+    // console.log(`[Status] Checking online status. Diff: ${Math.round(diff/1000)}s`);
+    return diff < (10 * 60 * 1000); // 10 minutes threshold for better reliability
   };
 
   const fetchFollowing = async (userId: string) => {
@@ -371,12 +373,9 @@ const App: React.FC = () => {
 
       // Periodically refresh UI to update "Online" dots based on current time
       uiRefreshId = setInterval(() => {
-        if (session.user.id) {
-          // We don't necessarily need to fetch from DB, 
-          // just trigger a re-render to re-calculate isOnline() for existing items
-          setPeople(prev => [...prev]);
-          setStreamers(prev => [...prev]);
-        }
+        // We need to re-map to re-calculate isOnline based on current time
+        setPeople(prev => prev.map(p => ({ ...p, isOnline: isOnline(p.lastSeenAt) })));
+        setSelectedChatUser(prev => prev ? { ...prev, isOnline: isOnline(prev.lastSeenAt) } : null);
       }, UI_REFRESH_INTERVAL);
     }
 

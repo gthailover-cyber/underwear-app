@@ -44,8 +44,18 @@ const Messages: React.FC<MessagesProps> = ({
         })
         .subscribe();
 
+      // UI refresh interval for online status
+      const refreshId = setInterval(() => {
+        setConversations(prev => prev.map(c => {
+          const lastSeen = c.lastSeenAt ? new Date(c.lastSeenAt).getTime() : 0;
+          const online = (new Date().getTime() - lastSeen) < (10 * 60 * 1000); // 10 minutes
+          return { ...c, isOnline: online };
+        }));
+      }, 30000);
+
       return () => {
         supabase.removeChannel(channel);
+        clearInterval(refreshId);
       };
     }
   }, [activeTab, currentUserId]);
@@ -58,7 +68,7 @@ const Messages: React.FC<MessagesProps> = ({
         const now = new Date().getTime();
         setConversations(data.map((c: any) => {
           const lastSeen = c.last_seen_at ? new Date(c.last_seen_at).getTime() : 0;
-          const online = (now - lastSeen) < (3 * 60 * 1000);
+          const online = (now - lastSeen) < (10 * 60 * 1000); // 10 minutes
 
           return {
             id: c.partner_id,
