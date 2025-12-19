@@ -855,6 +855,59 @@ const App: React.FC = () => {
             setProducts={setMyProducts}
           />
         );
+      case 'my_gifts':
+        const receivedGifts = [
+          { id: 1, date: '2025-12-19 14:30', sender: 'JohnDoe', giftName: 'Heart', icon: '❤️', price: 10 },
+          { id: 2, date: '2025-12-19 14:32', sender: 'FanClub007', giftName: 'Rose', icon: '🌹', price: 50 },
+          { id: 3, date: '2025-12-18 20:15', sender: 'Supporter_X', giftName: 'Fire', icon: '🔥', price: 100 },
+          { id: 4, date: '2025-12-18 20:00', sender: 'RichGuy', giftName: 'Diamond', icon: '💎', price: 500 },
+        ];
+
+        return (
+          <div className="pb-24 animate-fade-in bg-black min-h-screen">
+            <div className="flex items-center gap-3 px-4 py-4 sticky top-0 bg-black/90 backdrop-blur z-30 border-b border-gray-800">
+              <button
+                onClick={() => setActiveTab('home')}
+                className="w-10 h-10 rounded-full bg-gray-800 flex items-center justify-center hover:bg-gray-700 transition-colors border border-gray-700"
+              >
+                <ArrowLeft size={20} className="text-white" />
+              </button>
+              <h2 className="text-xl font-athletic tracking-wide text-white">{t.myGifts}</h2>
+            </div>
+
+            <div className="p-4 flex flex-col gap-3">
+              {receivedGifts.map((log) => (
+                <div key={log.id} className="bg-gray-800/50 rounded-xl p-4 flex items-center justify-between border border-gray-700 hover:bg-gray-800/80 transition-colors">
+                  <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 rounded-full bg-black/40 flex items-center justify-center text-3xl border border-white/10 shrink-0">
+                      {log.icon}
+                    </div>
+                    <div>
+                      <p className="text-white font-bold text-sm">
+                        <span className="text-blue-400">{log.sender}</span> <span className="text-gray-400 font-normal">sent</span> <span className="text-yellow-200">{log.giftName}</span>
+                      </p>
+                      <p className="text-[10px] text-gray-500 mt-0.5 flex items-center gap-1">
+                        <Clock size={10} /> {log.date}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex flex-col items-end">
+                    <span className="text-yellow-400 font-bold text-base flex items-center gap-1 bg-yellow-400/10 px-2 py-1 rounded-lg border border-yellow-400/20">
+                      +{log.price} <Coins size={14} className="fill-yellow-400" />
+                    </span>
+                  </div>
+                </div>
+              ))}
+
+              {receivedGifts.length === 0 && (
+                <div className="text-center py-20 text-gray-500">
+                  <Gift size={48} className="mx-auto mb-4 opacity-30" />
+                  <p>No gifts received yet.</p>
+                </div>
+              )}
+            </div>
+          </div>
+        );
       case 'my_rate':
         return (
           <MyRate
@@ -1230,6 +1283,15 @@ const App: React.FC = () => {
                       <Box size={18} className="text-blue-500 group-hover:text-white" />
                     </div>
                     <span className="font-medium text-base text-gray-200 group-hover:text-white">{t.myProducts}</span>
+                  </div>
+                  <ChevronRight size={18} className="text-gray-600 group-hover:text-white" />
+                </button>
+                <button onClick={() => { setActiveTab('my_gifts'); setIsMenuOpen(false); }} className="w-full flex items-center justify-between px-6 py-3 hover:bg-white/5 transition-colors group">
+                  <div className="flex items-center gap-4">
+                    <div className="w-9 h-9 rounded-lg bg-blue-900/30 border border-blue-500/50 flex items-center justify-center group-hover:bg-blue-600 transition-colors">
+                      <Gift size={18} className="text-blue-500 group-hover:text-white" />
+                    </div>
+                    <span className="font-medium text-base text-gray-200 group-hover:text-white">{t.myGifts}</span>
                   </div>
                   <ChevronRight size={18} className="text-gray-600 group-hover:text-white" />
                 </button>
