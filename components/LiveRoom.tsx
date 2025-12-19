@@ -777,7 +777,7 @@ const LiveRoom: React.FC<LiveRoomProps> = ({
                     {/* Input & Action Buttons */}
                     {!isHost ? (
                         <div className="flex items-center gap-3">
-                            <div className="flex-1 bg-black/40 backdrop-blur-md border border-white/20 rounded-full flex items-center px-2 py-1 focus-within:border-white/50 focus-within:bg-black/60 transition-all">
+                            <div className="w-1/2 bg-black/40 backdrop-blur-md border border-white/20 rounded-full flex items-center px-2 py-1 focus-within:border-white/50 focus-within:bg-black/60 transition-all">
                                 <input
                                     type="text"
                                     value={newComment}
