@@ -70,7 +70,8 @@ RETURNS TABLE (
     avatar TEXT,
     last_message TEXT,
     last_message_time TIMESTAMP WITH TIME ZONE,
-    unread_count BIGINT
+    unread_count BIGINT,
+    last_seen_at TIMESTAMP WITH TIME ZONE
 ) AS $$
 BEGIN
     RETURN QUERY
@@ -97,7 +98,8 @@ BEGIN
         p.avatar,
         lm.content as last_message,
         lm.created_at as last_message_time,
-        COALESCE(uc.c, 0)::BIGINT as unread_count
+        COALESCE(uc.c, 0)::BIGINT as unread_count,
+        p.last_seen_at
     FROM latest_messages lm
     JOIN public.profiles p ON p.id = lm.p_id
     LEFT JOIN unread_counts uc ON uc.p_id = lm.p_id

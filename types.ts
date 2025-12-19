@@ -69,9 +69,8 @@ export interface UserProfile {
   gallery: string[];
   followers: number; // Added
   following: number; // Added
-  rate_event_live?: number;
-  rate_product_presentation?: number;
   rate_onsite?: number;
+  lastSeenAt?: string;
 }
 
 export interface Person {
@@ -80,7 +79,8 @@ export interface Person {
   avatar: string;
   isOnline: boolean;
   followers?: number;
-  role?: UserRole; // Added role to Person
+  role?: UserRole;
+  lastSeenAt?: string;
 }
 
 export interface MessagePreview {
@@ -93,6 +93,7 @@ export interface MessagePreview {
   unread: number;
   isOnline: boolean;
   isVerified?: boolean;
+  lastSeenAt?: string;
 }
 
 export type MessageType = 'text' | 'image' | 'live_share';

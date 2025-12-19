@@ -34,6 +34,7 @@ import StartLiveModal from './components/StartLiveModal';
 import UpdatePasswordModal from './components/UpdatePasswordModal';
 import { TRANSLATIONS, MOCK_USER_PROFILE, DEFAULT_IMAGES } from './constants';
 import { Streamer, Language, CartItem, UserProfile, MessagePreview, Product, Person, ChatRoom, ReceivedGift, AppNotification } from './types';
+const HEARTBEAT_INTERVAL = 60 * 1000; // 1 minute
 
 const App: React.FC = () => {
   // Auth State
@@ -98,6 +99,12 @@ const App: React.FC = () => {
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [unreadMessagesCount, setUnreadMessagesCount] = useState(0);
+  const isOnline = (lastSeenAt?: string) => {
+    if (!lastSeenAt) return false;
+    const lastSeen = new Date(lastSeenAt).getTime();
+    const now = new Date().getTime();
+    return (now - lastSeen) < (3 * 60 * 1000); // Online if active in last 3 minutes
+  };
 
   const fetchFollowing = async (userId: string) => {
     try {
@@ -299,6 +306,7 @@ const App: React.FC = () => {
 
     let notificationsChannel: any = null;
     let messagesChannel: any = null;
+    let heartbeatId: any = null;
 
     if (session?.user) {
       notificationsChannel = supabase
@@ -334,6 +342,12 @@ const App: React.FC = () => {
           }
         )
         .subscribe();
+
+      // Heartbeat for online status
+      supabase.rpc('update_last_seen');
+      heartbeatId = setInterval(() => {
+        supabase.rpc('update_last_seen');
+      }, HEARTBEAT_INTERVAL);
     }
 
     return () => {
@@ -343,6 +357,9 @@ const App: React.FC = () => {
       }
       if (messagesChannel) {
         supabase.removeChannel(messagesChannel);
+      }
+      if (heartbeatId) {
+        clearInterval(heartbeatId);
       }
     };
   }, [session]);
@@ -356,7 +373,7 @@ const App: React.FC = () => {
         .from('rooms')
         .select(`
             *,
-            profiles:host_id (username, avatar)
+            profiles:host_id (username, avatar, last_seen_at)
           `)
         .or(`last_active_at.gt.${twoMinutesAgo},last_active_at.is.null`)
         .neq('host_id', userId)
@@ -434,7 +451,8 @@ const App: React.FC = () => {
           id: p.id,
           username: p.username || 'User',
           avatar: p.avatar || DEFAULT_IMAGES.AVATAR,
-          isOnline: false, // Placeholder
+          isOnline: isOnline(p.last_seen_at),
+          lastSeenAt: p.last_seen_at,
           followers: p.followers || 0,
           role: p.role
         })));
@@ -483,6 +501,7 @@ const App: React.FC = () => {
           rate_event_live: data.rate_event_live,
           rate_product_presentation: data.rate_product_presentation,
           rate_onsite: data.rate_onsite,
+          lastSeenAt: data.last_seen_at
         });
         setWalletBalance(data.wallet_balance || 0);
       }
@@ -1433,6 +1452,9 @@ const App: React.FC = () => {
                   }`}>
                   <img src={userProfile.avatar} className="w-full h-full rounded-full border-2 border-black object-cover" alt="Profile" />
                 </div>
+                {session?.user && (
+                  <span className="absolute bottom-1 right-1 w-3.5 h-3.5 bg-green-500 border-2 border-gray-900 rounded-full animate-pulse shadow-lg"></span>
+                )}
               </div>
 
               <div className="flex flex-col">

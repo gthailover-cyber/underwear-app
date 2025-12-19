@@ -55,16 +55,23 @@ const Messages: React.FC<MessagesProps> = ({
     try {
       const { data, error } = await supabase.rpc('get_conversations');
       if (data) {
-        setConversations(data.map((c: any) => ({
-          id: c.partner_id, // We'll use partner_id as chat identifier
-          userId: c.partner_id,
-          username: c.username || 'User',
-          avatar: c.avatar || DEFAULT_IMAGES.AVATAR,
-          lastMessage: c.last_message,
-          time: new Date(c.last_message_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-          unread: Number(c.unread_count),
-          isOnline: false // Placeholder
-        })));
+        const now = new Date().getTime();
+        setConversations(data.map((c: any) => {
+          const lastSeen = c.last_seen_at ? new Date(c.last_seen_at).getTime() : 0;
+          const online = (now - lastSeen) < (3 * 60 * 1000);
+
+          return {
+            id: c.partner_id,
+            userId: c.partner_id,
+            username: c.username || 'User',
+            avatar: c.avatar || DEFAULT_IMAGES.AVATAR,
+            lastMessage: c.last_message,
+            time: new Date(c.last_message_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+            unread: Number(c.unread_count),
+            isOnline: online,
+            lastSeenAt: c.last_seen_at
+          };
+        }));
       }
     } catch (err) {
       console.error('Error fetching conversations:', err);
