@@ -903,12 +903,20 @@ const LiveRoom: React.FC<LiveRoomProps> = ({
                                     <div className="flex-1 text-left">
                                         <h3 className="font-bold text-white">{p.name}</h3>
                                         <p className="text-red-500 font-bold">฿{p.price.toLocaleString()}</p>
-                                        <button
-                                            onClick={() => handleBuyNow(p)}
-                                            className="mt-2 bg-white text-black text-xs font-bold px-4 py-2 rounded-full hover:bg-gray-200"
-                                        >
-                                            Buy Now
-                                        </button>
+                                        {isHost ? (
+                                            <div className="mt-2 flex items-center gap-3 text-xs font-bold text-gray-400">
+                                                <span className="flex items-center gap-1"><span className="text-white">{p.sold || 0}</span> Sold</span>
+                                                <span className="w-1 h-1 bg-gray-600 rounded-full"></span>
+                                                <span className="flex items-center gap-1"><span className="text-white">{p.stock}</span> Left</span>
+                                            </div>
+                                        ) : (
+                                            <button
+                                                onClick={() => handleBuyNow(p)}
+                                                className="mt-2 bg-white text-black text-xs font-bold px-4 py-2 rounded-full hover:bg-gray-200"
+                                            >
+                                                Buy Now
+                                            </button>
+                                        )}
                                     </div>
                                 </div>
                             ))}
