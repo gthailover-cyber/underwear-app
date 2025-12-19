@@ -136,6 +136,10 @@ const ChatDetail: React.FC<ChatDetailProps> = ({ user, language, onBack, onOpenS
         .select()
         .single();
 
+      if (error) {
+        console.error('[Chat] Insert Error:', error);
+        return;
+      }
       if (data) {
         const newMessage: ChatMessage = {
           id: data.id,
@@ -251,8 +255,8 @@ const ChatDetail: React.FC<ChatDetailProps> = ({ user, language, onBack, onOpenS
           onClick={handleSend}
           disabled={!inputText.trim()}
           className={`w-[10%] flex items-center justify-center transition-all ${inputText.trim()
-              ? 'text-red-600 scale-110'
-              : 'text-gray-600'
+            ? 'text-red-600 scale-110'
+            : 'text-gray-600'
             }`}
         >
           <div className={`p-2.5 rounded-full ${inputText.trim() ? 'bg-red-600/10' : 'bg-gray-800'}`}>
