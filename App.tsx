@@ -910,7 +910,7 @@ const App: React.FC = () => {
 
                 <div className="relative z-10">
                   <div className="flex justify-between items-center mb-2">
-                    <p className="text-yellow-100/80 text-[10px] font-bold uppercase tracking-[0.2em]">{t.totalEarnings}</p>
+                    <p className="text-yellow-100/80 text-[20px] font-bold uppercase tracking-[0.2em]">{t.totalEarnings}</p>
                     <div className="w-8 h-8 bg-white/10 backdrop-blur-md rounded-xl flex items-center justify-center border border-white/10">
                       <Gift size={16} className="text-yellow-200" />
                     </div>
