@@ -94,6 +94,69 @@ const App: React.FC = () => {
   // Cart State (In real app, fetch from DB order_items with status 'in_cart' if implemented)
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [hasNewOrders, setHasNewOrders] = useState(false);
+  const [followingIds, setFollowingIds] = useState<string[]>([]);
+
+  const fetchFollowing = async (userId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('follows')
+        .select('followed_id')
+        .eq('follower_id', userId);
+
+      if (data) {
+        setFollowingIds(data.map(f => f.followed_id));
+      }
+    } catch (err) {
+      console.error('Error fetching following:', err);
+    }
+  };
+
+  const toggleFollow = async (followedId: string) => {
+    if (!session?.user) {
+      alert(t.pleaseLoginToFollow || "Please login to follow");
+      return;
+    }
+
+    const isFollowing = followingIds.includes(followedId);
+
+    try {
+      if (isFollowing) {
+        // Unfollow
+        const { error } = await supabase
+          .from('follows')
+          .delete()
+          .eq('follower_id', session.user.id)
+          .eq('followed_id', followedId);
+
+        if (error) throw error;
+        setFollowingIds(prev => prev.filter(id => id !== followedId));
+      } else {
+        // Follow
+        const { error } = await supabase
+          .from('follows')
+          .insert({
+            follower_id: session.user.id,
+            followed_id: followedId
+          });
+
+        if (error) {
+          // Check if error is missing table
+          if (error.code === 'PGRST204' || error.message?.includes('not found')) {
+            alert("Database table 'follows' not found. Please run the SQL migration.");
+            return;
+          }
+          throw error;
+        }
+        setFollowingIds(prev => [...prev, followedId]);
+      }
+
+      // Refresh global data to update follower counts
+      fetchGlobalData(session.user.id);
+    } catch (err: any) {
+      console.error('Toggle Follow Error:', err);
+      alert(err.message || "Failed to update follow status");
+    }
+  };
 
   const fetchReceivedGifts = async (userId: string) => {
     console.log('[FetchGifts] Fetching for user:', userId);
@@ -272,11 +335,10 @@ const App: React.FC = () => {
       console.error('Error fetching people:', err);
     }
 
-    // 4. Chat Rooms (Use 'rooms' table or separate 'chat_rooms' if exists. Reusing rooms for now)
-    // Since schema uses 'rooms' for live, we can treat them as group chats too if they are persistent
-    // For now, let's just initialize empty or filter for non-live rooms if logic existed
-    // setChatRooms([]); 
+    // 4. Following
+    fetchFollowing(userId);
   };
+
 
   const fetchUserProfile = async (userId: string, email?: string) => {
     try {
@@ -826,6 +888,8 @@ const App: React.FC = () => {
               person={selectedPerson}
               onBack={() => setSelectedPerson(null)}
               onChat={() => handleStartChatFromProfile(selectedPerson)}
+              onFollow={toggleFollow}
+              isFollowing={followingIds.includes(selectedPerson.id)}
             />
           );
         }
@@ -835,6 +899,8 @@ const App: React.FC = () => {
             onUserClick={(person) => setSelectedPerson(person)}
             streamers={streamers}
             people={people}
+            onFollow={toggleFollow}
+            followingIds={followingIds}
           />
         );
       case 'profile':
@@ -1545,6 +1611,8 @@ const App: React.FC = () => {
               username: userProfile.username,
               avatar: userProfile.avatar
             } : undefined}
+            onFollow={toggleFollow}
+            followingIds={followingIds}
           />
         </>
       )}

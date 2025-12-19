@@ -82,6 +82,8 @@ export const TRANSLATIONS = {
     liveNow: 'Live Now',
     viewAll: 'View All',
     follow: 'FOLLOW',
+    followed: 'FOLLOWING',
+    pleaseLoginToFollow: 'Please login to follow others.',
     watching: 'watching',
     saySomething: 'Say something...',
     shopItems: 'Shop Items',
@@ -347,6 +349,8 @@ export const TRANSLATIONS = {
     liveNow: 'ไลฟ์สด',
     viewAll: 'ดูทั้งหมด',
     follow: 'ติดตาม',
+    followed: 'ติดตามแล้ว',
+    pleaseLoginToFollow: 'กรุณาเข้าสู่ระบบเพื่อติดตาม',
     watching: 'คนดู',
     saySomething: 'พูดคุย...',
     shopItems: 'สินค้าในร้าน',
@@ -569,11 +573,6 @@ export const MOCK_USER_PROFILE: UserProfile = {
   gallery: [],
   followers: 0,
   following: 0,
-  youtubeStats: {
-    views: 0,
-    subscribers: 0,
-    videos: 0
-  }
 };
 
 export const DISCOVER_TAGS = [

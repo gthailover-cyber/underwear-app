@@ -26,6 +26,8 @@ interface LiveRoomProps {
     onAddToCart?: (item: CartItem) => void;
     onNewOrder?: () => void;
     currentUser?: { id: string; username: string; avatar: string; };
+    onFollow?: (id: string) => void;
+    followingIds?: string[];
 }
 
 interface FloatingHeart {
@@ -59,7 +61,9 @@ const LiveRoom: React.FC<LiveRoomProps> = ({
     onOpenWallet: propOnOpenWallet,
     onAddToCart: propOnAddToCart,
     onNewOrder,
-    currentUser
+    currentUser,
+    onFollow,
+    followingIds = []
 }) => {
     const t = TRANSLATIONS[language];
 
@@ -708,8 +712,14 @@ const LiveRoom: React.FC<LiveRoomProps> = ({
                                 </p>
                             </div>
                             {!isHost && (
-                                <button className="ml-2 bg-red-600 hover:bg-red-700 text-white text-xs font-bold px-3 py-1 rounded-full transition-colors shadow-lg shadow-red-900/40">
-                                    Follow
+                                <button
+                                    onClick={() => onFollow?.(streamer.hostId)}
+                                    className={`ml-2 text-xs font-bold px-3 py-1 rounded-full transition-all shadow-lg active:scale-95 ${followingIds.includes(streamer.hostId)
+                                        ? 'bg-gray-800 text-white border border-white/10'
+                                        : 'bg-red-600 hover:bg-red-700 text-white shadow-red-900/40'
+                                        }`}
+                                >
+                                    {followingIds.includes(streamer.hostId) ? t.followed : t.follow}
                                 </button>
                             )}
                         </div>

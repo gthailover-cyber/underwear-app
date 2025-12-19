@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { MapPin, ArrowLeft, MessageCircle, UserPlus, Grid, Share2, MoreVertical, BicepsFlexed, Crown, User, Calendar, CheckCircle, X, Video, Package } from 'lucide-react';
+import { MapPin, ArrowLeft, MessageCircle, UserPlus, UserCheck, Grid, Share2, MoreVertical, BicepsFlexed, Crown, User, Calendar, CheckCircle, X, Video, Package } from 'lucide-react';
 import { Person, Language, UserProfile } from '../types';
 import { TRANSLATIONS, DEFAULT_IMAGES } from '../constants';
 import { supabase } from '../lib/supabaseClient';
@@ -10,9 +10,11 @@ interface UserProfileDetailProps {
     person: Person;
     onBack: () => void;
     onChat: () => void;
+    onFollow?: (id: string) => void;
+    isFollowing?: boolean;
 }
 
-const UserProfileDetail: React.FC<UserProfileDetailProps> = ({ language, person, onBack, onChat }) => {
+const UserProfileDetail: React.FC<UserProfileDetailProps> = ({ language, person, onBack, onChat, onFollow, isFollowing }) => {
     const t = TRANSLATIONS[language];
 
     const [profile, setProfile] = useState<UserProfile | null>(null);
@@ -72,7 +74,7 @@ const UserProfileDetail: React.FC<UserProfileDetailProps> = ({ language, person,
         };
 
         fetchProfile();
-    }, [person]);
+    }, [person, isFollowing]);
 
     if (loading || !profile) return <div className="h-screen bg-black flex items-center justify-center text-white"><div className="w-8 h-8 border-4 border-red-600 border-t-transparent rounded-full animate-spin"></div></div>;
 
@@ -141,7 +143,16 @@ const UserProfileDetail: React.FC<UserProfileDetailProps> = ({ language, person,
                 {/* Body */}
                 <div className="bg-black relative z-20 -mt-6 rounded-t-3xl border-t border-gray-800/50 shadow-[0_-10px_40px_rgba(0,0,0,0.8)]">
                     <div className="flex justify-center -mt-8 mb-6 gap-4 px-6 relative z-30">
-                        <button className="flex-1 bg-red-600 hover:bg-red-700 text-white h-14 rounded-2xl font-bold text-lg shadow-lg shadow-red-900/50 flex items-center justify-center gap-2 transition-all active:scale-95"><UserPlus size={20} /> {t.follow}</button>
+                        <button
+                            onClick={() => onFollow?.(person.id)}
+                            className={`flex-1 h-14 rounded-2xl font-bold text-lg shadow-lg flex items-center justify-center gap-2 transition-all active:scale-95 ${isFollowing
+                                ? 'bg-gray-800 text-white border border-gray-700'
+                                : 'bg-red-600 text-white shadow-red-900/50 hover:bg-red-700'
+                                }`}
+                        >
+                            {isFollowing ? <UserCheck size={20} /> : <UserPlus size={20} />}
+                            {isFollowing ? t.followed : t.follow}
+                        </button>
                         <button onClick={onChat} className="flex-1 bg-white hover:bg-gray-200 text-black h-14 rounded-2xl font-bold text-lg shadow-lg flex items-center justify-center gap-2 transition-all active:scale-95"><MessageCircle size={20} /> Chat</button>
                     </div>
 
@@ -273,8 +284,15 @@ const UserProfileDetail: React.FC<UserProfileDetailProps> = ({ language, person,
                 </div>
 
                 <div className="flex gap-3 mt-5">
-                    <button className="px-6 py-2 bg-red-600 rounded-full text-white font-bold flex items-center gap-2 hover:bg-red-700 shadow-lg shadow-red-900/40 active:scale-95 transition-all text-sm">
-                        <UserPlus size={16} /> {t.follow}
+                    <button
+                        onClick={() => onFollow?.(person.id)}
+                        className={`px-6 py-2 rounded-full font-bold flex items-center gap-2 transition-all active:scale-95 text-sm shadow-lg ${isFollowing
+                            ? 'bg-gray-800 text-white border border-gray-700'
+                            : 'bg-red-600 text-white hover:bg-red-700 shadow-red-900/40'
+                            }`}
+                    >
+                        {isFollowing ? <UserCheck size={16} /> : <UserPlus size={16} />}
+                        {isFollowing ? t.followed : t.follow}
                     </button>
                     <button onClick={onChat} className="px-6 py-2 bg-gray-800 border border-gray-700 rounded-full text-white font-bold flex items-center gap-2 hover:bg-gray-700 active:scale-95 transition-all text-sm">
                         <MessageCircle size={16} /> Chat
