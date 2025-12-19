@@ -227,12 +227,14 @@ const ChatDetail: React.FC<ChatDetailProps> = ({ user, language, onBack, onOpenS
       </div>
 
       {/* Input Area */}
-      <div className="p-3 bg-gray-900/90 backdrop-blur border-t border-gray-800 flex items-end gap-2 sticky bottom-0 z-30 pb-safe">
-        <button className="p-2.5 text-gray-400 hover:text-white bg-gray-800 rounded-full transition-colors flex-shrink-0">
-          <Plus size={22} />
+      <div className="p-3 bg-gray-900/90 backdrop-blur border-t border-gray-800 flex items-center gap-0 sticky bottom-0 z-30 pb-safe">
+        <button className="w-[10%] flex items-center justify-center text-gray-400 hover:text-white transition-colors">
+          <div className="p-2 bg-gray-800 rounded-full">
+            <Plus size={22} />
+          </div>
         </button>
 
-        <form onSubmit={handleSend} className="flex-1 bg-gray-800 rounded-2xl flex items-center border border-gray-700 focus-within:border-gray-500 transition-colors">
+        <form onSubmit={handleSend} className="w-[80%] bg-gray-800 rounded-2xl flex items-center border border-gray-700 focus-within:border-gray-500 transition-colors mx-1">
           <input
             type="text"
             value={inputText}
@@ -248,12 +250,14 @@ const ChatDetail: React.FC<ChatDetailProps> = ({ user, language, onBack, onOpenS
         <button
           onClick={handleSend}
           disabled={!inputText.trim()}
-          className={`p-3 rounded-full flex-shrink-0 transition-all ${inputText.trim()
-            ? 'bg-red-600 text-white shadow-lg shadow-red-900/50 hover:bg-red-500 transform active:scale-95'
-            : 'bg-gray-800 text-gray-600'
+          className={`w-[10%] flex items-center justify-center transition-all ${inputText.trim()
+              ? 'text-red-600 scale-110'
+              : 'text-gray-600'
             }`}
         >
-          <Send size={20} className={inputText.trim() ? "translate-x-0.5" : ""} />
+          <div className={`p-2.5 rounded-full ${inputText.trim() ? 'bg-red-600/10' : 'bg-gray-800'}`}>
+            <Send size={20} className={inputText.trim() ? "translate-x-0.5" : ""} />
+          </div>
         </button>
       </div>
     </div>
