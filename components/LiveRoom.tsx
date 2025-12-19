@@ -183,6 +183,10 @@ const LiveRoom: React.FC<LiveRoomProps> = ({
             setComments(prev => [...prev, comment]);
         });
 
+        const cleanupHearts = socketService.on('new_heart', () => {
+            addFloatingHeart();
+        });
+
         const cleanupBids = socketService.onBidUpdate((data) => {
             setCurrentHighestBid(data.amount);
             // Also animate or show toast
@@ -202,6 +206,7 @@ const LiveRoom: React.FC<LiveRoomProps> = ({
 
         return () => {
             cleanup();
+            cleanupHearts();
             cleanupBids();
             cleanupViewers();
             socketService.leaveRoom();
@@ -307,12 +312,11 @@ const LiveRoom: React.FC<LiveRoomProps> = ({
         setNewComment('');
 
         // Simulate getting hearts when commenting
-        if (Math.random() > 0.7) addFloatingHeart();
+        if (Math.random() > 0.7) socketService.emit('send_heart', {});
     };
 
     const handleLike = () => {
-        addFloatingHeart();
-        // In real app, emit socket event
+        socketService.emit('send_heart', {});
     };
 
     // Auction Handlers
