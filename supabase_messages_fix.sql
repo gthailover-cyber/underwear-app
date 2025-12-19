@@ -39,6 +39,14 @@ END $$;
 ALTER TABLE public.messages ALTER COLUMN sender_id SET NOT NULL;
 ALTER TABLE public.messages ALTER COLUMN receiver_id SET NOT NULL;
 
+-- Fix for room_id constraint: make it nullable to support 1:1 chat
+DO $$
+BEGIN
+    IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='messages' AND column_name='room_id') THEN
+        ALTER TABLE public.messages ALTER COLUMN room_id DROP NOT NULL;
+    END IF;
+END $$;
+
 -- Re-apply RLS and Policies (DROP first to be safe)
 ALTER TABLE public.messages ENABLE ROW LEVEL SECURITY;
 
