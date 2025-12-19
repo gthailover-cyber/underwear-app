@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { MessageCircle, Bell, Menu, Plus, Home, Compass, ShoppingCart, User, Users, MapPin, CreditCard, Wallet, LogOut, ChevronRight, X, Globe, Coins, ArrowLeft, Package, ShoppingBag, Box, LayoutDashboard, Shield, List, UserCog, Video, MessageSquare, BicepsFlexed, Crown, Star, Clock, LockKeyhole, Banknote, Calendar } from 'lucide-react';
+import { MessageCircle, Bell, Menu, Plus, Home, Compass, ShoppingCart, User, Users, MapPin, CreditCard, Wallet, LogOut, ChevronRight, X, Globe, Coins, ArrowLeft, Package, ShoppingBag, Box, LayoutDashboard, Shield, List, UserCog, Video, MessageSquare, BicepsFlexed, Crown, Star, Clock, LockKeyhole, Banknote, Calendar, Gift } from 'lucide-react';
 import { supabase } from './lib/supabaseClient';
 import { Session } from '@supabase/supabase-js';
 import AuthPage from './components/AuthPage';
