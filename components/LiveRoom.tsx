@@ -187,6 +187,29 @@ const LiveRoom: React.FC<LiveRoomProps> = ({
             addFloatingHeart();
         });
 
+        const cleanupGifts = socketService.on('new_gift', (data: any) => {
+            const gift = GIFTS.find(g => g.id === data.giftId);
+            if (gift) {
+                // Only animate if it's NOT from me (since I already animated it locally on click)
+                if (data.senderId !== currentUser?.id) {
+                    triggerGiftAnimation(gift, data.sender);
+                    // Log for host
+                    if (isHost) {
+                        const newLog: GiftLogItem = {
+                            id: Date.now().toString() + Math.random(),
+                            sender: data.sender,
+                            avatar: data.avatar || `https://picsum.photos/50/50?random=${Math.floor(Math.random() * 1000)}`,
+                            giftName: gift.name,
+                            giftIcon: gift.icon,
+                            price: gift.price,
+                            timestamp: new Date()
+                        };
+                        setGiftLogs(prev => [newLog, ...prev].slice(0, 50));
+                    }
+                }
+            }
+        });
+
         const cleanupBids = socketService.onBidUpdate((data) => {
             setCurrentHighestBid(data.amount);
             // Also animate or show toast
@@ -207,6 +230,7 @@ const LiveRoom: React.FC<LiveRoomProps> = ({
         return () => {
             cleanup();
             cleanupHearts();
+            cleanupGifts();
             cleanupBids();
             cleanupViewers();
             socketService.leaveRoom();

@@ -99,6 +99,9 @@ class SupabaseService {
       .on('broadcast', { event: 'heart' }, (payload) => {
         this.triggerEvent('new_heart', payload.payload);
       })
+      .on('broadcast', { event: 'gift' }, (payload) => {
+        this.triggerEvent('new_gift', payload.payload);
+      })
       .on('broadcast', { event: 'bid' }, (payload) => {
         this.triggerEvent('bid_update', payload.payload);
       })
@@ -264,7 +267,23 @@ class SupabaseService {
     }
 
     if (event === 'send_gift') {
-      console.log("Gift sent:", data.giftId);
+      const giftData = {
+        giftId: data.giftId,
+        sender: this.userProfile?.username || 'Guest',
+        avatar: this.userProfile?.avatar,
+        senderId: this.userId
+      };
+
+      this.channel?.send({
+        type: 'broadcast',
+        event: 'gift',
+        payload: giftData
+      });
+
+      // Trigger locally for the sender (if needed, though LiveRoom handles local animation separately)
+      // keeping consistent with heart/bid where we might want self-echo handling or optimistic UI
+      // But LiveRoom calls triggerGiftAnimation locally already.
+      // We'll leave local trigger here just in case, or rely on LiveRoom.
     }
 
     if (event === 'place_bid') {
