@@ -69,6 +69,9 @@ export interface UserProfile {
   gallery: string[];
   followers: number; // Added
   following: number; // Added
+  rate_event_live?: number;
+  rate_product_presentation?: number;
+  rate_onsite?: number;
 }
 
 export interface Person {

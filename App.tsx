@@ -304,6 +304,9 @@ const App: React.FC = () => {
           gallery: data.gallery || [],
           followers: data.followers || 0,
           following: data.following || 0,
+          rate_event_live: data.rate_event_live,
+          rate_product_presentation: data.rate_product_presentation,
+          rate_onsite: data.rate_onsite,
         });
         setWalletBalance(data.wallet_balance || 0);
       }
