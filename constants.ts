@@ -99,6 +99,9 @@ export const TRANSLATIONS = {
       rooms: 'Rooms',
       models: 'Models'
     },
+    notifications: 'Notifications',
+    noNotifications: 'No notifications yet',
+    close: 'Close',
     // Roles & Upgrade
     roles: {
       model: 'Model',
@@ -366,6 +369,9 @@ export const TRANSLATIONS = {
       rooms: 'ห้อง',
       models: 'นายแบบ'
     },
+    notifications: 'การแจ้งเตือน',
+    noNotifications: 'ยังไม่มีการแจ้งเตือน',
+    close: 'ปิด',
     // Roles & Upgrade
     roles: {
       model: 'นายแบบ',

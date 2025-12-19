@@ -161,3 +161,19 @@ export interface ReceivedGift {
     avatar: string;
   };
 }
+
+export type NotificationType = 'follow' | 'gift' | 'mention' | 'system';
+
+export interface AppNotification {
+  id: string;
+  user_id: string;
+  actor_id: string;
+  type: NotificationType;
+  content: string;
+  is_read: boolean;
+  created_at: string;
+  actor?: {
+    username: string;
+    avatar: string;
+  };
+}

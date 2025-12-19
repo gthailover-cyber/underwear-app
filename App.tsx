@@ -33,7 +33,7 @@ import ModelApplicationModal from './components/ModelApplicationModal';
 import StartLiveModal from './components/StartLiveModal';
 import UpdatePasswordModal from './components/UpdatePasswordModal';
 import { TRANSLATIONS, MOCK_USER_PROFILE, DEFAULT_IMAGES } from './constants';
-import { Streamer, Language, CartItem, UserProfile, MessagePreview, Product, Person, ChatRoom, ReceivedGift } from './types';
+import { Streamer, Language, CartItem, UserProfile, MessagePreview, Product, Person, ChatRoom, ReceivedGift, AppNotification } from './types';
 
 const App: React.FC = () => {
   // Auth State
@@ -95,6 +95,8 @@ const App: React.FC = () => {
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [hasNewOrders, setHasNewOrders] = useState(false);
   const [followingIds, setFollowingIds] = useState<string[]>([]);
+  const [notifications, setNotifications] = useState<AppNotification[]>([]);
+  const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
 
   const fetchFollowing = async (userId: string) => {
     try {
@@ -108,6 +110,46 @@ const App: React.FC = () => {
       }
     } catch (err) {
       console.error('Error fetching following:', err);
+    }
+  };
+  const fetchNotifications = async (userId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('notifications')
+        .select(`
+          *,
+          actor:actor_id (username, avatar)
+        `)
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false })
+        .limit(20);
+
+      if (data) {
+        setNotifications(data);
+      }
+    } catch (err) {
+      console.error('Error fetching notifications:', err);
+    }
+  };
+
+  const markNotificationsAsRead = async () => {
+    if (!session?.user || notifications.length === 0) return;
+
+    // Only update those that are currently unread
+    const unreadIds = notifications.filter(n => !n.is_read).map(n => n.id);
+    if (unreadIds.length === 0) return;
+
+    try {
+      const { error } = await supabase
+        .from('notifications')
+        .update({ is_read: true })
+        .in('id', unreadIds);
+
+      if (!error) {
+        setNotifications(prev => prev.map(n => ({ ...n, is_read: true })));
+      }
+    } catch (err) {
+      console.error('Error marking notifications read:', err);
     }
   };
 
@@ -238,8 +280,30 @@ const App: React.FC = () => {
       })
       .subscribe();
 
+    const notificationsChannel = supabase
+      .channel('public:notifications')
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'notifications', filter: `user_id=eq.${session.user.id}` },
+        async (payload) => {
+          console.log('New Notification Received:', payload);
+          // Fetch full notification data including actor profile
+          const { data } = await supabase
+            .from('notifications')
+            .select('*, actor:actor_id (username, avatar)')
+            .eq('id', payload.new.id)
+            .single();
+
+          if (data) {
+            setNotifications(prev => [data, ...prev].slice(0, 20));
+          }
+        }
+      )
+      .subscribe();
+
     return () => {
       supabase.removeChannel(channel);
+      supabase.removeChannel(notificationsChannel);
     };
   }, [session]);
 
@@ -341,6 +405,9 @@ const App: React.FC = () => {
 
     // 4. Following
     fetchFollowing(userId);
+
+    // 5. Notifications
+    fetchNotifications(userId);
   };
 
 
@@ -1527,9 +1594,19 @@ const App: React.FC = () => {
               <span className="text-xs font-bold text-white font-athletic">{walletBalance.toLocaleString()}</span>
             </button>
 
-            <button className="relative p-1 hover:text-gray-300 transition-colors">
+            <button
+              onClick={() => {
+                setIsNotificationsOpen(!isNotificationsOpen);
+                if (!isNotificationsOpen) markNotificationsAsRead();
+              }}
+              className="relative p-1 hover:text-gray-300 transition-colors"
+            >
               <Bell size={22} className="text-white" />
-              <span className="absolute top-0 right-0 w-2.5 h-2.5 bg-red-600 rounded-full border-2 border-black animate-pulse"></span>
+              {notifications.some(n => !n.is_read) && (
+                <span className="absolute -top-0.5 -right-0.5 min-w-[14px] h-[14px] bg-red-600 rounded-full border border-black flex items-center justify-center text-[8px] font-bold text-white px-0.5 animate-pulse">
+                  {notifications.filter(n => !n.is_read).length > 9 ? '9+' : notifications.filter(n => !n.is_read).length}
+                </span>
+              )}
             </button>
 
             <button onClick={() => setActiveTab('messages')} className="relative p-1 hover:text-gray-300 transition-colors">
@@ -1692,6 +1769,81 @@ const App: React.FC = () => {
         onClose={() => setIsUpdatePasswordOpen(false)}
         language={language}
       />
+
+      {/* Notifications Overlay */}
+      {isNotificationsOpen && (
+        <>
+          <div
+            className="fixed inset-0 z-50 bg-black/20 backdrop-blur-[2px]"
+            onClick={() => setIsNotificationsOpen(false)}
+          />
+          <div className="fixed top-16 right-4 left-4 max-w-sm mx-auto z-[51] bg-gray-900/95 backdrop-blur-xl rounded-2xl border border-gray-800 shadow-2xl animate-in fade-in zoom-in duration-200 origin-top overflow-hidden">
+            <div className="p-4 border-b border-gray-800 flex justify-between items-center bg-black/20">
+              <h3 className="text-white font-bold flex items-center gap-2">
+                <Bell size={16} className="text-red-600" />
+                {t.notifications}
+              </h3>
+              <button
+                onClick={() => setIsNotificationsOpen(false)}
+                className="text-gray-500 hover:text-white transition-colors"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <div className="max-h-[60vh] overflow-y-auto no-scrollbar py-2">
+              {notifications.length > 0 ? (
+                notifications.map((notif) => (
+                  <div
+                    key={notif.id}
+                    className={`flex gap-3 px-4 py-3 hover:bg-white/5 transition-colors cursor-pointer border-l-2 ${notif.is_read ? 'border-transparent' : 'border-red-600 bg-red-600/5'}`}
+                  >
+                    <div className="w-10 h-10 rounded-full bg-gray-800 overflow-hidden flex-shrink-0 border border-gray-700">
+                      <img
+                        src={notif.actor?.avatar || DEFAULT_IMAGES.AVATAR}
+                        className="w-full h-full object-cover"
+                        alt="Actor"
+                      />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm text-gray-200 leading-tight">
+                        <span className="font-bold text-white transition-colors hover:text-red-500">
+                          {notif.actor?.username || 'Someone'}
+                        </span>
+                        {' '}{notif.content.replace(notif.actor?.username || '', '').trim()}
+                      </p>
+                      <span className="text-[10px] text-gray-500 mt-1 block">
+                        {new Date(notif.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      </span>
+                    </div>
+                    {notif.type === 'follow' && (
+                      <div className="bg-red-600/20 p-1.5 rounded-lg self-start">
+                        <Users size={12} className="text-red-500" />
+                      </div>
+                    )}
+                  </div>
+                ))
+              ) : (
+                <div className="py-12 flex flex-col items-center justify-center text-gray-500">
+                  <div className="w-16 h-16 bg-gray-800/50 rounded-full flex items-center justify-center mb-3">
+                    <Bell size={24} className="opacity-20" />
+                  </div>
+                  <p className="text-sm">{t.noNotifications || 'No notifications yet'}</p>
+                </div>
+              )}
+            </div>
+
+            {notifications.length > 0 && (
+              <button
+                onClick={() => setIsNotificationsOpen(false)}
+                className="w-full p-3 text-center text-xs font-bold text-gray-500 hover:text-white border-t border-gray-800 bg-black/20 transition-colors"
+              >
+                {t.close || 'Close'}
+              </button>
+            )}
+          </div>
+        </>
+      )}
 
       <CountdownOverlay
         count={countdownValue}
