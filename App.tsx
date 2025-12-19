@@ -255,6 +255,7 @@ const App: React.FC = () => {
             profiles:host_id (username, avatar)
           `)
         .or(`last_active_at.gt.${twoMinutesAgo},last_active_at.is.null`)
+        .neq('host_id', userId)
         .order('created_at', { ascending: false });
 
       if (!error && data) {
@@ -320,7 +321,10 @@ const App: React.FC = () => {
 
     // 3. Fetch All People (Profiles)
     try {
-      const { data: profileData } = await supabase.from('profiles').select('*');
+      const { data: profileData } = await supabase
+        .from('profiles')
+        .select('*')
+        .neq('id', userId);
       if (profileData) {
         setPeople(profileData.map(p => ({
           id: p.id,
@@ -1114,6 +1118,7 @@ const App: React.FC = () => {
             onCreateRoom={() => setIsCreateRoomOpen(true)}
             chatRooms={chatRooms}
             initialTab={organizerToolTab}
+            currentUser={userProfile.username}
           />
         );
       case 'all_live':
