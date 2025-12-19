@@ -151,12 +151,15 @@ const App: React.FC = () => {
   const fetchGlobalData = async (userId: string) => {
     // 1. Fetch Rooms (Streamers)
     try {
+      const twoMinutesAgo = new Date(Date.now() - 2 * 60 * 1000).toISOString();
+
       const { data, error } = await supabase
         .from('rooms')
         .select(`
             *,
             profiles:host_id (username, avatar)
           `)
+        .or(`last_active_at.gt.${twoMinutesAgo},last_active_at.is.null`)
         .order('created_at', { ascending: false });
 
       if (!error && data) {

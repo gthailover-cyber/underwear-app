@@ -173,6 +173,21 @@ const LiveRoom: React.FC<LiveRoomProps> = ({
     }, []);
 
     // Initial Setup & Socket Listeners
+    // Heartbeat Logic: Update last_active_at every minute to keep room "alive"
+    useEffect(() => {
+        if (!isHost) return;
+
+        const interval = setInterval(async () => {
+            console.log('[Heartbeat] Updating room activity...');
+            await supabase
+                .from('rooms')
+                .update({ last_active_at: new Date().toISOString() })
+                .eq('id', streamer.id);
+        }, 60000); // 1 minute
+
+        return () => clearInterval(interval);
+    }, [isHost, streamer.id]);
+
     useEffect(() => {
         if (currentUser) {
             socketService.updateUser(currentUser);
