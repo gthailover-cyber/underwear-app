@@ -401,11 +401,11 @@ const LiveRoom: React.FC<LiveRoomProps> = ({
         setShowGiftSelector(false);
 
         // Record in Database
-        try {
+        if (currentUser?.id && streamer.hostId) {
             supabase
                 .from('received_gifts')
                 .insert({
-                    sender_id: currentUser?.id,
+                    sender_id: currentUser.id,
                     receiver_id: streamer.hostId,
                     gift_id: gift.id,
                     gift_name: gift.name,
@@ -413,10 +413,14 @@ const LiveRoom: React.FC<LiveRoomProps> = ({
                     price: gift.price
                 })
                 .then(({ error }) => {
-                    if (error) console.error('Error recording gift:', error);
+                    if (error) {
+                        console.error('[Gift] Save Error:', error);
+                    } else {
+                        console.log('[Gift] Recorded successfully in database');
+                    }
                 });
-        } catch (err) {
-            console.error('Failed to record gift:', err);
+        } else {
+            console.error('[Gift] Missing sender or receiver ID', { sender: currentUser?.id, receiver: streamer.hostId });
         }
 
         // Trigger Animation locally

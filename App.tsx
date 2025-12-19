@@ -96,6 +96,7 @@ const App: React.FC = () => {
   const [hasNewOrders, setHasNewOrders] = useState(false);
 
   const fetchReceivedGifts = async (userId: string) => {
+    console.log('[FetchGifts] Fetching for user:', userId);
     try {
       const { data, error } = await supabase
         .from('received_gifts')
@@ -107,11 +108,12 @@ const App: React.FC = () => {
         .order('created_at', { ascending: false });
 
       if (data) {
+        console.log('[FetchGifts] Data received:', data.length, 'records');
         setReceivedGifts(data as ReceivedGift[]);
       }
-      if (error) console.error('Error fetching gifts:', error);
+      if (error) console.error('[FetchGifts] Error:', error);
     } catch (err) {
-      console.error('Fetch gifts failed:', err);
+      console.error('[FetchGifts] Failed:', err);
     }
   };
 
