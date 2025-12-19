@@ -191,6 +191,7 @@ const App: React.FC = () => {
           avatar: room.profiles?.avatar || DEFAULT_IMAGES.AVATAR,
           title: room.title,
           viewerCount: room.viewer_count || 0,
+          likes: room.likes || 0, // Map likes from DB
           coverImage: room.cover_image || DEFAULT_IMAGES.COVER,
           videoUrl: room.video_url,
           youtubeId: room.youtube_id,

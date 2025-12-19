@@ -38,6 +38,7 @@ export interface Streamer {
   name: string;
   title: string;
   viewerCount: number;
+  likes?: number; // Added: Heart count
   coverImage: string;
   avatar?: string; // Added: Host's avatar image
   youtubeId?: string; // Added for 100% Free Live Streaming via YouTube Embed
