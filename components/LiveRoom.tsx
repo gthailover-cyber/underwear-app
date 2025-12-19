@@ -208,6 +208,18 @@ const LiveRoom: React.FC<LiveRoomProps> = ({
                 // Only animate if it's NOT from me (since I already animated it locally on click)
                 if (data.senderId !== currentUser?.id) {
                     triggerGiftAnimation(gift, data.sender);
+
+                    // Add to Chat Stream
+                    const giftComment: any = {
+                        id: Date.now().toString() + Math.random(),
+                        username: data.sender || 'User',
+                        message: `a ${gift.name}!`,
+                        timestamp: new Date().toLocaleTimeString(),
+                        isGift: true, // Custom flag for styling
+                        isSystem: false
+                    };
+                    setComments(prev => [...prev, giftComment]);
+
                     // Log for host
                     if (isHost) {
                         const newLog: GiftLogItem = {
@@ -393,6 +405,17 @@ const LiveRoom: React.FC<LiveRoomProps> = ({
 
         // Emit to server
         socketService.emit('send_gift', { giftId: gift.id });
+
+        // Add to Chat Locally
+        const giftComment: any = {
+            id: Date.now().toString(),
+            username: 'Me',
+            message: `a ${gift.name}!`,
+            timestamp: new Date().toLocaleTimeString(),
+            isGift: true,
+            isSystem: false // technically not system, user action
+        };
+        setComments(prev => [...prev, giftComment]);
 
         // If host, add to log (logic mock)
         if (isHost) {
@@ -785,11 +808,18 @@ const LiveRoom: React.FC<LiveRoomProps> = ({
                             📢 Welcome to {streamer.name}'s room! Please follow the community guidelines.
                         </div>
 
-                        {comments.map((comment) => (
+                        {comments.map((comment: any) => (
                             <div key={comment.id} className={`flex flex-col items-start max-w-[85%] animate-slide-up ${comment.isSystem ? 'w-full' : ''}`}>
                                 {comment.isSystem ? (
                                     <div className="bg-white/20 backdrop-blur-md self-center text-white text-xs px-3 py-1 rounded-full font-medium my-1">
                                         {comment.username} {comment.message}
+                                    </div>
+                                ) : comment.isGift ? (
+                                    <div className="bg-gradient-to-r from-yellow-600/80 to-pink-600/80 backdrop-blur-md border border-yellow-400/30 self-start text-white text-xs px-3 py-1.5 rounded-2xl rounded-bl-none font-bold my-1 shadow-lg shadow-yellow-900/20 flex items-center gap-2">
+                                        <Gift size={12} className="text-yellow-200" />
+                                        <span>
+                                            <span className="text-yellow-200">{comment.username}</span> sent {comment.message}
+                                        </span>
                                     </div>
                                 ) : (
                                     <div className={`px-3 py-1.5 rounded-2xl text-sm break-words shadow-sm backdrop-blur-sm border ${comment.isHost
