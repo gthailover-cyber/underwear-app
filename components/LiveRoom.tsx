@@ -654,15 +654,13 @@ const LiveRoom: React.FC<LiveRoomProps> = ({
                         </div>
                     </div>
 
-                    {/* Host Stats (Only for Host) */}
-                    {isHost && (
-                        <div className="mt-4 flex gap-2 overflow-x-auto pb-2 no-scrollbar">
-                            <div className="bg-black/40 backdrop-blur-md px-3 py-1.5 rounded-lg border border-white/10 flex items-center gap-2 min-w-max">
-                                <Heart size={14} className="text-pink-500 fill-pink-500" />
-                                <span className="text-xs font-bold">{(heartCount || 0).toLocaleString()} Likes</span>
-                            </div>
+                    {/* Host Stats (For Everyone now) */}
+                    <div className="mt-4 flex gap-2 overflow-x-auto pb-2 no-scrollbar">
+                        <div className="bg-black/40 backdrop-blur-md px-3 py-1.5 rounded-lg border border-white/10 flex items-center gap-2 min-w-max">
+                            <Heart size={14} className="text-pink-500 fill-pink-500" />
+                            <span className="text-xs font-bold">{(heartCount || 0).toLocaleString()} Likes</span>
                         </div>
-                    )}
+                    </div>
                 </div>
 
                 {/* Auction Floating Card (If Auction is Active) */}
