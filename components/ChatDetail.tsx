@@ -139,17 +139,8 @@ const ChatDetail: React.FC<ChatDetailProps> = ({ user, language, onBack, onOpenS
         console.error('[Chat] Insert Error:', error);
         return;
       }
-      if (data) {
-        const newMessage: ChatMessage = {
-          id: data.id,
-          senderId: 'me',
-          text: data.content,
-          type: 'text',
-          timestamp: new Date(data.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-          read: false
-        };
-        setMessages(prev => [...prev, newMessage]);
-      }
+      // Note: We don't call setMessages here because the subscribeToMessages
+      // listener will catch the INSERT event and add it to the state.
     } catch (err) {
       console.error('Error sending message:', err);
     }
