@@ -903,38 +903,35 @@ const App: React.FC = () => {
             </div>
 
             <div className="p-4 flex flex-col gap-4">
-              {/* Total Summary Card */}
-              <div className="bg-gradient-to-br from-yellow-500 via-orange-600 to-red-700 rounded-3xl p-6 shadow-2xl shadow-orange-900/40 border border-yellow-400/20 relative overflow-hidden group">
+              {/* Total Summary Card (Compact) */}
+              <div className="bg-gradient-to-br from-yellow-500 via-orange-600 to-red-700 rounded-2xl p-4 shadow-xl shadow-orange-900/30 border border-yellow-400/20 relative overflow-hidden group">
                 {/* Decorative Elements */}
-                <div className="absolute -top-10 -right-10 w-40 h-40 bg-white/10 rounded-full blur-3xl group-hover:scale-125 transition-transform duration-1000"></div>
-                <div className="absolute -bottom-10 -left-10 w-32 h-32 bg-yellow-400/10 rounded-full blur-2xl group-hover:scale-150 transition-transform duration-1000"></div>
+                <div className="absolute -top-8 -right-8 w-32 h-32 bg-white/10 rounded-full blur-2xl group-hover:scale-125 transition-transform duration-1000"></div>
 
                 <div className="relative z-10">
-                  <div className="flex justify-between items-start mb-4">
+                  <div className="flex justify-between items-center mb-2">
                     <p className="text-yellow-100/80 text-[10px] font-bold uppercase tracking-[0.2em]">{t.totalEarnings}</p>
-                    <div className="w-10 h-10 bg-white/10 backdrop-blur-md rounded-2xl flex items-center justify-center border border-white/10">
-                      <Gift size={20} className="text-yellow-200" />
+                    <div className="w-8 h-8 bg-white/10 backdrop-blur-md rounded-xl flex items-center justify-center border border-white/10">
+                      <Gift size={16} className="text-yellow-200" />
                     </div>
                   </div>
 
                   <div className="flex items-baseline gap-2">
-                    <h3 className="text-5xl font-black text-white font-athletic tracking-tight">
+                    <h3 className="text-3xl font-black text-white font-athletic tracking-tight">
                       {totalGiftValue.toLocaleString()}
                     </h3>
-                    <Coins size={28} className="text-yellow-300 fill-yellow-300 mb-1" />
+                    <Coins size={20} className="text-yellow-300 fill-yellow-300 mb-0.5" />
                   </div>
 
-                  <div className="mt-6 flex items-center justify-between">
+                  <div className="mt-4 flex items-center gap-6 pt-3 border-t border-white/10">
                     <div className="flex flex-col">
-                      <span className="text-[10px] text-yellow-100/60 font-medium uppercase tracking-wider">Total Received</span>
-                      <span className="text-lg font-bold text-white">{receivedGifts.length}</span>
+                      <span className="text-[9px] text-yellow-100/60 font-medium uppercase tracking-wider">Gifts Received</span>
+                      <span className="text-base font-bold text-white">{receivedGifts.length}</span>
                     </div>
 
-                    <div className="h-8 w-px bg-white/10"></div>
-
-                    <div className="flex flex-col items-end">
-                      <span className="text-[10px] text-yellow-100/60 font-medium uppercase tracking-wider">Avg. Value</span>
-                      <span className="text-lg font-bold text-white">
+                    <div className="flex flex-col">
+                      <span className="text-[9px] text-yellow-100/60 font-medium uppercase tracking-wider">Avg Value</span>
+                      <span className="text-base font-bold text-white">
                         {receivedGifts.length > 0 ? Math.round(totalGiftValue / receivedGifts.length) : 0}
                       </span>
                     </div>
