@@ -177,8 +177,8 @@ const ChatDetail: React.FC<ChatDetailProps> = ({ user, language, onBack, onOpenS
         </div>
 
         <div className="flex items-center gap-3 text-gray-400">
-          <button className="hover:text-white transition-colors"><Phone size={20} /></button>
-          <button className="hover:text-white transition-colors"><Video size={22} /></button>
+          {/* <button className="hover:text-white transition-colors"><Phone size={20} /></button>
+          <button className="hover:text-white transition-colors"><Video size={22} /></button> */}
           <button className="hover:text-white transition-colors"><MoreVertical size={20} /></button>
         </div>
       </div>
