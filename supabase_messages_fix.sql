@@ -104,3 +104,13 @@ BEGIN
     ORDER BY lm.created_at DESC;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Enable Realtime for messages table
+DO $$
+BEGIN
+    IF EXISTS (SELECT 1 FROM pg_publication WHERE pubname = 'supabase_realtime') THEN
+        IF NOT EXISTS (SELECT 1 FROM pg_publication_tables WHERE pubname = 'supabase_realtime' AND schemaname = 'public' AND tablename = 'messages') THEN
+            ALTER PUBLICATION supabase_realtime ADD TABLE public.messages;
+        END IF;
+    END IF;
+END $$;

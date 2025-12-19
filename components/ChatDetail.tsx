@@ -86,8 +86,7 @@ const ChatDetail: React.FC<ChatDetailProps> = ({ user, language, onBack, onOpenS
         {
           event: 'INSERT',
           schema: 'public',
-          table: 'messages',
-          filter: `or(sender_id.eq.${user.userId},receiver_id.eq.${user.userId})`
+          table: 'messages'
         },
         (payload) => {
           const m = payload.new;
