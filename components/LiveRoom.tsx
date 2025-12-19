@@ -11,6 +11,7 @@ import { TRANSLATIONS } from '../constants';
 import { GIFTS } from '../constants';
 import { socketService } from '../services/socket';
 import { supabase } from '../lib/supabaseClient';
+import { liveKitService } from '../services/livekit';
 import LiveKitVideo from './LiveKitVideo';
 
 interface LiveRoomProps {
@@ -530,6 +531,19 @@ const LiveRoom: React.FC<LiveRoomProps> = ({
         }
     };
 
+    const [isMicOn, setIsMicOn] = useState(true);
+
+    const handleToggleMic = async () => {
+        const newState = !isMicOn;
+        setIsMicOn(newState);
+        try {
+            await liveKitService.enableMicrophone(newState);
+        } catch (err) {
+            console.error("Error toggling mic:", err);
+            setIsMicOn(!newState); // Revert on error
+        }
+    };
+
     return (
         <div className="fixed inset-0 z-50 bg-black text-white flex justify-center h-[100dvh] w-full overflow-hidden">
 
@@ -846,10 +860,13 @@ const LiveRoom: React.FC<LiveRoomProps> = ({
                             </div>
 
                             <button
-                                onClick={() => setShowGiftSelector(true)}
-                                className="w-10 h-10 flex items-center justify-center bg-pink-600/80 backdrop-blur-md rounded-full border border-pink-500/50 text-white hover:bg-pink-500 active:scale-90 transition-all shadow-lg shadow-pink-900/40"
+                                onClick={handleToggleMic}
+                                className={`w-10 h-10 flex items-center justify-center backdrop-blur-md rounded-full border text-white active:scale-90 transition-all shadow-lg ${isMicOn
+                                    ? 'bg-gray-600/80 border-gray-500/50 hover:bg-gray-500'
+                                    : 'bg-red-600/80 border-red-500/50 hover:bg-red-500 shadow-red-900/40'
+                                    }`}
                             >
-                                <Gift size={20} />
+                                {isMicOn ? <Mic size={20} /> : <MicOff size={20} />}
                             </button>
                         </div>
                     )}
@@ -863,17 +880,19 @@ const LiveRoom: React.FC<LiveRoomProps> = ({
                         <div className="flex items-center justify-between p-4 border-b border-gray-800">
                             <h2 className="text-lg font-bold text-white">Products ({streamer.products.length})</h2>
                             <div className="flex items-center gap-4">
-                                <button
-                                    onClick={() => { setShowProducts(false); setShowCart(true); }}
-                                    className="relative p-2 hover:bg-white/10 rounded-full transition-colors"
-                                >
-                                    <ShoppingCart size={24} className="text-white" />
-                                    {cart.length > 0 && (
-                                        <span className="absolute top-0 right-0 w-4 h-4 bg-red-600 rounded-full text-[10px] flex items-center justify-center font-bold border border-black">
-                                            {cart.length}
-                                        </span>
-                                    )}
-                                </button>
+                                {!isHost && (
+                                    <button
+                                        onClick={() => { setShowProducts(false); setShowCart(true); }}
+                                        className="relative p-2 hover:bg-white/10 rounded-full transition-colors"
+                                    >
+                                        <ShoppingCart size={24} className="text-white" />
+                                        {cart.length > 0 && (
+                                            <span className="absolute top-0 right-0 w-4 h-4 bg-red-600 rounded-full text-[10px] flex items-center justify-center font-bold border border-black">
+                                                {cart.length}
+                                            </span>
+                                        )}
+                                    </button>
+                                )}
                                 <button onClick={() => setShowProducts(false)}><X className="text-white" /></button>
                             </div>
                         </div>
