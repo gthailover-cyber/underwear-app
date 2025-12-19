@@ -63,6 +63,7 @@ CREATE POLICY "Users can mark messages as read" ON public.messages
 FOR UPDATE USING (auth.uid() = receiver_id);
 
 -- Re-create the RPC function
+DROP FUNCTION IF EXISTS public.get_conversations();
 CREATE OR REPLACE FUNCTION public.get_conversations()
 RETURNS TABLE (
     partner_id UUID,
