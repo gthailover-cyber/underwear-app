@@ -531,10 +531,10 @@ const LiveRoom: React.FC<LiveRoomProps> = ({
     };
 
     return (
-        <div className="fixed inset-0 z-50 bg-black text-white flex flex-col md:flex-row h-[100dvh] w-full overflow-hidden">
+        <div className="fixed inset-0 z-50 bg-black text-white flex justify-center h-[100dvh] w-full overflow-hidden">
 
-            {/* --- LEFT: VIDEO AREA (Mobile: Full Screen, Desktop: 2/3) --- */}
-            <div className="relative flex-1 bg-gray-900 overflow-hidden flex items-center justify-center">
+            {/* --- VIDEO AREA (Centered, Mobile Width on Desktop) --- */}
+            <div className="relative w-full max-w-lg h-full bg-gray-900 border-x border-gray-800 overflow-hidden flex items-center justify-center">
 
                 {/* Main Video Layer */}
                 <div className="absolute inset-0 bg-black">
@@ -854,283 +854,283 @@ const LiveRoom: React.FC<LiveRoomProps> = ({
                         </div>
                     )}
                 </div>
-            </div>
 
-            {/* --- OVERLAYS --- */}
+                {/* --- OVERLAYS --- */}
 
-            {/* Product List */}
-            {showProducts && (
-                <div className="absolute inset-0 z-40 bg-black/90 flex flex-col animate-slide-up">
-                    <div className="flex items-center justify-between p-4 border-b border-gray-800">
-                        <h2 className="text-lg font-bold text-white">Products ({streamer.products.length})</h2>
-                        <div className="flex items-center gap-4">
-                            <button
-                                onClick={() => { setShowProducts(false); setShowCart(true); }}
-                                className="relative p-2 hover:bg-white/10 rounded-full transition-colors"
-                            >
-                                <ShoppingCart size={24} className="text-white" />
-                                {cart.length > 0 && (
-                                    <span className="absolute top-0 right-0 w-4 h-4 bg-red-600 rounded-full text-[10px] flex items-center justify-center font-bold border border-black">
-                                        {cart.length}
-                                    </span>
-                                )}
-                            </button>
-                            <button onClick={() => setShowProducts(false)}><X className="text-white" /></button>
-                        </div>
-                    </div>
-                    <div className="flex-1 overflow-y-auto p-4 space-y-4">
-                        {streamer.products.map(p => (
-                            <div key={p.id} className="flex gap-4 bg-gray-900 p-3 rounded-xl border border-gray-800">
-                                <img src={p.image} className="w-20 h-20 rounded-lg object-cover bg-gray-800" />
-                                <div className="flex-1 text-left">
-                                    <h3 className="font-bold text-white">{p.name}</h3>
-                                    <p className="text-red-500 font-bold">฿{p.price.toLocaleString()}</p>
-                                    <button
-                                        onClick={() => handleBuyNow(p)}
-                                        className="mt-2 bg-white text-black text-xs font-bold px-4 py-2 rounded-full hover:bg-gray-200"
-                                    >
-                                        Buy Now
-                                    </button>
-                                </div>
+                {/* Product List */}
+                {showProducts && (
+                    <div className="absolute inset-0 z-40 bg-black/90 flex flex-col animate-slide-up">
+                        <div className="flex items-center justify-between p-4 border-b border-gray-800">
+                            <h2 className="text-lg font-bold text-white">Products ({streamer.products.length})</h2>
+                            <div className="flex items-center gap-4">
+                                <button
+                                    onClick={() => { setShowProducts(false); setShowCart(true); }}
+                                    className="relative p-2 hover:bg-white/10 rounded-full transition-colors"
+                                >
+                                    <ShoppingCart size={24} className="text-white" />
+                                    {cart.length > 0 && (
+                                        <span className="absolute top-0 right-0 w-4 h-4 bg-red-600 rounded-full text-[10px] flex items-center justify-center font-bold border border-black">
+                                            {cart.length}
+                                        </span>
+                                    )}
+                                </button>
+                                <button onClick={() => setShowProducts(false)}><X className="text-white" /></button>
                             </div>
-                        ))}
-                    </div>
-                </div>
-            )}
-
-            {/* Cart Overlay */}
-            {showCart && (
-                <div className="absolute inset-0 z-40 bg-black/90 flex flex-col animate-slide-up">
-                    <div className="flex items-center justify-between p-4 border-b border-gray-800">
-                        <h2 className="text-lg font-bold text-white">My Cart ({cart.length})</h2>
-                        <button onClick={() => setShowCart(false)}><X className="text-white" /></button>
-                    </div>
-                    <div className="flex-1 overflow-y-auto p-4 space-y-4 text-white">
-                        {cart.length === 0 && <p className="text-center text-gray-400 mt-10">Your cart is empty.</p>}
-                        {cart.map((item, index) => (
-                            <div key={index} className="flex gap-4 bg-gray-900 p-3 rounded-xl border border-gray-800">
-                                <img src={item.image} className="w-16 h-16 rounded-lg object-cover" />
-                                <div className="flex-1">
-                                    <h3 className="font-bold text-sm">{item.name}</h3>
-                                    <div className="flex justify-between items-center mt-2">
-                                        <div className="flex items-center gap-2 bg-black rounded-lg px-2 py-1">
-                                            <button onClick={() => handleUpdateCartQuantity(index, -1)}><Minus size={12} /></button>
-                                            <span className="text-xs">{item.quantity}</span>
-                                            <button onClick={() => handleUpdateCartQuantity(index, 1)}><Plus size={12} /></button>
-                                        </div>
-                                        <p className="text-red-500 font-bold text-sm">฿{(item.price * item.quantity).toLocaleString()}</p>
+                        </div>
+                        <div className="flex-1 overflow-y-auto p-4 space-y-4">
+                            {streamer.products.map(p => (
+                                <div key={p.id} className="flex gap-4 bg-gray-900 p-3 rounded-xl border border-gray-800">
+                                    <img src={p.image} className="w-20 h-20 rounded-lg object-cover bg-gray-800" />
+                                    <div className="flex-1 text-left">
+                                        <h3 className="font-bold text-white">{p.name}</h3>
+                                        <p className="text-red-500 font-bold">฿{p.price.toLocaleString()}</p>
+                                        <button
+                                            onClick={() => handleBuyNow(p)}
+                                            className="mt-2 bg-white text-black text-xs font-bold px-4 py-2 rounded-full hover:bg-gray-200"
+                                        >
+                                            Buy Now
+                                        </button>
                                     </div>
                                 </div>
-                                <button onClick={() => handleRemoveCartItem(index)} className="text-gray-500"><X size={16} /></button>
-                            </div>
-                        ))}
-                    </div>
-                    <div className="p-4 border-t border-gray-800 bg-black/50">
-                        <div className="flex justify-between text-white font-bold mb-3">
-                            <span>Total</span>
-                            <span className="text-red-500">฿{cart.reduce((a, c) => a + c.price * c.quantity, 0).toLocaleString()}</span>
+                            ))}
                         </div>
-                        <button onClick={handleCheckoutCart} className="w-full bg-red-600 py-3 rounded-full font-bold text-white">Checkout</button>
                     </div>
-                </div>
-            )}
+                )}
 
-            {/* Checkout Modal */}
-            {showCheckoutModal && (
-                <div className="absolute inset-0 z-50 bg-black flex flex-col">
-                    <div className="p-4 border-b border-gray-800 flex items-center gap-2 text-white">
-                        <button onClick={() => setShowCheckoutModal(false)}><X /></button>
-                        <h2 className="font-bold">Checkout</h2>
-                    </div>
-
-                    <div className="flex-1 overflow-y-auto p-4 text-white">
-                        <div className="bg-gray-900 p-4 rounded-xl mb-4 border border-gray-800">
-                            <div className="flex justify-between items-start mb-2">
-                                <h3 className="font-bold text-gray-400 text-xs uppercase">Shipping Address</h3>
-                                <button onClick={() => setIsEditingAddress(true)} className="text-blue-400 text-xs text-blue-500">Edit</button>
-                            </div>
-                            {isEditingAddress ? (
-                                <div>
-                                    <textarea
-                                        className="w-full bg-black border border-gray-700 rounded p-2 text-sm text-white"
-                                        value={tempAddress}
-                                        onChange={e => setTempAddress(e.target.value)}
-                                        placeholder="Enter full address..."
-                                    />
-                                    <button onClick={handleSaveAddress} className="mt-2 bg-white text-black text-xs px-3 py-1 rounded font-bold">Save</button>
-                                </div>
-                            ) : (
-                                <p className="text-sm text-gray-300 whitespace-pre-line">{userAddress || "No address set. Please edit."}</p>
-                            )}
+                {/* Cart Overlay */}
+                {showCart && (
+                    <div className="absolute inset-0 z-40 bg-black/90 flex flex-col animate-slide-up">
+                        <div className="flex items-center justify-between p-4 border-b border-gray-800">
+                            <h2 className="text-lg font-bold text-white">My Cart ({cart.length})</h2>
+                            <button onClick={() => setShowCart(false)}><X className="text-white" /></button>
                         </div>
-
-                        <div className="bg-gray-900 p-4 rounded-xl border border-gray-800">
-                            <h3 className="font-bold text-gray-400 text-xs uppercase mb-3">Order Summary</h3>
-                            {cart.map(item => (
-                                <div key={item.id} className="flex justify-between mb-2 text-sm text-gray-300">
-                                    <span>{item.name} x{item.quantity}</span>
-                                    <span>฿{(item.price * item.quantity).toLocaleString()}</span>
+                        <div className="flex-1 overflow-y-auto p-4 space-y-4 text-white">
+                            {cart.length === 0 && <p className="text-center text-gray-400 mt-10">Your cart is empty.</p>}
+                            {cart.map((item, index) => (
+                                <div key={index} className="flex gap-4 bg-gray-900 p-3 rounded-xl border border-gray-800">
+                                    <img src={item.image} className="w-16 h-16 rounded-lg object-cover" />
+                                    <div className="flex-1">
+                                        <h3 className="font-bold text-sm">{item.name}</h3>
+                                        <div className="flex justify-between items-center mt-2">
+                                            <div className="flex items-center gap-2 bg-black rounded-lg px-2 py-1">
+                                                <button onClick={() => handleUpdateCartQuantity(index, -1)}><Minus size={12} /></button>
+                                                <span className="text-xs">{item.quantity}</span>
+                                                <button onClick={() => handleUpdateCartQuantity(index, 1)}><Plus size={12} /></button>
+                                            </div>
+                                            <p className="text-red-500 font-bold text-sm">฿{(item.price * item.quantity).toLocaleString()}</p>
+                                        </div>
+                                    </div>
+                                    <button onClick={() => handleRemoveCartItem(index)} className="text-gray-500"><X size={16} /></button>
                                 </div>
                             ))}
-                            <div className="border-t border-gray-800 mt-2 pt-2 flex justify-between font-bold text-white">
+                        </div>
+                        <div className="p-4 border-t border-gray-800 bg-black/50">
+                            <div className="flex justify-between text-white font-bold mb-3">
                                 <span>Total</span>
-                                <span className="text-green-500">฿{cart.reduce((a, c) => a + c.price * c.quantity, 0).toLocaleString()}</span>
+                                <span className="text-red-500">฿{cart.reduce((a, c) => a + c.price * c.quantity, 0).toLocaleString()}</span>
                             </div>
+                            <button onClick={handleCheckoutCart} className="w-full bg-red-600 py-3 rounded-full font-bold text-white">Checkout</button>
                         </div>
                     </div>
+                )}
 
-                    <div className="p-4 border-t border-gray-800 bg-black/50">
-                        <button
-                            onClick={handleFinalPayment}
-                            className="w-full bg-green-600 hover:bg-green-500 text-white py-3 rounded-full font-bold transition-colors"
-                            disabled={cart.length === 0}
-                        >
-                            Pay Now (฿{cart.reduce((a, c) => a + c.price * c.quantity, 0).toLocaleString()})
-                        </button>
-                    </div>
-                </div>
-            )}
+                {/* Checkout Modal */}
+                {showCheckoutModal && (
+                    <div className="absolute inset-0 z-50 bg-black flex flex-col">
+                        <div className="p-4 border-b border-gray-800 flex items-center gap-2 text-white">
+                            <button onClick={() => setShowCheckoutModal(false)}><X /></button>
+                            <h2 className="font-bold">Checkout</h2>
+                        </div>
 
-            {/* Gift Selector */}
-            {showGiftSelector && (
-                <div className="absolute bottom-0 left-0 right-0 z-50 bg-gray-900 rounded-t-3xl p-4 animate-slide-up border-t border-gray-800">
-                    <div className="flex justify-between items-center mb-4 text-white">
-                        <h3 className="font-bold">Send a Gift</h3>
-                        <button onClick={() => setShowGiftSelector(false)}><X size={20} /></button>
-                    </div>
-                    <div className="grid grid-cols-4 gap-4">
-                        {GIFTS.map(gift => (
-                            <button key={gift.id} onClick={() => handleSendGift(gift)} className="flex flex-col items-center gap-1 p-2 hover:bg-white/10 rounded-xl transition-colors">
-                                <span className="text-2xl">{gift.icon}</span>
-                                <span className="text-xs font-medium text-white">{gift.name}</span>
-                                <span className="text-[10px] text-yellow-400 flex items-center gap-0.5">
-                                    <DollarSign size={8} /> {gift.price}
-                                </span>
+                        <div className="flex-1 overflow-y-auto p-4 text-white">
+                            <div className="bg-gray-900 p-4 rounded-xl mb-4 border border-gray-800">
+                                <div className="flex justify-between items-start mb-2">
+                                    <h3 className="font-bold text-gray-400 text-xs uppercase">Shipping Address</h3>
+                                    <button onClick={() => setIsEditingAddress(true)} className="text-blue-400 text-xs text-blue-500">Edit</button>
+                                </div>
+                                {isEditingAddress ? (
+                                    <div>
+                                        <textarea
+                                            className="w-full bg-black border border-gray-700 rounded p-2 text-sm text-white"
+                                            value={tempAddress}
+                                            onChange={e => setTempAddress(e.target.value)}
+                                            placeholder="Enter full address..."
+                                        />
+                                        <button onClick={handleSaveAddress} className="mt-2 bg-white text-black text-xs px-3 py-1 rounded font-bold">Save</button>
+                                    </div>
+                                ) : (
+                                    <p className="text-sm text-gray-300 whitespace-pre-line">{userAddress || "No address set. Please edit."}</p>
+                                )}
+                            </div>
+
+                            <div className="bg-gray-900 p-4 rounded-xl border border-gray-800">
+                                <h3 className="font-bold text-gray-400 text-xs uppercase mb-3">Order Summary</h3>
+                                {cart.map(item => (
+                                    <div key={item.id} className="flex justify-between mb-2 text-sm text-gray-300">
+                                        <span>{item.name} x{item.quantity}</span>
+                                        <span>฿{(item.price * item.quantity).toLocaleString()}</span>
+                                    </div>
+                                ))}
+                                <div className="border-t border-gray-800 mt-2 pt-2 flex justify-between font-bold text-white">
+                                    <span>Total</span>
+                                    <span className="text-green-500">฿{cart.reduce((a, c) => a + c.price * c.quantity, 0).toLocaleString()}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="p-4 border-t border-gray-800 bg-black/50">
+                            <button
+                                onClick={handleFinalPayment}
+                                className="w-full bg-green-600 hover:bg-green-500 text-white py-3 rounded-full font-bold transition-colors"
+                                disabled={cart.length === 0}
+                            >
+                                Pay Now (฿{cart.reduce((a, c) => a + c.price * c.quantity, 0).toLocaleString()})
                             </button>
-                        ))}
-                    </div>
-                    <div className="mt-4 flex justify-between items-center bg-black/40 p-2 rounded-full px-4">
-                        <div className="flex items-center gap-1 text-yellow-400 font-bold text-sm">
-                            <Wallet size={14} /> <span>{walletBalance.toLocaleString()}</span>
                         </div>
-                        <button onClick={() => onOpenWallet()} className="text-xs bg-yellow-500/20 text-yellow-400 px-3 py-1 rounded-full border border-yellow-500/30">Top Up</button>
                     </div>
-                </div>
-            )}
+                )}
 
-            {/* Bid Modal */}
-            {showBidModal && (
-                <div className="absolute inset-0 z-50 bg-black/90 flex items-center justify-center p-4">
-                    <div className="bg-gray-900 w-full max-w-sm rounded-2xl p-6 border border-gray-800 text-white animate-scale-in">
-                        <h2 className="text-xl font-bold mb-4 text-center">Place a Bid</h2>
-                        <div className="text-center mb-6">
-                            <p className="text-gray-400 text-sm">Current Highest Bid</p>
-                            <p className="text-3xl font-bold text-green-500">฿{currentHighestBid.toLocaleString()}</p>
+                {/* Gift Selector */}
+                {showGiftSelector && (
+                    <div className="absolute bottom-0 left-0 right-0 z-50 bg-gray-900 rounded-t-3xl p-4 animate-slide-up border-t border-gray-800">
+                        <div className="flex justify-between items-center mb-4 text-white">
+                            <h3 className="font-bold">Send a Gift</h3>
+                            <button onClick={() => setShowGiftSelector(false)}><X size={20} /></button>
                         </div>
-
-                        <div className="flex items-center gap-4 mb-6">
-                            <button onClick={decreaseBid} className="w-12 h-12 rounded-full bg-gray-800 hover:bg-gray-700 flex items-center justify-center transition-colors"><Minus /></button>
-                            <div className="flex-1 text-center">
-                                <p className="text-xs text-gray-400">Your Bid</p>
-                                <p className="text-2xl font-bold">฿{myBidAmount.toLocaleString()}</p>
+                        <div className="grid grid-cols-4 gap-4">
+                            {GIFTS.map(gift => (
+                                <button key={gift.id} onClick={() => handleSendGift(gift)} className="flex flex-col items-center gap-1 p-2 hover:bg-white/10 rounded-xl transition-colors">
+                                    <span className="text-2xl">{gift.icon}</span>
+                                    <span className="text-xs font-medium text-white">{gift.name}</span>
+                                    <span className="text-[10px] text-yellow-400 flex items-center gap-0.5">
+                                        <DollarSign size={8} /> {gift.price}
+                                    </span>
+                                </button>
+                            ))}
+                        </div>
+                        <div className="mt-4 flex justify-between items-center bg-black/40 p-2 rounded-full px-4">
+                            <div className="flex items-center gap-1 text-yellow-400 font-bold text-sm">
+                                <Wallet size={14} /> <span>{walletBalance.toLocaleString()}</span>
                             </div>
-                            <button onClick={increaseBid} className="w-12 h-12 rounded-full bg-gray-800 hover:bg-gray-700 flex items-center justify-center transition-colors"><Plus /></button>
-                        </div>
-
-                        <button
-                            onClick={() => { placeBid(); setShowBidModal(false); }}
-                            className="w-full bg-orange-600 hover:bg-orange-500 text-white py-3 rounded-xl font-bold transition-colors shadow-lg shadow-orange-900/40"
-                            disabled={isInsufficientFunds}
-                        >
-                            {isInsufficientFunds ? 'Insufficient Funds' : 'Confirm Bid'}
-                        </button>
-                        <button onClick={() => setShowBidModal(false)} className="w-full mt-3 py-2 text-gray-400 text-sm hover:text-white">Cancel</button>
-                    </div>
-                </div>
-            )}
-
-            {/* Product Purchase Sheet (Buy Now) */}
-            {selectedProductForPurchase && (
-                <div className="absolute inset-x-0 bottom-0 z-50 bg-gray-900 rounded-t-3xl p-6 shadow-2xl shadow-black border-t border-gray-800 animate-slide-up">
-                    <div className="flex gap-4">
-                        <img src={selectedProductForPurchase.image} className="w-24 h-24 rounded-xl object-cover bg-gray-800" />
-                        <div className="text-white">
-                            <h3 className="font-bold text-lg">{selectedProductForPurchase.name}</h3>
-                            <p className="text-xl font-bold text-red-500">฿{selectedProductForPurchase.price.toLocaleString()}</p>
+                            <button onClick={() => onOpenWallet()} className="text-xs bg-yellow-500/20 text-yellow-400 px-3 py-1 rounded-full border border-yellow-500/30">Top Up</button>
                         </div>
                     </div>
+                )}
 
-                    {/* Configuration */}
-                    <div className="mt-4 space-y-4 text-white">
-                        {/* Color Selection */}
-                        {selectedProductForPurchase.colors && selectedProductForPurchase.colors.length > 0 && (
-                            <div>
-                                <span className="text-sm text-gray-400 mb-2 block">Color</span>
-                                <div className="flex gap-3 flex-wrap">
-                                    {selectedProductForPurchase.colors.map(color => (
-                                        <button
-                                            key={color}
-                                            onClick={() => setPurchaseConfig(p => ({ ...p, color }))}
-                                            className={`w-8 h-8 rounded-full border-2 transition-all shadow-sm ${purchaseConfig.color === color
-                                                ? 'border-white scale-110 ring-2 ring-white/30'
-                                                : 'border-transparent hover:scale-105'
-                                                }`}
-                                            style={{ backgroundColor: color }}
-                                            title={color}
-                                        >
-                                            {purchaseConfig.color === color && (
-                                                <div className="w-full h-full flex items-center justify-center">
-                                                    <Check size={14} className="text-white drop-shadow-md filter invert grayscale contrast-200" />
-                                                </div>
-                                            )}
-                                        </button>
-                                    ))}
+                {/* Bid Modal */}
+                {showBidModal && (
+                    <div className="absolute inset-0 z-50 bg-black/90 flex items-center justify-center p-4">
+                        <div className="bg-gray-900 w-full max-w-sm rounded-2xl p-6 border border-gray-800 text-white animate-scale-in">
+                            <h2 className="text-xl font-bold mb-4 text-center">Place a Bid</h2>
+                            <div className="text-center mb-6">
+                                <p className="text-gray-400 text-sm">Current Highest Bid</p>
+                                <p className="text-3xl font-bold text-green-500">฿{currentHighestBid.toLocaleString()}</p>
+                            </div>
+
+                            <div className="flex items-center gap-4 mb-6">
+                                <button onClick={decreaseBid} className="w-12 h-12 rounded-full bg-gray-800 hover:bg-gray-700 flex items-center justify-center transition-colors"><Minus /></button>
+                                <div className="flex-1 text-center">
+                                    <p className="text-xs text-gray-400">Your Bid</p>
+                                    <p className="text-2xl font-bold">฿{myBidAmount.toLocaleString()}</p>
+                                </div>
+                                <button onClick={increaseBid} className="w-12 h-12 rounded-full bg-gray-800 hover:bg-gray-700 flex items-center justify-center transition-colors"><Plus /></button>
+                            </div>
+
+                            <button
+                                onClick={() => { placeBid(); setShowBidModal(false); }}
+                                className="w-full bg-orange-600 hover:bg-orange-500 text-white py-3 rounded-xl font-bold transition-colors shadow-lg shadow-orange-900/40"
+                                disabled={isInsufficientFunds}
+                            >
+                                {isInsufficientFunds ? 'Insufficient Funds' : 'Confirm Bid'}
+                            </button>
+                            <button onClick={() => setShowBidModal(false)} className="w-full mt-3 py-2 text-gray-400 text-sm hover:text-white">Cancel</button>
+                        </div>
+                    </div>
+                )}
+
+                {/* Product Purchase Sheet (Buy Now) */}
+                {selectedProductForPurchase && (
+                    <div className="absolute inset-x-0 bottom-0 z-50 bg-gray-900 rounded-t-3xl p-6 shadow-2xl shadow-black border-t border-gray-800 animate-slide-up">
+                        <div className="flex gap-4">
+                            <img src={selectedProductForPurchase.image} className="w-24 h-24 rounded-xl object-cover bg-gray-800" />
+                            <div className="text-white">
+                                <h3 className="font-bold text-lg">{selectedProductForPurchase.name}</h3>
+                                <p className="text-xl font-bold text-red-500">฿{selectedProductForPurchase.price.toLocaleString()}</p>
+                            </div>
+                        </div>
+
+                        {/* Configuration */}
+                        <div className="mt-4 space-y-4 text-white">
+                            {/* Color Selection */}
+                            {selectedProductForPurchase.colors && selectedProductForPurchase.colors.length > 0 && (
+                                <div>
+                                    <span className="text-sm text-gray-400 mb-2 block">Color</span>
+                                    <div className="flex gap-3 flex-wrap">
+                                        {selectedProductForPurchase.colors.map(color => (
+                                            <button
+                                                key={color}
+                                                onClick={() => setPurchaseConfig(p => ({ ...p, color }))}
+                                                className={`w-8 h-8 rounded-full border-2 transition-all shadow-sm ${purchaseConfig.color === color
+                                                    ? 'border-white scale-110 ring-2 ring-white/30'
+                                                    : 'border-transparent hover:scale-105'
+                                                    }`}
+                                                style={{ backgroundColor: color }}
+                                                title={color}
+                                            >
+                                                {purchaseConfig.color === color && (
+                                                    <div className="w-full h-full flex items-center justify-center">
+                                                        <Check size={14} className="text-white drop-shadow-md filter invert grayscale contrast-200" />
+                                                    </div>
+                                                )}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Size Selection */}
+                            {selectedProductForPurchase.sizes && selectedProductForPurchase.sizes.length > 0 && (
+                                <div>
+                                    <span className="text-sm text-gray-400 mb-2 block">Size</span>
+                                    <div className="flex gap-2 flex-wrap">
+                                        {selectedProductForPurchase.sizes.map(size => (
+                                            <button
+                                                key={size}
+                                                onClick={() => setPurchaseConfig(p => ({ ...p, size }))}
+                                                className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold border ${purchaseConfig.size === size
+                                                    ? 'bg-white text-black border-white'
+                                                    : 'bg-black text-gray-400 border-gray-700 hover:border-gray-500'
+                                                    }`}
+                                            >
+                                                {size}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+
+                            <div className="flex items-center justify-between">
+                                <span>Quantity</span>
+                                <div className="flex items-center gap-3 bg-black rounded-lg p-1 border border-gray-700">
+                                    <button onClick={() => setPurchaseConfig(p => ({ ...p, quantity: Math.max(1, p.quantity - 1) }))} className="px-3 hover:bg-gray-800 rounded"><Minus size={14} /></button>
+                                    <span className="font-bold w-4 text-center">{purchaseConfig.quantity}</span>
+                                    <button onClick={() => setPurchaseConfig(p => ({ ...p, quantity: p.quantity + 1 }))} className="px-3 hover:bg-gray-800 rounded"><Plus size={14} /></button>
                                 </div>
                             </div>
-                        )}
-
-                        {/* Size Selection */}
-                        {selectedProductForPurchase.sizes && selectedProductForPurchase.sizes.length > 0 && (
-                            <div>
-                                <span className="text-sm text-gray-400 mb-2 block">Size</span>
-                                <div className="flex gap-2 flex-wrap">
-                                    {selectedProductForPurchase.sizes.map(size => (
-                                        <button
-                                            key={size}
-                                            onClick={() => setPurchaseConfig(p => ({ ...p, size }))}
-                                            className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold border ${purchaseConfig.size === size
-                                                ? 'bg-white text-black border-white'
-                                                : 'bg-black text-gray-400 border-gray-700 hover:border-gray-500'
-                                                }`}
-                                        >
-                                            {size}
-                                        </button>
-                                    ))}
-                                </div>
-                            </div>
-                        )}
-
-                        <div className="flex items-center justify-between">
-                            <span>Quantity</span>
-                            <div className="flex items-center gap-3 bg-black rounded-lg p-1 border border-gray-700">
-                                <button onClick={() => setPurchaseConfig(p => ({ ...p, quantity: Math.max(1, p.quantity - 1) }))} className="px-3 hover:bg-gray-800 rounded"><Minus size={14} /></button>
-                                <span className="font-bold w-4 text-center">{purchaseConfig.quantity}</span>
-                                <button onClick={() => setPurchaseConfig(p => ({ ...p, quantity: p.quantity + 1 }))} className="px-3 hover:bg-gray-800 rounded"><Plus size={14} /></button>
-                            </div>
                         </div>
+
+                        <div className="mt-6 flex gap-3">
+                            <button onClick={() => handleConfirmPurchase('add_to_cart')} className="flex-1 bg-gray-800 hover:bg-gray-700 text-white py-3 rounded-xl font-bold transition-colors">Add to Cart</button>
+                            <button onClick={() => handleConfirmPurchase('buy_now')} className="flex-1 bg-red-600 hover:bg-red-500 text-white py-3 rounded-xl font-bold transition-colors">Buy Now</button>
+                        </div>
+                        <button onClick={() => setSelectedProductForPurchase(null)} className="absolute top-4 right-4 text-white hover:text-gray-300"><X /></button>
                     </div>
+                )
+                }
 
-                    <div className="mt-6 flex gap-3">
-                        <button onClick={() => handleConfirmPurchase('add_to_cart')} className="flex-1 bg-gray-800 hover:bg-gray-700 text-white py-3 rounded-xl font-bold transition-colors">Add to Cart</button>
-                        <button onClick={() => handleConfirmPurchase('buy_now')} className="flex-1 bg-red-600 hover:bg-red-500 text-white py-3 rounded-xl font-bold transition-colors">Buy Now</button>
-                    </div>
-                    <button onClick={() => setSelectedProductForPurchase(null)} className="absolute top-4 right-4 text-white hover:text-gray-300"><X /></button>
-                </div>
-            )
-            }
+                <ArrowLeft className="hidden" />
 
-            <ArrowLeft className="hidden" />
-
+            </div>
         </div >
     );
 };

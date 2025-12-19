@@ -939,7 +939,7 @@ const App: React.FC = () => {
         return (
           <>
             {/* Fixed Sub-Tabs */}
-            <div className="fixed top-16 left-0 right-0 z-30 bg-black/95 backdrop-blur-md py-1 px-2 border-b border-gray-800/50 shadow-md max-w-5xl mx-auto">
+            <div className="fixed top-16 left-0 right-0 z-30 bg-black/95 backdrop-blur-md py-1 px-2 border-b border-gray-800/50 shadow-md max-w-lg mx-auto">
               <div className="flex bg-gray-900 rounded-xl p-1 border border-gray-800">
                 <button
                   onClick={() => setHomeTab('live')}
@@ -1281,7 +1281,7 @@ const App: React.FC = () => {
 
       {/* FIXED TOP NAV BAR */}
       {showTopNav && (
-        <div className="fixed top-0 left-0 right-0 z-40 bg-black/95 backdrop-blur-md px-4 py-3 border-b border-gray-800 flex justify-between items-center shadow-md">
+        <div className="fixed top-0 left-0 right-0 mx-auto max-w-lg z-40 bg-black/95 backdrop-blur-md px-4 py-3 border-b border-gray-800 flex justify-between items-center shadow-md">
           <div className="flex items-center gap-3">
             <button onClick={() => setIsMenuOpen(true)} className="active:scale-90 transition-transform relative">
               <Menu className="text-white" size={24} />
@@ -1317,13 +1317,13 @@ const App: React.FC = () => {
       )}
 
       {/* Main Content Area */}
-      <div className={`h-full overflow-y-auto no-scrollbar ${showTopNav ? 'pt-[64px]' : ''} ${showBottomNav ? 'pb-[80px]' : ''}`}>
+      <div className={`h-full overflow-y-auto no-scrollbar mx-auto max-w-lg border-x border-gray-900 ${showTopNav ? 'pt-[64px]' : ''} ${showBottomNav ? 'pb-[80px]' : ''}`}>
         {renderContent()}
       </div>
 
       {/* FIXED BOTTOM NAV BAR */}
       {showBottomNav && (
-        <div className="fixed bottom-0 left-0 right-0 z-40 bg-black/95 backdrop-blur-lg border-t border-gray-800 px-2 py-2 flex justify-around items-end pb-safe">
+        <div className="fixed bottom-0 left-0 right-0 mx-auto max-w-lg z-40 bg-black/95 backdrop-blur-lg border-t border-gray-800 px-2 py-2 flex justify-around items-end pb-safe">
           <button
             onClick={() => setActiveTab('home')}
             className={`flex-1 flex flex-col items-center gap-1 transition-all duration-200 active:scale-90 ${activeTab === 'home' ? 'text-red-600' : 'text-gray-500 hover:text-gray-300'}`}
