@@ -167,7 +167,7 @@ const App: React.FC = () => {
         const { error } = await supabase
           .from('follows')
           .delete()
-          .eq('follower_id', session.user.id)
+          .eq('follower_id', session?.user?.id)
           .eq('followed_id', followedId);
 
         if (error) throw error;
@@ -177,7 +177,7 @@ const App: React.FC = () => {
         const { error } = await supabase
           .from('follows')
           .insert({
-            follower_id: session.user.id,
+            follower_id: session?.user?.id,
             followed_id: followedId
           });
 
@@ -193,7 +193,7 @@ const App: React.FC = () => {
       }
 
       // Refresh global data to update follower counts
-      fetchGlobalData(session.user.id);
+      if (session?.user?.id) fetchGlobalData(session.user.id);
     } catch (err: any) {
       console.error('Toggle Follow Error:', err);
       alert(err.message || "Failed to update follow status");
@@ -232,8 +232,8 @@ const App: React.FC = () => {
       setLoadingSession(false);
 
       if (session?.user) {
-        fetchUserProfile(session.user.id, session.user.email);
-        fetchGlobalData(session.user.id);
+        fetchUserProfile(session?.user?.id, session?.user?.email);
+        if (session?.user?.id) fetchGlobalData(session?.user?.id);
       }
     });
 
@@ -241,8 +241,8 @@ const App: React.FC = () => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       setSession(session);
       if (session?.user) {
-        fetchUserProfile(session.user.id, session.user.email);
-        fetchGlobalData(session.user.id);
+        fetchUserProfile(session?.user?.id, session?.user?.email);
+        if (session?.user?.id) fetchGlobalData(session?.user?.id);
       }
 
       // Handle Password Recovery Event
@@ -263,7 +263,7 @@ const App: React.FC = () => {
 
   // --- REFRESH DATA ON TAB CHANGE ---
   useEffect(() => {
-    if (activeTab === 'my_gifts' && session?.user) {
+    if (activeTab === 'my_gifts' && session?.user?.id) {
       fetchReceivedGifts(session.user.id);
     }
   }, [activeTab, session]);
@@ -274,36 +274,42 @@ const App: React.FC = () => {
       .channel('public:rooms')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'rooms' }, (payload) => {
         console.log('Realtime Room Update:', payload);
-        if (session?.user) {
+        if (session?.user?.id) {
           fetchGlobalData(session.user.id);
         }
       })
       .subscribe();
 
-    const notificationsChannel = supabase
-      .channel('public:notifications')
-      .on(
-        'postgres_changes',
-        { event: 'INSERT', schema: 'public', table: 'notifications', filter: `user_id=eq.${session.user.id}` },
-        async (payload) => {
-          console.log('New Notification Received:', payload);
-          // Fetch full notification data including actor profile
-          const { data } = await supabase
-            .from('notifications')
-            .select('*, actor:actor_id (username, avatar)')
-            .eq('id', payload.new.id)
-            .single();
+    let notificationsChannel: any = null;
 
-          if (data) {
-            setNotifications(prev => [data, ...prev].slice(0, 20));
+    if (session?.user) {
+      notificationsChannel = supabase
+        .channel('public:notifications')
+        .on(
+          'postgres_changes',
+          { event: 'INSERT', schema: 'public', table: 'notifications', filter: `user_id=eq.${session?.user?.id}` },
+          async (payload) => {
+            console.log('New Notification Received:', payload);
+            // Fetch full notification data including actor profile
+            const { data } = await supabase
+              .from('notifications')
+              .select('*, actor:actor_id (username, avatar)')
+              .eq('id', payload.new.id)
+              .single();
+
+            if (data) {
+              setNotifications(prev => [data, ...prev].slice(0, 20));
+            }
           }
-        }
-      )
-      .subscribe();
+        )
+        .subscribe();
+    }
 
     return () => {
       supabase.removeChannel(channel);
-      supabase.removeChannel(notificationsChannel);
+      if (notificationsChannel) {
+        supabase.removeChannel(notificationsChannel);
+      }
     };
   }, [session]);
 
@@ -469,7 +475,7 @@ const App: React.FC = () => {
       console.log("Closing Stream:", {
         streamId: currentStreamer.id,
         hostId: currentStreamer.hostId,
-        myId: session.user.id
+        myId: session?.user?.id
       });
 
       if (currentStreamer.hostId === session.user.id) {
@@ -646,7 +652,7 @@ const App: React.FC = () => {
           products: liveSelectedProducts.length > 0 ? liveSelectedProducts : myProducts, // Use selected products if available
           // Add auction data if needed
           // Add auction data if needed
-          hostId: session.user.id, // Explicitly enforce session ID
+          hostId: session?.user?.id, // Explicitly enforce session ID
         };
 
         setCurrentStreamer(myStream);
@@ -655,14 +661,14 @@ const App: React.FC = () => {
         if (session?.user) {
           console.log("Attempting to insert room into DB...", {
             id: roomId,
-            host_id: session.user.id,
+            host_id: session?.user?.id,
             title: streamConfig.title
           });
 
           try {
             const { data, error } = await supabase.from('rooms').insert({
               id: roomId,
-              host_id: session.user.id,
+              host_id: session?.user?.id,
               title: streamConfig.title || 'Untitled Live',
               cover_image: streamConfig.coverImage || userProfile.coverImage,
               video_url: '', // Empty string instead of null if column is non-nullable text
@@ -1689,7 +1695,7 @@ const App: React.FC = () => {
             onAddToCart={handleAddToCart}
             onNewOrder={() => { setHasNewOrders(true); setCartItems([]); }}
             currentUser={session?.user ? {
-              id: session.user.id,
+              id: session?.user?.id,
               username: userProfile.username,
               avatar: userProfile.avatar
             } : undefined}
