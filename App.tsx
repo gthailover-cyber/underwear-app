@@ -97,6 +97,7 @@ const App: React.FC = () => {
   const [followingIds, setFollowingIds] = useState<string[]>([]);
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
+  const [unreadMessagesCount, setUnreadMessagesCount] = useState(0);
 
   const fetchFollowing = async (userId: string) => {
     try {
@@ -129,6 +130,22 @@ const App: React.FC = () => {
       }
     } catch (err) {
       console.error('Error fetching notifications:', err);
+    }
+  };
+
+  const fetchUnreadMessagesCount = async (userId: string) => {
+    try {
+      const { count, error } = await supabase
+        .from('messages')
+        .select('*', { count: 'exact', head: true })
+        .eq('receiver_id', userId)
+        .eq('is_read', false);
+
+      if (!error && count !== null) {
+        setUnreadMessagesCount(count);
+      }
+    } catch (err) {
+      console.error('Error fetching unread count:', err);
     }
   };
 
@@ -281,6 +298,7 @@ const App: React.FC = () => {
       .subscribe();
 
     let notificationsChannel: any = null;
+    let messagesChannel: any = null;
 
     if (session?.user) {
       notificationsChannel = supabase
@@ -303,12 +321,28 @@ const App: React.FC = () => {
           }
         )
         .subscribe();
+
+      // Listener for unread chat messages
+      messagesChannel = supabase
+        .channel('public:messages_unread')
+        .on(
+          'postgres_changes',
+          { event: '*', schema: 'public', table: 'messages', filter: `receiver_id=eq.${session?.user?.id}` },
+          (payload) => {
+            console.log('Message change detected for unread count:', payload);
+            fetchUnreadMessagesCount(session.user.id);
+          }
+        )
+        .subscribe();
     }
 
     return () => {
       supabase.removeChannel(channel);
       if (notificationsChannel) {
         supabase.removeChannel(notificationsChannel);
+      }
+      if (messagesChannel) {
+        supabase.removeChannel(messagesChannel);
       }
     };
   }, [session]);
@@ -414,6 +448,9 @@ const App: React.FC = () => {
 
     // 5. Notifications
     fetchNotifications(userId);
+
+    // 6. Unread Chat Messages
+    fetchUnreadMessagesCount(userId);
   };
 
 
@@ -1619,7 +1656,11 @@ const App: React.FC = () => {
 
             <button onClick={() => setActiveTab('messages')} className="relative p-1 hover:text-gray-300 transition-colors">
               <MessageCircle size={22} className="text-white" />
-              <span className="absolute top-0 right-0 w-2.5 h-2.5 bg-blue-500 rounded-full border-2 border-black"></span>
+              {unreadMessagesCount > 0 && (
+                <span className="absolute -top-0.5 -right-0.5 min-w-[14px] h-[14px] bg-blue-500 rounded-full border border-black flex items-center justify-center text-[8px] font-bold text-white px-0.5 animate-pulse">
+                  {unreadMessagesCount > 9 ? '9+' : unreadMessagesCount}
+                </span>
+              )}
             </button>
           </div>
         </div>
