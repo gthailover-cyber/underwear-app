@@ -888,6 +888,8 @@ const App: React.FC = () => {
           />
         );
       case 'my_gifts':
+        const totalGiftValue = receivedGifts.reduce((sum, log) => sum + log.price, 0);
+
         return (
           <div className="pb-24 animate-fade-in bg-black min-h-screen">
             <div className="flex items-center gap-3 px-4 py-4 sticky top-0 bg-black/90 backdrop-blur z-30 border-b border-gray-800">
@@ -900,40 +902,96 @@ const App: React.FC = () => {
               <h2 className="text-xl font-athletic tracking-wide text-white">{t.myGifts}</h2>
             </div>
 
-            <div className="p-4 flex flex-col gap-3">
-              {receivedGifts.map((log) => (
-                <div key={log.id} className="bg-gray-800/50 rounded-xl p-4 flex items-center justify-between border border-gray-700 hover:bg-gray-800/80 transition-colors">
-                  <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 rounded-full bg-black/40 flex items-center justify-center text-3xl border border-white/10 shrink-0 overflow-hidden">
-                      {log.profiles?.avatar ? (
-                        <img src={log.profiles.avatar} className="w-full h-full object-cover" alt="" />
-                      ) : (
-                        log.gift_icon
-                      )}
-                    </div>
-                    <div>
-                      <p className="text-white font-bold text-sm">
-                        <span className="text-blue-400">{log.profiles?.username || 'User'}</span> <span className="text-gray-400 font-normal">sent</span> <span className="text-yellow-200">{log.gift_name}</span>
-                      </p>
-                      <p className="text-[10px] text-gray-500 mt-0.5 flex items-center gap-1">
-                        <Clock size={10} /> {new Date(log.created_at).toLocaleString()}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex flex-col items-end">
-                    <span className="text-yellow-400 font-bold text-base flex items-center gap-1 bg-yellow-400/10 px-2 py-1 rounded-lg border border-yellow-400/20">
-                      +{log.price} <Coins size={14} className="fill-yellow-400" />
-                    </span>
-                  </div>
-                </div>
-              ))}
+            <div className="p-4 flex flex-col gap-4">
+              {/* Total Summary Card */}
+              <div className="bg-gradient-to-br from-yellow-500 via-orange-600 to-red-700 rounded-3xl p-6 shadow-2xl shadow-orange-900/40 border border-yellow-400/20 relative overflow-hidden group">
+                {/* Decorative Elements */}
+                <div className="absolute -top-10 -right-10 w-40 h-40 bg-white/10 rounded-full blur-3xl group-hover:scale-125 transition-transform duration-1000"></div>
+                <div className="absolute -bottom-10 -left-10 w-32 h-32 bg-yellow-400/10 rounded-full blur-2xl group-hover:scale-150 transition-transform duration-1000"></div>
 
-              {receivedGifts.length === 0 && (
-                <div className="text-center py-20 text-gray-500">
-                  <Gift size={48} className="mx-auto mb-4 opacity-30" />
-                  <p>No gifts received yet.</p>
+                <div className="relative z-10">
+                  <div className="flex justify-between items-start mb-4">
+                    <p className="text-yellow-100/80 text-[10px] font-bold uppercase tracking-[0.2em]">{t.totalEarnings}</p>
+                    <div className="w-10 h-10 bg-white/10 backdrop-blur-md rounded-2xl flex items-center justify-center border border-white/10">
+                      <Gift size={20} className="text-yellow-200" />
+                    </div>
+                  </div>
+
+                  <div className="flex items-baseline gap-2">
+                    <h3 className="text-5xl font-black text-white font-athletic tracking-tight">
+                      {totalGiftValue.toLocaleString()}
+                    </h3>
+                    <Coins size={28} className="text-yellow-300 fill-yellow-300 mb-1" />
+                  </div>
+
+                  <div className="mt-6 flex items-center justify-between">
+                    <div className="flex flex-col">
+                      <span className="text-[10px] text-yellow-100/60 font-medium uppercase tracking-wider">Total Received</span>
+                      <span className="text-lg font-bold text-white">{receivedGifts.length}</span>
+                    </div>
+
+                    <div className="h-8 w-px bg-white/10"></div>
+
+                    <div className="flex flex-col items-end">
+                      <span className="text-[10px] text-yellow-100/60 font-medium uppercase tracking-wider">Avg. Value</span>
+                      <span className="text-lg font-bold text-white">
+                        {receivedGifts.length > 0 ? Math.round(totalGiftValue / receivedGifts.length) : 0}
+                      </span>
+                    </div>
+                  </div>
                 </div>
-              )}
+              </div>
+
+              <div className="flex flex-col gap-3">
+                {receivedGifts.map((log) => (
+                  <div key={log.id} className="bg-gray-900/40 backdrop-blur-sm rounded-2xl p-4 flex items-center justify-between border border-white/5 hover:border-yellow-500/30 hover:bg-white/5 transition-all duration-300 group/item">
+                    <div className="flex items-center gap-4">
+                      <div className="relative">
+                        <div className="w-12 h-12 rounded-full ring-2 ring-white/10 ring-offset-2 ring-offset-black overflow-hidden bg-black/40 flex items-center justify-center text-2xl border border-white/10 shrink-0">
+                          {log.profiles?.avatar ? (
+                            <img src={log.profiles.avatar} className="w-full h-full object-cover group-hover/item:scale-110 transition-transform duration-500" alt="" />
+                          ) : (
+                            <span className="grayscale-0 group-hover/item:scale-125 transition-transform duration-500">{log.gift_icon}</span>
+                          )}
+                        </div>
+                        <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-yellow-500 rounded-full flex items-center justify-center border-2 border-black">
+                          <Gift size={10} className="text-black" />
+                        </div>
+                      </div>
+
+                      <div>
+                        <div className="flex items-center gap-2 mb-0.5">
+                          <span className="text-white font-bold text-sm tracking-tight">{log.profiles?.username || 'User'}</span>
+                          <span className="text-[10px] bg-blue-500/20 text-blue-400 px-1.5 py-0.5 rounded-md font-bold uppercase tracking-tighter">Sender</span>
+                        </div>
+                        <p className="text-gray-400 text-xs text-left">
+                          sent <span className="text-yellow-200/90 font-medium">{log.gift_name}</span>
+                        </p>
+                        <p className="text-[9px] text-gray-600 mt-1 flex items-center gap-1 font-medium uppercase tracking-wider">
+                          <Clock size={10} className="opacity-50" /> {new Date(log.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} • {new Date(log.created_at).toLocaleDateString()}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex flex-col items-end gap-1">
+                      <div className="flex items-center gap-1.5 bg-black/40 px-3 py-1.5 rounded-xl border border-white/10 group-hover/item:border-yellow-500/50 transition-colors">
+                        <span className="text-yellow-400 font-black text-sm">+{log.price}</span>
+                        <Coins size={14} className="fill-yellow-400 text-yellow-400" />
+                      </div>
+                    </div>
+                  </div>
+                ))}
+
+                {receivedGifts.length === 0 && (
+                  <div className="text-center py-20 flex flex-col items-center">
+                    <div className="w-20 h-20 bg-gray-900 rounded-full flex items-center justify-center mb-6 border border-gray-800 shadow-inner">
+                      <Gift size={32} className="text-gray-700 opacity-50" />
+                    </div>
+                    <h4 className="text-white font-bold mb-1">No Gifts Yet</h4>
+                    <p className="text-gray-500 text-sm max-w-[200px] mx-auto">When your viewers send you gifts during your stream, they will appear here!</p>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         );
