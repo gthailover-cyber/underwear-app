@@ -908,6 +908,7 @@ const App: React.FC = () => {
             language={language}
             onBack={handleCloseChat}
             onOpenStream={handleOpenStream}
+            currentUserId={session?.user?.id}
           />
         );
       }
@@ -933,6 +934,7 @@ const App: React.FC = () => {
           chatRooms={chatRooms}
           userProfile={userProfile}
           onCreateRoom={() => setIsCreateRoomOpen(true)}
+          currentUserId={session?.user?.id}
         />
       );
     }
