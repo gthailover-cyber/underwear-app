@@ -974,7 +974,7 @@ const LiveRoom: React.FC<LiveRoomProps> = ({
                                     value={newComment}
                                     onChange={(e) => setNewComment(e.target.value)}
                                     placeholder={t.saySomething}
-                                    className="flex-1 bg-transparent border-none text-white text-sm px-3 focus:outline-none placeholder-gray-400 h-10"
+                                    className="flex-1 min-w-0 bg-transparent border-none text-white text-sm px-3 focus:outline-none placeholder-gray-400 h-10"
                                     onKeyDown={(e) => e.key === 'Enter' && handleSendMessage(e)}
                                 />
                                 <button
@@ -1020,32 +1020,30 @@ const LiveRoom: React.FC<LiveRoomProps> = ({
                     ) : (
                         // Host Controls (Professional UX)
                         // Host Controls (Professional UX)
-                        <div className="flex items-center w-full">
-                            {/* Product Button (10%) */}
+                        <div className="flex items-center gap-2 w-full">
+                            {/* Product Button */}
                             {!streamer.isAuction && (
-                                <div className="w-[10%] flex justify-center">
-                                    <button
-                                        onClick={() => setShowProducts(true)}
-                                        className="relative w-10 h-10 flex items-center justify-center bg-black/40 backdrop-blur-md rounded-full border border-white/20 text-white hover:bg-white/10 active:scale-90 transition-all"
-                                    >
-                                        <ShoppingBag size={20} />
-                                        {streamer.products.length > 0 && (
-                                            <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-600 rounded-full text-[10px] flex items-center justify-center font-bold border border-black">
-                                                {streamer.products.length}
-                                            </span>
-                                        )}
-                                    </button>
-                                </div>
+                                <button
+                                    onClick={() => setShowProducts(true)}
+                                    className="shrink-0 relative w-10 h-10 flex items-center justify-center bg-black/40 backdrop-blur-md rounded-full border border-white/20 text-white hover:bg-white/10 active:scale-90 transition-all"
+                                >
+                                    <ShoppingBag size={20} />
+                                    {streamer.products.length > 0 && (
+                                        <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-600 rounded-full text-[10px] flex items-center justify-center font-bold border border-black">
+                                            {streamer.products.length}
+                                        </span>
+                                    )}
+                                </button>
                             )}
 
-                            {/* Chat Input for Host (80%) */}
-                            <div className="w-[80%] bg-black/40 backdrop-blur-md border border-white/20 rounded-full flex items-center px-2 py-1 mx-1 focus-within:border-white/50 focus-within:bg-black/60 transition-all">
+                            {/* Chat Input for Host */}
+                            <div className="flex-1 min-w-0 bg-black/40 backdrop-blur-md border border-white/20 rounded-full flex items-center px-2 py-1 focus-within:border-white/50 focus-within:bg-black/60 transition-all">
                                 <input
                                     type="text"
                                     value={newComment}
                                     onChange={(e) => setNewComment(e.target.value)}
                                     placeholder="Type to chat..."
-                                    className="flex-1 bg-transparent border-none text-white text-sm px-3 focus:outline-none placeholder-gray-400 h-10 w-full"
+                                    className="flex-1 min-w-0 bg-transparent border-none text-white text-sm px-3 focus:outline-none placeholder-gray-400 h-10"
                                     onKeyDown={(e) => e.key === 'Enter' && handleSendMessage(e)}
                                 />
                                 <button
@@ -1057,18 +1055,16 @@ const LiveRoom: React.FC<LiveRoomProps> = ({
                                 </button>
                             </div>
 
-                            {/* Mic Toggle Button (10%) */}
-                            <div className="w-[10%] flex justify-center">
-                                <button
-                                    onClick={handleToggleMic}
-                                    className={`w-10 h-10 flex items-center justify-center backdrop-blur-md rounded-full border text-white active:scale-90 transition-all shadow-lg ${isMicOn
-                                        ? 'bg-gray-600/80 border-gray-500/50 hover:bg-gray-500'
-                                        : 'bg-red-600/80 border-red-500/50 hover:bg-red-500 shadow-red-900/40'
-                                        }`}
-                                >
-                                    {isMicOn ? <Mic size={20} /> : <MicOff size={20} />}
-                                </button>
-                            </div>
+                            {/* Mic Toggle Button */}
+                            <button
+                                onClick={handleToggleMic}
+                                className={`shrink-0 w-10 h-10 flex items-center justify-center backdrop-blur-md rounded-full border text-white active:scale-90 transition-all shadow-lg ${isMicOn
+                                    ? 'bg-gray-600/80 border-gray-500/50 hover:bg-gray-500'
+                                    : 'bg-red-600/80 border-red-500/50 hover:bg-red-500 shadow-red-900/40'
+                                    }`}
+                            >
+                                {isMicOn ? <Mic size={20} /> : <MicOff size={20} />}
+                            </button>
                         </div>
                     )}
                 </div>
