@@ -809,94 +809,6 @@ const LiveRoom: React.FC<LiveRoomProps> = ({
                     </div>
                 </div>
 
-                {/* Auction Interactive Card (Compact Sidebar Design) */}
-                {streamer.isAuction && (
-                    <div className="absolute top-32 right-4 z-20 animate-slide-in flex flex-col items-end">
-                        <div className="bg-black/50 backdrop-blur-xl rounded-2xl p-3 border border-orange-500/30 shadow-2xl w-44 overflow-hidden ring-1 ring-orange-500/20">
-                            {/* Product Info - Mini */}
-                            <div className="flex items-center gap-2 mb-2">
-                                <div className="relative">
-                                    <img src={streamer.products[0]?.image} className="w-10 h-10 rounded-lg object-cover bg-gray-800 border border-white/10" alt="Auction Item" />
-                                    <div className="absolute -top-1 -right-1 bg-orange-600 rounded-full p-0.5 shadow-lg">
-                                        <Flame size={10} className="text-white fill-white" />
-                                    </div>
-                                </div>
-                                <div className="flex-1 min-w-0">
-                                    <h3 className="text-[10px] font-bold text-white truncate leading-tight">{streamer.products[0]?.name}</h3>
-                                    <p className="text-[8px] text-orange-400 font-black uppercase tracking-widest mt-0.5">Auction</p>
-                                </div>
-                            </div>
-
-                            {/* Current Bid Display - Compact */}
-                            <div className="bg-white/5 rounded-xl py-2 px-1 mb-2 text-center border border-white/5">
-                                <p className="text-[8px] text-gray-400 uppercase font-black tracking-widest mb-0.5">Highest Bid</p>
-                                <p className="text-xl font-black text-white font-athletic tracking-tighter">฿{(currentHighestBid || 0).toLocaleString()}</p>
-                                {highestBidderName && (
-                                    <div className="flex items-center justify-center gap-1 mt-0.5">
-                                        <div className="w-1 h-1 rounded-full bg-blue-500 animate-pulse"></div>
-                                        <p className="text-[9px] text-blue-400 font-bold truncate max-w-[80px]">{highestBidderName}</p>
-                                    </div>
-                                )}
-                            </div>
-
-                            {/* Interaction Box (Viewer Only) */}
-                            {!isHost && (
-                                <div className="space-y-2">
-                                    <div className="flex items-center justify-between bg-black/40 rounded-xl p-1 border border-white/5">
-                                        <button
-                                            onClick={decreaseBid}
-                                            className="w-7 h-7 rounded-lg bg-gray-800 hover:bg-gray-700 flex items-center justify-center transition-all active:scale-90"
-                                        >
-                                            <Minus size={14} className="text-white" />
-                                        </button>
-
-                                        <div className="text-center px-1">
-                                            <p className="text-[12px] font-bold text-yellow-500 font-athletic">฿{myBidAmount.toLocaleString()}</p>
-                                        </div>
-
-                                        <button
-                                            onClick={increaseBid}
-                                            className="w-7 h-7 rounded-lg bg-gray-800 hover:bg-gray-700 flex items-center justify-center transition-all active:scale-90"
-                                        >
-                                            <Plus size={14} className="text-white" />
-                                        </button>
-                                    </div>
-
-                                    <button
-                                        onClick={placeBid}
-                                        disabled={isInsufficientFunds || myBidAmount <= currentHighestBid}
-                                        className={`w-full py-2 rounded-xl font-black text-[10px] uppercase tracking-wider transition-all active:scale-95 shadow-lg ${isInsufficientFunds
-                                                ? 'bg-gray-700 text-gray-500 cursor-not-allowed'
-                                                : myBidAmount <= currentHighestBid
-                                                    ? 'bg-gray-800 text-gray-400 opacity-50 cursor-not-allowed'
-                                                    : 'bg-gradient-to-br from-orange-500 to-red-600 text-white shadow-red-900/40 hover:brightness-110'
-                                            }`}
-                                    >
-                                        {isInsufficientFunds ? 'No Balance' : 'Bid Now'}
-                                    </button>
-                                </div>
-                            )}
-
-                            {/* Timer - Mini */}
-                            {auctionTimeLeft && (
-                                <div className="mt-2 pt-2 border-t border-white/5 flex items-center justify-center gap-1.5">
-                                    <Clock size={10} className="text-gray-400" />
-                                    <span className={`text-[10px] font-bold font-athletic ${auctionTimeLeft === 'ENDED' ? 'text-red-500' : 'text-gray-300'}`}>
-                                        {auctionTimeLeft}
-                                    </span>
-                                </div>
-                            )}
-                        </div>
-                    </div>
-                )}
-
-                {/* Featured Product Pin (Removed as per request) */}
-                {!streamer.isAuction && streamer.products.length > 0 && !showProducts && !isHost && (
-                    <div className="hidden absolute top-24 right-4 z-20 animate-slide-in max-w-[160px]">
-                        {/* Hidden by default now, or just logic removed */}
-                    </div>
-                )}
-
                 {/* Floating Hearts Animation Layer */}
                 <div className="absolute inset-0 z-20 pointer-events-none overflow-hidden">
                     {floatingHearts.map((heart) => (
@@ -929,8 +841,69 @@ const LiveRoom: React.FC<LiveRoomProps> = ({
                     </div>
                 )}
 
-                {/* --- BOTTOM CONTROLS --- */}
+
                 <div className="absolute bottom-0 left-0 right-0 p-4 pb-safe-bottom z-30 bg-gradient-to-t from-black/90 via-black/40 to-transparent">
+
+                    {/* Integrated Auction Bar (Floating above chat) */}
+                    {streamer.isAuction && (
+                        <div className="mb-4 animate-slide-up">
+                            <div className="bg-white/10 backdrop-blur-2xl rounded-2xl p-3 border border-orange-500/30 shadow-xl flex items-center gap-4">
+                                {/* Small Product Preview */}
+                                <div className="relative hidden xs:block">
+                                    <img src={streamer.products[0]?.image} className="w-12 h-12 rounded-lg object-cover bg-gray-800 border border-white/10" alt="Auction Item" />
+                                    <div className="absolute -top-1 -right-1 bg-orange-600 rounded-full p-1 shadow-lg">
+                                        <Flame size={10} className="text-white fill-white" />
+                                    </div>
+                                </div>
+
+                                {/* Bid Info Section */}
+                                <div className="flex-1 min-w-0">
+                                    <div className="flex items-center gap-2 mb-0.5">
+                                        <span className="text-[10px] font-black text-orange-400 uppercase tracking-widest whitespace-nowrap">Highest Bid</span>
+                                        {highestBidderName && (
+                                            <span className="text-[10px] text-blue-400 font-bold truncate">by {highestBidderName}</span>
+                                        )}
+                                    </div>
+                                    <div className="flex items-baseline gap-2">
+                                        <span className="text-2xl font-black text-white font-athletic">฿{(currentHighestBid || 0).toLocaleString()}</span>
+                                        {auctionTimeLeft && (
+                                            <div className="flex items-center gap-1 text-gray-400">
+                                                <Clock size={12} />
+                                                <span className="text-[11px] font-bold font-athletic uppercase">{auctionTimeLeft}</span>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+
+                                {/* Bid Actions (Viewer Only) */}
+                                {!isHost && (
+                                    <div className="flex items-center gap-2 bg-black/40 p-1.5 rounded-xl border border-white/5">
+                                        <div className="flex items-center gap-2 mr-2">
+                                            <button onClick={decreaseBid} className="w-8 h-8 rounded-lg bg-gray-800 flex items-center justify-center active:scale-90 transition-all">
+                                                <Minus size={14} className="text-white" />
+                                            </button>
+                                            <span className="text-sm font-bold text-yellow-500 min-w-[50px] text-center font-athletic">฿{myBidAmount.toLocaleString()}</span>
+                                            <button onClick={increaseBid} className="w-8 h-8 rounded-lg bg-gray-800 flex items-center justify-center active:scale-90 transition-all">
+                                                <Plus size={14} className="text-white" />
+                                            </button>
+                                        </div>
+                                        <button
+                                            onClick={placeBid}
+                                            disabled={isInsufficientFunds || myBidAmount <= currentHighestBid}
+                                            className={`px-4 py-2 rounded-lg font-black text-[11px] uppercase tracking-wider transition-all shadow-lg ${isInsufficientFunds
+                                                ? 'bg-gray-700 text-gray-400'
+                                                : myBidAmount <= currentHighestBid
+                                                    ? 'bg-gray-800 text-gray-500 opacity-50'
+                                                    : 'bg-gradient-to-r from-orange-500 to-red-600 text-white hover:brightness-110 active:scale-95'
+                                                }`}
+                                        >
+                                            {isInsufficientFunds ? 'No Money' : 'Bid Now'}
+                                        </button>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    )}
                     {/* Chat Messages Area */}
                     <div className="w-full md:w-3/4 max-h-48 md:max-h-60 overflow-y-auto mask-image-linear-gradient flex flex-col justify-end space-y-2 mb-4 pr-10 no-scrollbar">
                         {/* System Welcome Message */}
@@ -1074,210 +1047,220 @@ const LiveRoom: React.FC<LiveRoomProps> = ({
                 {/* --- OVERLAYS --- */}
 
                 {/* Product List */}
-                {showProducts && (
-                    <div className="absolute inset-0 z-40 bg-black/90 flex flex-col animate-slide-up">
-                        <div className="flex items-center justify-between p-4 border-b border-gray-800">
-                            <h2 className="text-lg font-bold text-white">Products ({streamer.products.length})</h2>
-                            <div className="flex items-center gap-4">
-                                {!isHost && (
-                                    <button
-                                        onClick={() => { setShowProducts(false); setShowCart(true); }}
-                                        className="relative p-2 hover:bg-white/10 rounded-full transition-colors"
-                                    >
-                                        <ShoppingCart size={24} className="text-white" />
-                                        {cart.length > 0 && (
-                                            <span className="absolute top-0 right-0 w-4 h-4 bg-red-600 rounded-full text-[10px] flex items-center justify-center font-bold border border-black">
-                                                {cart.length}
-                                            </span>
-                                        )}
-                                    </button>
-                                )}
-                                <button onClick={() => setShowProducts(false)}><X className="text-white" /></button>
-                            </div>
-                        </div>
-                        <div className="flex-1 overflow-y-auto p-4 space-y-4">
-                            {streamer.products.map(p => (
-                                <div key={p.id} className="flex gap-4 bg-gray-900 p-3 rounded-xl border border-gray-800">
-                                    <img src={p.image} className="w-20 h-20 rounded-lg object-cover bg-gray-800" />
-                                    <div className="flex-1 text-left">
-                                        <h3 className="font-bold text-white">{p.name}</h3>
-                                        <p className="text-red-500 font-bold">฿{p.price.toLocaleString()}</p>
-                                        {isHost ? (
-                                            <div className="mt-2 flex items-center gap-3 text-xs font-bold text-gray-400">
-                                                <span className="flex items-center gap-1"><span className="text-white">{p.sold || 0}</span> Sold</span>
-                                                <span className="w-1 h-1 bg-gray-600 rounded-full"></span>
-                                                <span className="flex items-center gap-1"><span className="text-white">{p.stock}</span> Left</span>
-                                            </div>
-                                        ) : (
-                                            <button
-                                                onClick={() => handleBuyNow(p)}
-                                                className="mt-2 bg-white text-black text-xs font-bold px-4 py-2 rounded-full hover:bg-gray-200"
-                                            >
-                                                Buy Now
-                                            </button>
-                                        )}
-                                    </div>
+                {
+                    showProducts && (
+                        <div className="absolute inset-0 z-40 bg-black/90 flex flex-col animate-slide-up">
+                            <div className="flex items-center justify-between p-4 border-b border-gray-800">
+                                <h2 className="text-lg font-bold text-white">Products ({streamer.products.length})</h2>
+                                <div className="flex items-center gap-4">
+                                    {!isHost && (
+                                        <button
+                                            onClick={() => { setShowProducts(false); setShowCart(true); }}
+                                            className="relative p-2 hover:bg-white/10 rounded-full transition-colors"
+                                        >
+                                            <ShoppingCart size={24} className="text-white" />
+                                            {cart.length > 0 && (
+                                                <span className="absolute top-0 right-0 w-4 h-4 bg-red-600 rounded-full text-[10px] flex items-center justify-center font-bold border border-black">
+                                                    {cart.length}
+                                                </span>
+                                            )}
+                                        </button>
+                                    )}
+                                    <button onClick={() => setShowProducts(false)}><X className="text-white" /></button>
                                 </div>
-                            ))}
-                        </div>
-                    </div>
-                )}
-
-                {/* Cart Overlay */}
-                {showCart && (
-                    <div className="absolute inset-0 z-40 bg-black/90 flex flex-col animate-slide-up">
-                        <div className="flex items-center justify-between p-4 border-b border-gray-800">
-                            <h2 className="text-lg font-bold text-white">My Cart ({cart.length})</h2>
-                            <button onClick={() => setShowCart(false)}><X className="text-white" /></button>
-                        </div>
-                        <div className="flex-1 overflow-y-auto p-4 space-y-4 text-white">
-                            {cart.length === 0 && <p className="text-center text-gray-400 mt-10">Your cart is empty.</p>}
-                            {cart.map((item, index) => (
-                                <div key={index} className="flex gap-4 bg-gray-900 p-3 rounded-xl border border-gray-800">
-                                    <img src={item.image} className="w-16 h-16 rounded-lg object-cover" />
-                                    <div className="flex-1">
-                                        <h3 className="font-bold text-sm">{item.name}</h3>
-                                        <div className="flex justify-between items-center mt-2">
-                                            <div className="flex items-center gap-2 bg-black rounded-lg px-2 py-1">
-                                                <button onClick={() => handleUpdateCartQuantity(index, -1)}><Minus size={12} /></button>
-                                                <span className="text-xs">{item.quantity}</span>
-                                                <button onClick={() => handleUpdateCartQuantity(index, 1)}><Plus size={12} /></button>
-                                            </div>
-                                            <p className="text-red-500 font-bold text-sm">฿{(item.price * item.quantity).toLocaleString()}</p>
+                            </div>
+                            <div className="flex-1 overflow-y-auto p-4 space-y-4">
+                                {streamer.products.map(p => (
+                                    <div key={p.id} className="flex gap-4 bg-gray-900 p-3 rounded-xl border border-gray-800">
+                                        <img src={p.image} className="w-20 h-20 rounded-lg object-cover bg-gray-800" />
+                                        <div className="flex-1 text-left">
+                                            <h3 className="font-bold text-white">{p.name}</h3>
+                                            <p className="text-red-500 font-bold">฿{p.price.toLocaleString()}</p>
+                                            {isHost ? (
+                                                <div className="mt-2 flex items-center gap-3 text-xs font-bold text-gray-400">
+                                                    <span className="flex items-center gap-1"><span className="text-white">{p.sold || 0}</span> Sold</span>
+                                                    <span className="w-1 h-1 bg-gray-600 rounded-full"></span>
+                                                    <span className="flex items-center gap-1"><span className="text-white">{p.stock}</span> Left</span>
+                                                </div>
+                                            ) : (
+                                                <button
+                                                    onClick={() => handleBuyNow(p)}
+                                                    className="mt-2 bg-white text-black text-xs font-bold px-4 py-2 rounded-full hover:bg-gray-200"
+                                                >
+                                                    Buy Now
+                                                </button>
+                                            )}
                                         </div>
                                     </div>
-                                    <button onClick={() => handleRemoveCartItem(index)} className="text-gray-500"><X size={16} /></button>
-                                </div>
-                            ))}
-                        </div>
-                        <div className="p-4 border-t border-gray-800 bg-black/50">
-                            <div className="flex justify-between text-white font-bold mb-3">
-                                <span>Total</span>
-                                <span className="text-red-500">฿{cart.reduce((a, c) => a + c.price * c.quantity, 0).toLocaleString()}</span>
+                                ))}
                             </div>
-                            <button onClick={handleCheckoutCart} className="w-full bg-red-600 py-3 rounded-full font-bold text-white">Checkout</button>
                         </div>
-                    </div>
-                )}
+                    )
+                }
 
-                {/* Checkout Modal */}
-                {showCheckoutModal && (
-                    <div className="absolute inset-0 z-50 bg-black flex flex-col">
-                        <div className="p-4 border-b border-gray-800 flex items-center gap-2 text-white">
-                            <button onClick={() => setShowCheckoutModal(false)}><X /></button>
-                            <h2 className="font-bold">Checkout</h2>
-                        </div>
-
-                        <div className="flex-1 overflow-y-auto p-4 text-white">
-                            <div className="bg-gray-900 p-4 rounded-xl mb-4 border border-gray-800">
-                                <div className="flex justify-between items-start mb-2">
-                                    <h3 className="font-bold text-gray-400 text-xs uppercase">Shipping Address</h3>
-                                    <button onClick={() => setIsEditingAddress(true)} className="text-blue-400 text-xs text-blue-500">Edit</button>
-                                </div>
-                                {isEditingAddress ? (
-                                    <div>
-                                        <textarea
-                                            className="w-full bg-black border border-gray-700 rounded p-2 text-sm text-white"
-                                            value={tempAddress}
-                                            onChange={e => setTempAddress(e.target.value)}
-                                            placeholder="Enter full address..."
-                                        />
-                                        <button onClick={handleSaveAddress} className="mt-2 bg-white text-black text-xs px-3 py-1 rounded font-bold">Save</button>
-                                    </div>
-                                ) : (
-                                    <p className="text-sm text-gray-300 whitespace-pre-line">{userAddress || "No address set. Please edit."}</p>
-                                )}
+                {/* Cart Overlay */}
+                {
+                    showCart && (
+                        <div className="absolute inset-0 z-40 bg-black/90 flex flex-col animate-slide-up">
+                            <div className="flex items-center justify-between p-4 border-b border-gray-800">
+                                <h2 className="text-lg font-bold text-white">My Cart ({cart.length})</h2>
+                                <button onClick={() => setShowCart(false)}><X className="text-white" /></button>
                             </div>
-
-                            <div className="bg-gray-900 p-4 rounded-xl border border-gray-800">
-                                <h3 className="font-bold text-gray-400 text-xs uppercase mb-3">Order Summary</h3>
-                                {cart.map(item => (
-                                    <div key={item.id} className="flex justify-between mb-2 text-sm text-gray-300">
-                                        <span>{item.name} x{item.quantity}</span>
-                                        <span>฿{(item.price * item.quantity).toLocaleString()}</span>
+                            <div className="flex-1 overflow-y-auto p-4 space-y-4 text-white">
+                                {cart.length === 0 && <p className="text-center text-gray-400 mt-10">Your cart is empty.</p>}
+                                {cart.map((item, index) => (
+                                    <div key={index} className="flex gap-4 bg-gray-900 p-3 rounded-xl border border-gray-800">
+                                        <img src={item.image} className="w-16 h-16 rounded-lg object-cover" />
+                                        <div className="flex-1">
+                                            <h3 className="font-bold text-sm">{item.name}</h3>
+                                            <div className="flex justify-between items-center mt-2">
+                                                <div className="flex items-center gap-2 bg-black rounded-lg px-2 py-1">
+                                                    <button onClick={() => handleUpdateCartQuantity(index, -1)}><Minus size={12} /></button>
+                                                    <span className="text-xs">{item.quantity}</span>
+                                                    <button onClick={() => handleUpdateCartQuantity(index, 1)}><Plus size={12} /></button>
+                                                </div>
+                                                <p className="text-red-500 font-bold text-sm">฿{(item.price * item.quantity).toLocaleString()}</p>
+                                            </div>
+                                        </div>
+                                        <button onClick={() => handleRemoveCartItem(index)} className="text-gray-500"><X size={16} /></button>
                                     </div>
                                 ))}
-                                <div className="border-t border-gray-800 mt-2 pt-2 flex justify-between font-bold text-white">
+                            </div>
+                            <div className="p-4 border-t border-gray-800 bg-black/50">
+                                <div className="flex justify-between text-white font-bold mb-3">
                                     <span>Total</span>
-                                    <span className="text-green-500">฿{cart.reduce((a, c) => a + c.price * c.quantity, 0).toLocaleString()}</span>
+                                    <span className="text-red-500">฿{cart.reduce((a, c) => a + c.price * c.quantity, 0).toLocaleString()}</span>
                                 </div>
+                                <button onClick={handleCheckoutCart} className="w-full bg-red-600 py-3 rounded-full font-bold text-white">Checkout</button>
                             </div>
                         </div>
+                    )
+                }
 
-                        <div className="p-4 border-t border-gray-800 bg-black/50">
-                            <button
-                                onClick={handleFinalPayment}
-                                className="w-full bg-green-600 hover:bg-green-500 text-white py-3 rounded-full font-bold transition-colors"
-                                disabled={cart.length === 0}
-                            >
-                                Pay Now (฿{cart.reduce((a, c) => a + c.price * c.quantity, 0).toLocaleString()})
-                            </button>
+                {/* Checkout Modal */}
+                {
+                    showCheckoutModal && (
+                        <div className="absolute inset-0 z-50 bg-black flex flex-col">
+                            <div className="p-4 border-b border-gray-800 flex items-center gap-2 text-white">
+                                <button onClick={() => setShowCheckoutModal(false)}><X /></button>
+                                <h2 className="font-bold">Checkout</h2>
+                            </div>
+
+                            <div className="flex-1 overflow-y-auto p-4 text-white">
+                                <div className="bg-gray-900 p-4 rounded-xl mb-4 border border-gray-800">
+                                    <div className="flex justify-between items-start mb-2">
+                                        <h3 className="font-bold text-gray-400 text-xs uppercase">Shipping Address</h3>
+                                        <button onClick={() => setIsEditingAddress(true)} className="text-blue-400 text-xs text-blue-500">Edit</button>
+                                    </div>
+                                    {isEditingAddress ? (
+                                        <div>
+                                            <textarea
+                                                className="w-full bg-black border border-gray-700 rounded p-2 text-sm text-white"
+                                                value={tempAddress}
+                                                onChange={e => setTempAddress(e.target.value)}
+                                                placeholder="Enter full address..."
+                                            />
+                                            <button onClick={handleSaveAddress} className="mt-2 bg-white text-black text-xs px-3 py-1 rounded font-bold">Save</button>
+                                        </div>
+                                    ) : (
+                                        <p className="text-sm text-gray-300 whitespace-pre-line">{userAddress || "No address set. Please edit."}</p>
+                                    )}
+                                </div>
+
+                                <div className="bg-gray-900 p-4 rounded-xl border border-gray-800">
+                                    <h3 className="font-bold text-gray-400 text-xs uppercase mb-3">Order Summary</h3>
+                                    {cart.map(item => (
+                                        <div key={item.id} className="flex justify-between mb-2 text-sm text-gray-300">
+                                            <span>{item.name} x{item.quantity}</span>
+                                            <span>฿{(item.price * item.quantity).toLocaleString()}</span>
+                                        </div>
+                                    ))}
+                                    <div className="border-t border-gray-800 mt-2 pt-2 flex justify-between font-bold text-white">
+                                        <span>Total</span>
+                                        <span className="text-green-500">฿{cart.reduce((a, c) => a + c.price * c.quantity, 0).toLocaleString()}</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="p-4 border-t border-gray-800 bg-black/50">
+                                <button
+                                    onClick={handleFinalPayment}
+                                    className="w-full bg-green-600 hover:bg-green-500 text-white py-3 rounded-full font-bold transition-colors"
+                                    disabled={cart.length === 0}
+                                >
+                                    Pay Now (฿{cart.reduce((a, c) => a + c.price * c.quantity, 0).toLocaleString()})
+                                </button>
+                            </div>
                         </div>
-                    </div>
-                )}
+                    )
+                }
 
                 {/* Gift Selector */}
-                {showGiftSelector && (
-                    <div className="absolute bottom-0 left-0 right-0 z-50 bg-gray-900 rounded-t-3xl p-4 animate-slide-up border-t border-gray-800">
-                        <div className="flex justify-between items-center mb-4 text-white">
-                            <h3 className="font-bold">Send a Gift</h3>
-                            <button onClick={() => setShowGiftSelector(false)}><X size={20} /></button>
-                        </div>
-                        <div className="grid grid-cols-4 gap-4">
-                            {GIFTS.map(gift => (
-                                <button key={gift.id} onClick={() => handleSendGift(gift)} className="flex flex-col items-center gap-1 p-2 hover:bg-white/10 rounded-xl transition-colors">
-                                    <span className="text-2xl">{gift.icon}</span>
-                                    <span className="text-xs font-medium text-white">{gift.name}</span>
-                                    <span className="text-[10px] text-yellow-400 flex items-center gap-0.5">
-                                        <DollarSign size={8} /> {gift.price}
-                                    </span>
-                                </button>
-                            ))}
-                        </div>
-                        <div className="mt-4 flex justify-between items-center bg-black/40 p-2 rounded-full px-4">
-                            <div className="flex items-center gap-1 text-yellow-400 font-bold text-sm">
-                                <Wallet size={14} /> <span>{walletBalance.toLocaleString()}</span>
+                {
+                    showGiftSelector && (
+                        <div className="absolute bottom-0 left-0 right-0 z-50 bg-gray-900 rounded-t-3xl p-4 animate-slide-up border-t border-gray-800">
+                            <div className="flex justify-between items-center mb-4 text-white">
+                                <h3 className="font-bold">Send a Gift</h3>
+                                <button onClick={() => setShowGiftSelector(false)}><X size={20} /></button>
                             </div>
-                            <button onClick={() => onOpenWallet()} className="text-xs bg-yellow-500/20 text-yellow-400 px-3 py-1 rounded-full border border-yellow-500/30">Top Up</button>
+                            <div className="grid grid-cols-4 gap-4">
+                                {GIFTS.map(gift => (
+                                    <button key={gift.id} onClick={() => handleSendGift(gift)} className="flex flex-col items-center gap-1 p-2 hover:bg-white/10 rounded-xl transition-colors">
+                                        <span className="text-2xl">{gift.icon}</span>
+                                        <span className="text-xs font-medium text-white">{gift.name}</span>
+                                        <span className="text-[10px] text-yellow-400 flex items-center gap-0.5">
+                                            <DollarSign size={8} /> {gift.price}
+                                        </span>
+                                    </button>
+                                ))}
+                            </div>
+                            <div className="mt-4 flex justify-between items-center bg-black/40 p-2 rounded-full px-4">
+                                <div className="flex items-center gap-1 text-yellow-400 font-bold text-sm">
+                                    <Wallet size={14} /> <span>{walletBalance.toLocaleString()}</span>
+                                </div>
+                                <button onClick={() => onOpenWallet()} className="text-xs bg-yellow-500/20 text-yellow-400 px-3 py-1 rounded-full border border-yellow-500/30">Top Up</button>
+                            </div>
                         </div>
-                    </div>
-                )}
+                    )
+                }
 
                 {/* Bid Modal */}
-                {showBidModal && (
-                    <div className="absolute inset-0 z-50 bg-black/90 flex items-center justify-center p-4">
-                        <div className="bg-gray-900 w-full max-w-sm rounded-2xl p-6 border border-gray-800 text-white animate-scale-in">
-                            <h2 className="text-xl font-bold mb-4 text-center">Place a Bid</h2>
-                            <div className="text-center mb-6">
-                                <p className="text-gray-400 text-sm">Current Highest Bid</p>
-                                <p className="text-3xl font-bold text-green-500">฿{currentHighestBid.toLocaleString()}</p>
-                                {highestBidderName && (
-                                    <p className="text-xs text-blue-400 mt-1">
-                                        by <span className="font-bold">{highestBidderName}</span>
-                                    </p>
-                                )}
-                            </div>
-
-                            <div className="flex items-center gap-4 mb-6">
-                                <button onClick={decreaseBid} className="w-12 h-12 rounded-full bg-gray-800 hover:bg-gray-700 flex items-center justify-center transition-colors"><Minus /></button>
-                                <div className="flex-1 text-center">
-                                    <p className="text-xs text-gray-400">Your Bid</p>
-                                    <p className="text-2xl font-bold">฿{myBidAmount.toLocaleString()}</p>
+                {
+                    showBidModal && (
+                        <div className="absolute inset-0 z-50 bg-black/90 flex items-center justify-center p-4">
+                            <div className="bg-gray-900 w-full max-w-sm rounded-2xl p-6 border border-gray-800 text-white animate-scale-in">
+                                <h2 className="text-xl font-bold mb-4 text-center">Place a Bid</h2>
+                                <div className="text-center mb-6">
+                                    <p className="text-gray-400 text-sm">Current Highest Bid</p>
+                                    <p className="text-3xl font-bold text-green-500">฿{currentHighestBid.toLocaleString()}</p>
+                                    {highestBidderName && (
+                                        <p className="text-xs text-blue-400 mt-1">
+                                            by <span className="font-bold">{highestBidderName}</span>
+                                        </p>
+                                    )}
                                 </div>
-                                <button onClick={increaseBid} className="w-12 h-12 rounded-full bg-gray-800 hover:bg-gray-700 flex items-center justify-center transition-colors"><Plus /></button>
-                            </div>
 
-                            <button
-                                onClick={() => { placeBid(); setShowBidModal(false); }}
-                                className="w-full bg-orange-600 hover:bg-orange-500 text-white py-3 rounded-xl font-bold transition-colors shadow-lg shadow-orange-900/40"
-                                disabled={isInsufficientFunds}
-                            >
-                                {isInsufficientFunds ? 'Insufficient Funds' : 'Confirm Bid'}
-                            </button>
-                            <button onClick={() => setShowBidModal(false)} className="w-full mt-3 py-2 text-gray-400 text-sm hover:text-white">Cancel</button>
+                                <div className="flex items-center gap-4 mb-6">
+                                    <button onClick={decreaseBid} className="w-12 h-12 rounded-full bg-gray-800 hover:bg-gray-700 flex items-center justify-center transition-colors"><Minus /></button>
+                                    <div className="flex-1 text-center">
+                                        <p className="text-xs text-gray-400">Your Bid</p>
+                                        <p className="text-2xl font-bold">฿{myBidAmount.toLocaleString()}</p>
+                                    </div>
+                                    <button onClick={increaseBid} className="w-12 h-12 rounded-full bg-gray-800 hover:bg-gray-700 flex items-center justify-center transition-colors"><Plus /></button>
+                                </div>
+
+                                <button
+                                    onClick={() => { placeBid(); setShowBidModal(false); }}
+                                    className="w-full bg-orange-600 hover:bg-orange-500 text-white py-3 rounded-xl font-bold transition-colors shadow-lg shadow-orange-900/40"
+                                    disabled={isInsufficientFunds}
+                                >
+                                    {isInsufficientFunds ? 'Insufficient Funds' : 'Confirm Bid'}
+                                </button>
+                                <button onClick={() => setShowBidModal(false)} className="w-full mt-3 py-2 text-gray-400 text-sm hover:text-white">Cancel</button>
+                            </div>
                         </div>
-                    </div>
-                )}
+                    )
+                }
 
                 {/* Product Purchase Sheet (Buy Now) */}
                 {selectedProductForPurchase && (
@@ -1356,13 +1339,9 @@ const LiveRoom: React.FC<LiveRoomProps> = ({
                         </div>
                         <button onClick={() => setSelectedProductForPurchase(null)} className="absolute top-4 right-4 text-white hover:text-gray-300"><X /></button>
                     </div>
-                )
-                }
-
-                <ArrowLeft className="hidden" />
-
+                )}
             </div>
-        </div >
+        </div>
     );
 };
 
