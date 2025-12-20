@@ -108,6 +108,13 @@ class SupabaseService {
       .on('presence', { event: 'sync' }, () => {
         this.handlePresenceSync();
       })
+      .on('broadcast', { event: 'chat' }, (payload) => {
+        console.log('[Supabase] Broadcast chat received:', payload.payload);
+        // Only trigger if it's NOT from me (sender already handled it locally for instant feel)
+        if (payload.payload.senderId !== this.userId) {
+          this.triggerEvent('new_comment', payload.payload);
+        }
+      })
       // .on('presence', { event: 'join' }, ({ key, newPresences }) => { console.log('join', key, newPresences); })
       // .on('presence', { event: 'leave' }, ({ key, leftPresences }) => { console.log('leave', key, leftPresences); })
       .subscribe(async (status) => {
@@ -167,10 +174,15 @@ class SupabaseService {
   }
 
   private handleNewMessage(newRecord: any) {
-    console.log('[SupabaseService] Realtime message received:', newRecord);
-    // We no longer skip self-messages because we want the DB to be the single source of truth
-    // and we removed optimistic updates earlier.
+    console.log('[SupabaseService] DB Realtime message received:', newRecord);
 
+    // IMPORTANT: For text messages, we only process them if they are 'system' messages
+    // Ordinary chat messages are handled via 'broadcast' for speed.
+    if (newRecord.type !== 'system') {
+      return;
+    }
+
+    // If it's a system message, we always show it
     const comment = {
       id: newRecord.id,
       username: newRecord.username || 'User',
@@ -209,12 +221,31 @@ class SupabaseService {
   }
 
   sendComment(data: any) {
-    // We no longer do optimistic updates here to ensure all screens are synced via DB
-    // 2. Send to DB
+    const commentData = {
+      id: `temp-${Date.now()}`,
+      username: data.username || this.userProfile?.username || 'User',
+      message: data.message,
+      avatar: data.avatar || this.userProfile?.avatar || '',
+      senderId: this.userId,
+      isSystem: false,
+      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+    };
+
+    // 1. Broadcast immediately for instant sync across all open screens
+    this.channel?.send({
+      type: 'broadcast',
+      event: 'chat',
+      payload: commentData
+    });
+
+    // 2. Trigger locally for the sender immediately
+    this.triggerEvent('new_comment', commentData);
+
+    // 3. Save to DB for history (silently in background)
     this.emit('send_comment', {
       message: data.message,
-      username: data.username || this.userProfile?.username || 'User',
-      avatar: data.avatar || this.userProfile?.avatar || ''
+      username: commentData.username,
+      avatar: commentData.avatar
     });
   }
 
