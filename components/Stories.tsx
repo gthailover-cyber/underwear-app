@@ -408,34 +408,38 @@ const Stories: React.FC<StoriesProps> = ({ userProfile, language }) => {
             )}
             {/* Create Story Modal (Portal to Body) */}
             {pendingStory && createPortal(
-                <div className="fixed inset-0 z-[9999] bg-black/95 flex flex-col items-center justify-center p-4 animate-fade-in">
-                    <div className="relative w-full max-w-md aspect-[9/16] bg-gray-950 rounded-3xl overflow-hidden shadow-2xl border border-gray-800 flex flex-col">
-                        {/* Preview */}
-                        <div className="flex-1 bg-black relative">
+                <div className="fixed inset-0 z-[9999] bg-black/95 flex flex-col items-center justify-center p-2 sm:p-4 animate-fade-in backdrop-blur-sm">
+                    <div className="relative w-full max-w-md h-[90vh] sm:h-auto sm:aspect-[9/16] bg-gray-950 rounded-3xl overflow-hidden shadow-2xl border border-gray-800 flex flex-col">
+                        {/* Preview Section */}
+                        <div className="flex-1 bg-black relative min-h-0">
                             {pendingStory.type === 'video' ? (
                                 <video src={pendingStory.preview} autoPlay muted loop className="w-full h-full object-contain" />
                             ) : (
                                 <img src={pendingStory.preview} className="w-full h-full object-contain" alt="" />
                             )}
 
-                            <button onClick={() => setPendingStory(null)} className="absolute top-4 right-4 w-10 h-10 rounded-full bg-black/40 backdrop-blur-md flex items-center justify-center text-white hover:bg-black/60 transition-colors">
+                            <button
+                                onClick={() => setPendingStory(null)}
+                                className="absolute top-4 right-4 w-10 h-10 rounded-full bg-black/60 backdrop-blur-md flex items-center justify-center text-white hover:bg-black/60 transition-colors z-20"
+                            >
                                 <X size={20} />
                             </button>
                         </div>
 
-                        {/* Caption Input Field */}
-                        <div className="p-4 bg-gray-900/80 backdrop-blur-md border-t border-gray-800">
-                            <label className="text-xs font-bold text-gray-500 uppercase mb-2 block">Story Caption</label>
+                        {/* Caption & Actions Section */}
+                        <div className="p-4 sm:p-6 bg-gray-900 border-t border-gray-800">
+                            <label className="text-xs font-bold text-gray-500 uppercase mb-2 block ml-1">Add Caption</label>
                             <textarea
                                 value={caption}
                                 onChange={(e) => setCaption(e.target.value)}
-                                placeholder="Write something about your story..."
-                                className="w-full bg-black/40 border border-gray-700 rounded-2xl p-4 text-white placeholder-gray-600 focus:outline-none focus:border-red-600 transition-colors resize-none h-24 mb-4"
+                                placeholder="Write a headline for your story..."
+                                className="w-full bg-black/40 border border-gray-700 rounded-2xl p-3 text-white placeholder-gray-600 focus:outline-none focus:border-red-600 transition-colors resize-none h-20 mb-4 text-sm"
+                                autoFocus
                             />
                             <button
                                 onClick={handlePostStory}
                                 disabled={isUploading}
-                                className="w-full py-4 bg-red-600 hover:bg-red-700 active:scale-95 disabled:opacity-50 transition-all rounded-2xl text-white font-bold flex items-center justify-center gap-2 shadow-lg shadow-red-900/20"
+                                className="w-full py-4 bg-red-600 hover:bg-red-700 active:scale-95 disabled:opacity-50 transition-all rounded-2xl text-white font-bold flex items-center justify-center gap-2 shadow-lg shadow-red-900/20 mb-2"
                             >
                                 {isUploading ? (
                                     <>
@@ -445,7 +449,7 @@ const Stories: React.FC<StoriesProps> = ({ userProfile, language }) => {
                                 ) : (
                                     <>
                                         <Camera size={20} />
-                                        <span>Post Story</span>
+                                        <span>Post Story Now</span>
                                     </>
                                 )}
                             </button>
