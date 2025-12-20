@@ -4,6 +4,7 @@ import { ArrowLeft, Package, Truck, CheckCircle, Clock, X, User, ExternalLink, M
 import { Language, OrderStatus } from '../types';
 import { TRANSLATIONS } from '../constants';
 import { supabase } from '../lib/supabaseClient';
+import { BrowserMultiFormatReader } from '@zxing/library';
 
 interface CustomerOrdersProps {
     language: Language;
@@ -41,6 +42,8 @@ const CustomerOrders: React.FC<CustomerOrdersProps> = ({ language, onBack }) => 
     const [isScanning, setIsScanning] = useState(false);
     const [trackingNumber, setTrackingNumber] = useState('');
     const [selectedStatus, setSelectedStatus] = useState<OrderStatus>('pending');
+    const scannerRef = useRef<BrowserMultiFormatReader | null>(null);
+    const videoRef = useRef<HTMLVideoElement>(null);
 
     const fetchCustomerOrders = async () => {
         setLoading(true);
@@ -177,17 +180,53 @@ const CustomerOrders: React.FC<CustomerOrdersProps> = ({ language, onBack }) => 
         }
     };
 
-    const handleSimulateScan = () => {
+    const startScanning = async () => {
         setIsScanning(true);
-        // Simulate OCR processing after 2 seconds
-        setTimeout(() => {
-            const mockTracking = 'TH' + Math.floor(Math.random() * 1000000000).toString();
-            setTrackingNumber(mockTracking);
+        const codeReader = new BrowserMultiFormatReader();
+        scannerRef.current = codeReader;
+
+        try {
+            // Wait for video element to be available in DOM
+            setTimeout(async () => {
+                if (!videoRef.current) return;
+
+                try {
+                    const result = await codeReader.decodeFromVideoDevice(
+                        undefined, // Default to back camera automatically by browser if environment is preferred
+                        videoRef.current,
+                        (result, error) => {
+                            if (result) {
+                                setTrackingNumber(result.getText());
+                                stopScanning();
+                                if (selectedStatus === 'pending') setSelectedStatus('shipping');
+                                alert(language === 'th' ? `สแกนสำเร็จ: ${result.getText()}` : `Scan successful: ${result.getText()}`);
+                            }
+                        }
+                    );
+                } catch (err) {
+                    console.error('Barcode scan error:', err);
+                }
+            }, 500);
+        } catch (err) {
+            console.error('Scanner init error:', err);
             setIsScanning(false);
-            if (selectedStatus === 'pending') setSelectedStatus('shipping');
-            alert(language === 'th' ? `สแกนสำเร็จ! หมายเลขติดตาม: ${mockTracking}` : `Scan complete! Tracking No: ${mockTracking}`);
-        }, 2000);
+        }
     };
+
+    const stopScanning = () => {
+        if (scannerRef.current) {
+            scannerRef.current.reset();
+            scannerRef.current = null;
+        }
+        setIsScanning(false);
+    };
+
+    // Auto-clean on unmount
+    useEffect(() => {
+        return () => {
+            if (scannerRef.current) scannerRef.current.reset();
+        };
+    }, []);
 
     const filteredItems = activeTab === 'all'
         ? orderItems
@@ -437,19 +476,58 @@ const CustomerOrders: React.FC<CustomerOrdersProps> = ({ language, onBack }) => 
                                                 <Truck size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-600" />
                                             </div>
                                             <button
-                                                onClick={handleSimulateScan}
+                                                onClick={startScanning}
                                                 disabled={isScanning}
-                                                className="bg-yellow-600 hover:bg-yellow-500 disabled:opacity-50 text-black px-3 rounded-xl flex items-center justify-center transition-all active:scale-95"
-                                                title="Scan Receipt"
+                                                className="bg-yellow-600 hover:bg-yellow-500 disabled:opacity-50 text-black px-4 rounded-xl flex items-center justify-center transition-all active:scale-95 shadow-lg shadow-yellow-900/20"
+                                                title="Scan Barcode"
                                             >
-                                                {isScanning ? <RefreshCw size={18} className="animate-spin" /> : <Scan size={18} />}
+                                                <Scan size={20} />
                                             </button>
                                         </div>
-                                        <p className="text-[10px] text-gray-600 italic">Tip: Use Scan button to automatically get tracking number from receipt</p>
+                                        <p className="text-[10px] text-gray-600 italic">Tip: Use Scan button to automatically capture tracking number from parcel</p>
                                     </div>
                                 </div>
                             </div>
                         </div>
+
+                        {/* Scanner Overlay */}
+                        {isScanning && (
+                            <div className="fixed inset-0 z-[200] bg-black flex flex-col items-center justify-center animate-fade-in">
+                                <div className="absolute top-8 right-8 z-[210]">
+                                    <button
+                                        onClick={stopScanning}
+                                        className="w-12 h-12 rounded-full bg-white/10 backdrop-blur-md flex items-center justify-center text-white hover:bg-white/20 border border-white/20"
+                                    >
+                                        <X size={24} />
+                                    </button>
+                                </div>
+
+                                <div className="w-full h-full relative flex items-center justify-center overflow-hidden">
+                                    <video
+                                        ref={videoRef}
+                                        className="w-full h-full object-cover"
+                                        playsInline
+                                    />
+
+                                    {/* Scanner Frame UI */}
+                                    <div className="absolute inset-0 pointer-events-none flex flex-col items-center justify-center">
+                                        <div className="w-72 h-48 border-2 border-yellow-500 rounded-3xl relative">
+                                            {/* Corner Accents */}
+                                            <div className="absolute -top-1 -left-1 w-8 h-8 border-t-4 border-l-4 border-yellow-500 rounded-tl-xl"></div>
+                                            <div className="absolute -top-1 -right-1 w-8 h-8 border-t-4 border-r-4 border-yellow-500 rounded-tr-xl"></div>
+                                            <div className="absolute -bottom-1 -left-1 w-8 h-8 border-b-4 border-l-4 border-yellow-500 rounded-bl-xl"></div>
+                                            <div className="absolute -bottom-1 -right-1 w-8 h-8 border-b-4 border-r-4 border-yellow-500 rounded-br-xl"></div>
+
+                                            {/* Scanning Line Animation */}
+                                            <div className="absolute left-0 right-0 h-0.5 bg-yellow-500/50 shadow-[0_0_15px_rgba(234,179,8,0.8)] animate-scan-line"></div>
+                                        </div>
+                                        <p className="mt-8 text-white font-bold text-sm bg-black/40 px-6 py-2 rounded-full backdrop-blur-md">
+                                            Align Barcode/QR inside the frame
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
                         <div className="p-6 border-t border-gray-800 bg-black/30 flex gap-3">
                             <button
                                 onClick={() => setSelectedItem(null)}
