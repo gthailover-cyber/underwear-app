@@ -957,7 +957,7 @@ const LiveRoom: React.FC<LiveRoomProps> = ({
                                 <button
                                     onClick={handleSendMessage}
                                     disabled={!newComment.trim()}
-                                    className="w-8 h-8 flex items-center justify-center bg-white/10 rounded-full text-white hover:bg-white/20 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                                    className="w-8 h-8 shrink-0 flex items-center justify-center bg-white/10 rounded-full text-white hover:bg-white/20 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
                                 >
                                     <Send size={16} />
                                 </button>
@@ -1028,7 +1028,7 @@ const LiveRoom: React.FC<LiveRoomProps> = ({
                                 <button
                                     onClick={handleSendMessage}
                                     disabled={!newComment.trim()}
-                                    className="w-8 h-8 flex items-center justify-center bg-white/10 rounded-full text-white hover:bg-white/20 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                                    className="w-8 h-8 shrink-0 flex items-center justify-center bg-white/10 rounded-full text-white hover:bg-white/20 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
                                 >
                                     <Send size={16} />
                                 </button>

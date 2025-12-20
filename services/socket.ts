@@ -167,7 +167,8 @@ class SupabaseService {
   }
 
   private handleNewMessage(newRecord: any) {
-    if (this.userId && newRecord.sender_id === this.userId) {
+    // Skip if it's my own message AND it's not a system message
+    if (this.userId && newRecord.sender_id === this.userId && newRecord.type !== 'system') {
       return;
     }
 
