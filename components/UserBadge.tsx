@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Dumbbell, Crown } from 'lucide-react';
+import { BicepsFlexed, Crown } from 'lucide-react';
 import { UserRole } from '../types';
 
 interface UserBadgeProps {
@@ -15,7 +15,7 @@ const UserBadge: React.FC<UserBadgeProps> = ({ role, size = 'sm', className = ''
     const getIcon = () => {
         switch (role) {
             case 'model':
-                return <Dumbbell className="text-white fill-white" size={size === 'xs' ? 8 : size === 'sm' ? 10 : size === 'md' ? 14 : 18} />;
+                return <BicepsFlexed className="text-white" size={size === 'xs' ? 8 : size === 'sm' ? 10 : size === 'md' ? 14 : 18} />;
             case 'organizer':
                 return <Crown className="text-white fill-white" size={size === 'xs' ? 8 : size === 'sm' ? 10 : size === 'md' ? 14 : 18} />;
             default:
