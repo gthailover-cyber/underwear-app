@@ -156,10 +156,33 @@ const LiveRoom: React.FC<LiveRoomProps> = ({
         commentsEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     }, [comments]);
 
-    // Fetch User Address on Mount
+    // Fetch Message History & User Address on Mount
     useEffect(() => {
-        const fetchAddress = async () => {
+        const fetchInitialData = async () => {
             const { data: { user } } = await supabase.auth.getUser();
+
+            // 1. Fetch Chat History
+            const { data: history } = await supabase
+                .from('messages')
+                .select('*')
+                .eq('room_id', streamer.id)
+                .order('created_at', { ascending: true })
+                .limit(50);
+
+            if (history) {
+                const formattedHistory = history.map((m: any) => ({
+                    id: m.id,
+                    username: m.username || 'User',
+                    message: m.content,
+                    isSystem: m.type === 'system',
+                    avatar: m.avatar || 'https://picsum.photos/200/200',
+                    timestamp: new Date(m.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+                    isHost: m.sender_id === streamer.hostId
+                }));
+                setComments(formattedHistory);
+            }
+
+            // 2. Fetch Address
             if (user) {
                 const { data } = await supabase
                     .from('addresses')
@@ -175,8 +198,8 @@ const LiveRoom: React.FC<LiveRoomProps> = ({
                 }
             }
         };
-        fetchAddress();
-    }, []);
+        fetchInitialData();
+    }, [streamer.id]);
 
     // Initial Setup & Socket Listeners
     // Heartbeat Logic: Update last_active_at every minute to keep room "alive"

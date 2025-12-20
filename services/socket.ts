@@ -210,24 +210,12 @@ class SupabaseService {
   }
 
   sendComment(data: any) {
-    // 1. Optimistic Update (Immediate Feedback)
-    const optimisticComment = {
-      id: `temp-${Date.now()}`,
-      username: data.username || this.userProfile?.username || 'Me',
-      message: data.message,
-      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-      isSystem: false,
-      isHost: data.isHost,
-      avatar: data.avatar || this.userProfile?.avatar || ''
-    };
-
-    this.triggerEvent('new_comment', optimisticComment);
-
+    // We no longer do optimistic updates here to ensure all screens are synced via DB
     // 2. Send to DB
     this.emit('send_comment', {
       message: data.message,
-      username: optimisticComment.username,
-      avatar: optimisticComment.avatar
+      username: data.username || this.userProfile?.username || 'User',
+      avatar: data.avatar || this.userProfile?.avatar || ''
     });
   }
 
