@@ -1991,9 +1991,9 @@ const App: React.FC = () => {
                   >
                     <div className="w-10 h-10 rounded-full bg-gray-800 overflow-hidden flex-shrink-0 border border-gray-700">
                       <img
-                        src={notif.actor?.avatar || DEFAULT_IMAGES.AVATAR}
+                        src={notif.image_url || notif.actor?.avatar || DEFAULT_IMAGES.AVATAR}
                         className="w-full h-full object-cover"
-                        alt="Actor"
+                        alt="Notification Image"
                       />
                     </div>
                     <div className="flex-1 min-w-0">

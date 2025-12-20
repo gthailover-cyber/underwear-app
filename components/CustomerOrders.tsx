@@ -111,6 +111,37 @@ const CustomerOrders: React.FC<CustomerOrdersProps> = ({ language, onBack }) => 
 
     useEffect(() => {
         fetchCustomerOrders();
+
+        let channel: any;
+        supabase.auth.getUser().then(async ({ data: { user } }) => {
+            if (user) {
+                // Get my product IDs to filter realtime updates
+                const { data: myProducts } = await supabase
+                    .from('products')
+                    .select('id')
+                    .eq('seller_id', user.id);
+
+                const productIds = myProducts?.map(p => p.id) || [];
+
+                channel = supabase
+                    .channel('public:customer_order_items')
+                    .on(
+                        'postgres_changes',
+                        { event: 'INSERT', schema: 'public', table: 'order_items' },
+                        (payload) => {
+                            if (productIds.includes(payload.new.product_id)) {
+                                console.log('New order item for my product, refreshing!');
+                                fetchCustomerOrders();
+                            }
+                        }
+                    )
+                    .subscribe();
+            }
+        });
+
+        return () => {
+            if (channel) supabase.removeChannel(channel);
+        };
     }, []);
 
     useEffect(() => {
@@ -383,8 +414,8 @@ const CustomerOrders: React.FC<CustomerOrdersProps> = ({ language, onBack }) => 
                                                 key={status}
                                                 onClick={() => setSelectedStatus(status)}
                                                 className={`py-2 px-3 rounded-xl text-xs font-bold border transition-all ${selectedStatus === status
-                                                        ? 'bg-blue-600 border-blue-500 text-white'
-                                                        : 'bg-gray-800 border-gray-700 text-gray-400 hover:border-gray-600'
+                                                    ? 'bg-blue-600 border-blue-500 text-white'
+                                                    : 'bg-gray-800 border-gray-700 text-gray-400 hover:border-gray-600'
                                                     }`}
                                             >
                                                 {getStatusLabel(status)}

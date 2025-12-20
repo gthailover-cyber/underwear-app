@@ -58,6 +58,28 @@ const MyOrders: React.FC<MyOrdersProps> = ({ language, onBack }) => {
       };
 
       fetchOrders();
+
+      // Real-time listener for order updates
+      let channel: any;
+      supabase.auth.getUser().then(({ data: { user } }) => {
+         if (user) {
+            channel = supabase
+               .channel('public:orders_buyer')
+               .on(
+                  'postgres_changes',
+                  { event: 'UPDATE', schema: 'public', table: 'orders', filter: `buyer_id=eq.${user.id}` },
+                  () => {
+                     console.log('Order update detected, refreshing...');
+                     fetchOrders();
+                  }
+               )
+               .subscribe();
+         }
+      });
+
+      return () => {
+         if (channel) supabase.removeChannel(channel);
+      };
    }, []);
 
    const filteredOrders = activeTab === 'all'
