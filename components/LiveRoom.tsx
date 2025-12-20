@@ -259,12 +259,31 @@ const LiveRoom: React.FC<LiveRoomProps> = ({
             setViewerCount(data.count);
         });
 
+        // Realtime listener for room updates (specifically likes)
+        const roomChannel = supabase
+            .channel(`room_sync_${streamer.id}`)
+            .on('postgres_changes', {
+                event: 'UPDATE',
+                schema: 'public',
+                table: 'rooms',
+                filter: `id=eq.${streamer.id}`
+            }, (payload) => {
+                if (payload.new.likes !== undefined) {
+                    setHeartCount(payload.new.likes);
+                }
+                if (payload.new.current_bid !== undefined) {
+                    setCurrentHighestBid(payload.new.current_bid);
+                }
+            })
+            .subscribe();
+
         return () => {
             cleanup();
             cleanupHearts();
             cleanupGifts();
             cleanupBids();
             cleanupViewers();
+            supabase.removeChannel(roomChannel);
             socketService.leaveRoom();
         };
     }, [streamer.id, currentUser]);
@@ -368,11 +387,16 @@ const LiveRoom: React.FC<LiveRoomProps> = ({
         setNewComment('');
 
         // Simulate getting hearts when commenting
-        if (Math.random() > 0.7) socketService.emit('send_heart', {});
+        if (Math.random() > 0.7) {
+            socketService.emit('send_heart', {});
+            supabase.rpc('increment_likes', { room_id: streamer.id });
+        }
     };
 
     const handleLike = () => {
         socketService.emit('send_heart', {});
+        // Persist to DB
+        supabase.rpc('increment_likes', { room_id: streamer.id });
     };
 
     // Auction Handlers
