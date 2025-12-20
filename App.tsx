@@ -81,6 +81,8 @@ const App: React.FC = () => {
   const [auctionSelectedProduct, setAuctionSelectedProduct] = useState<Product | null>(null);
   const [liveSelectedProducts, setLiveSelectedProducts] = useState<Product[]>([]);
   const [liveType, setLiveType] = useState<'selling' | 'auction' | null>(null);
+  const [auctionStartingPrice, setAuctionStartingPrice] = useState(0);
+  const [auctionDurationMs, setAuctionDurationMs] = useState(0);
 
   // Countdown State
   const [isCountdownActive, setIsCountdownActive] = useState(false);
@@ -746,10 +748,10 @@ const App: React.FC = () => {
   };
 
   const handleAuctionSetupConfirm = (durationMs: number, startingPrice: number) => {
+    setAuctionDurationMs(durationMs);
+    setAuctionStartingPrice(startingPrice);
     setIsAuctionSetupOpen(false);
     setIsStartLiveModalOpen(true);
-    // Store auction data for when start stream is pressed
-    // In a real app we'd pass this to the StartLiveModal or store in state
   };
 
   const handleStartStream = async (streamConfig: Streamer) => {
@@ -772,14 +774,19 @@ const App: React.FC = () => {
         const roomId = crypto.randomUUID();
 
         // Construct Final Stream Object
+        const isAuction = liveType === 'auction';
+        const auctionEndTime = isAuction ? Date.now() + (auctionDurationMs || 300000) : undefined;
+
         const myStream: Streamer = {
           ...streamConfig,
           id: roomId,
           name: userProfile.username,
           coverImage: streamConfig.coverImage || userProfile.coverImage,
           products: liveSelectedProducts.length > 0 ? liveSelectedProducts : myProducts, // Use selected products if available
-          // Add auction data if needed
-          // Add auction data if needed
+          isAuction: isAuction,
+          auctionEndTime: auctionEndTime,
+          auctionStartingPrice: isAuction ? auctionStartingPrice : undefined,
+          currentBid: isAuction ? auctionStartingPrice : 0,
           hostId: session?.user?.id, // Explicitly enforce session ID
         };
 
@@ -802,7 +809,10 @@ const App: React.FC = () => {
               video_url: '', // Empty string instead of null if column is non-nullable text
               youtube_id: '',
               viewer_count: 0,
-              is_auction: false, // Default for now
+              is_auction: isAuction,
+              auction_end_time: auctionEndTime ? auctionEndTime.toString() : null,
+              auction_starting_price: isAuction ? auctionStartingPrice : 0,
+              current_bid: isAuction ? auctionStartingPrice : 0,
               created_at: new Date().toISOString()
             }).select(); // Select to confirm return
 
