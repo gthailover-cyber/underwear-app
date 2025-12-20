@@ -1,7 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, Package, Truck, CheckCircle, Clock, X, User, ExternalLink, MapPin, Camera, Scan, Save, RefreshCw, StopCircle } from 'lucide-react';
-import { Html5QrcodeScanner } from 'html5-qrcode';
+import { ArrowLeft, Package, Truck, CheckCircle, Clock, X, User, ExternalLink, MapPin, Camera, Scan, Save, RefreshCw } from 'lucide-react';
 import { Language, OrderStatus } from '../types';
 import { TRANSLATIONS } from '../constants';
 import { supabase } from '../lib/supabaseClient';
@@ -178,49 +177,17 @@ const CustomerOrders: React.FC<CustomerOrdersProps> = ({ language, onBack }) => 
         }
     };
 
-    const startScanning = () => {
+    const handleSimulateScan = () => {
         setIsScanning(true);
-
-        // Use a short delay to ensure the container is rendered
+        // Simulate OCR processing after 2 seconds
         setTimeout(() => {
-            const scanner = new Html5QrcodeScanner(
-                'reader',
-                { fps: 10, qrbox: { width: 250, height: 150 } },
-                false
-            );
-
-            scanner.render(
-                (decodedText) => {
-                    setTrackingNumber(decodedText);
-                    setIsScanning(false);
-                    if (selectedStatus === 'pending') setSelectedStatus('shipping');
-                    scanner.clear();
-                    alert(language === 'th' ? `สแกนสำเร็จ!: ${decodedText}` : `Scan successful!: ${decodedText}`);
-                },
-                (error) => {
-                    // console.warn(error);
-                }
-            );
-
-            // Store scanner in window to clear it if Modal closes
-            (window as any).currentScanner = scanner;
-        }, 100);
+            const mockTracking = 'TH' + Math.floor(Math.random() * 1000000000).toString();
+            setTrackingNumber(mockTracking);
+            setIsScanning(false);
+            if (selectedStatus === 'pending') setSelectedStatus('shipping');
+            alert(language === 'th' ? `สแกนสำเร็จ! หมายเลขติดตาม: ${mockTracking}` : `Scan complete! Tracking No: ${mockTracking}`);
+        }, 2000);
     };
-
-    const stopScanning = () => {
-        if ((window as any).currentScanner) {
-            (window as any).currentScanner.clear();
-            (window as any).currentScanner = null;
-        }
-        setIsScanning(false);
-    };
-
-    // Auto-stop scanner if modal is closed
-    useEffect(() => {
-        if (!selectedItem && isScanning) {
-            stopScanning();
-        }
-    }, [selectedItem]);
 
     const filteredItems = activeTab === 'all'
         ? orderItems
@@ -470,22 +437,14 @@ const CustomerOrders: React.FC<CustomerOrdersProps> = ({ language, onBack }) => 
                                                 <Truck size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-600" />
                                             </div>
                                             <button
-                                                onClick={isScanning ? stopScanning : startScanning}
-                                                className={`${isScanning ? 'bg-red-600' : 'bg-yellow-600'} hover:opacity-90 text-white px-3 rounded-xl flex items-center justify-center transition-all active:scale-95`}
-                                                title={isScanning ? "Stop Scanner" : "Scan Receipt"}
+                                                onClick={handleSimulateScan}
+                                                disabled={isScanning}
+                                                className="bg-yellow-600 hover:bg-yellow-500 disabled:opacity-50 text-black px-3 rounded-xl flex items-center justify-center transition-all active:scale-95"
+                                                title="Scan Receipt"
                                             >
-                                                {isScanning ? <StopCircle size={18} /> : <Scan size={18} className="text-black" />}
+                                                {isScanning ? <RefreshCw size={18} className="animate-spin" /> : <Scan size={18} />}
                                             </button>
                                         </div>
-
-                                        {isScanning && (
-                                            <div className="mt-4 rounded-2xl overflow-hidden border-2 border-yellow-600/50 bg-black">
-                                                <div id="reader" className="w-full"></div>
-                                                <p className="text-[10px] text-center p-2 text-yellow-500 font-bold bg-yellow-950/20">
-                                                    {language === 'th' ? 'วางบาร์โค้ดให้อยู่ในกรอบ' : 'Position barcode inside the frame'}
-                                                </p>
-                                            </div>
-                                        )}
                                         <p className="text-[10px] text-gray-600 italic">Tip: Use Scan button to automatically get tracking number from receipt</p>
                                     </div>
                                 </div>
