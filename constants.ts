@@ -292,6 +292,7 @@ export const TRANSLATIONS = {
     trackingNumber: 'Tracking Number',
     copy: 'Copy',
     copied: 'Copied',
+    likedYourStory: 'liked your story!'
   },
   th: {
     // Auth
@@ -563,6 +564,7 @@ export const TRANSLATIONS = {
     trackingNumber: 'เลขพัสดุ',
     copy: 'คัดลอก',
     copied: 'คัดลอกแล้ว',
+    likedYourStory: 'ถูกใจสตอรี่ของคุณ!'
   }
 };
 

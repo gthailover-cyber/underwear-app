@@ -28,11 +28,11 @@ BEGIN
 
         -- Define content based on status
         IF NEW.status = 'shipping' THEN
-            notification_content := 'Your order for "' || first_product_name || '" has been shipped! Tracking: ' || COALESCE(NEW.tracking_number, 'Pending');
+            notification_content := 'สินค้า "' || first_product_name || '" ของคุณกำลังเดินทาง! เลขพัสดุ: ' || COALESCE(NEW.tracking_number, 'กำลังรออัปเดต');
         ELSIF NEW.status = 'delivered' THEN
-            notification_content := 'Your order for "' || first_product_name || '" has been delivered. Enjoy!';
+            notification_content := 'ผู้ขายได้จัดส่งสินค้า "' || first_product_name || '" ให้คุณแล้ว! กรุณารอรับสินค้า';
         ELSIF NEW.status = 'cancelled' THEN
-            notification_content := 'Your order for "' || first_product_name || '" has been cancelled.';
+            notification_content := 'คำสั่งซื้อสินค้า "' || first_product_name || '" ของคุณถูกยกเลิก';
         ELSE
             RETURN NEW; -- No notification for pending/other
         END IF;

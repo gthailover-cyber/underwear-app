@@ -193,7 +193,7 @@ const Stories: React.FC<StoriesProps> = ({ userProfile, language }) => {
                         user_id: ownerId,
                         actor_id: userProfile.id,
                         type: 'like',
-                        content: `${userProfile.username} liked your story!`,
+                        content: `${userProfile.username} ${t.likedYourStory}`,
                         image_url: story.media_url,
                         is_read: false
                     });
