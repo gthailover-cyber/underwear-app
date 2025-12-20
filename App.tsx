@@ -32,6 +32,7 @@ import MyOrders from './components/MyOrders';
 import ModelApplicationModal from './components/ModelApplicationModal';
 import StartLiveModal from './components/StartLiveModal';
 import UpdatePasswordModal from './components/UpdatePasswordModal';
+import CustomerOrders from './components/CustomerOrders';
 import { TRANSLATIONS, MOCK_USER_PROFILE, DEFAULT_IMAGES } from './constants';
 import { Streamer, Language, CartItem, UserProfile, MessagePreview, Product, Person, ChatRoom, ReceivedGift, AppNotification } from './types';
 const HEARTBEAT_INTERVAL = 60 * 1000; // 1 minute
@@ -53,7 +54,7 @@ const App: React.FC = () => {
   const [currentStreamer, setCurrentStreamer] = useState<Streamer | null>(null);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [language, setLanguage] = useState<Language>('th');
-  const [activeTab, setActiveTab] = useState<'home' | 'discover' | 'cart' | 'people' | 'profile' | 'all_live' | 'messages' | 'my_products' | 'address' | 'payment' | 'my_orders' | 'organizer_tools' | 'my_rate' | 'my_schedule' | 'my_gifts'>('home');
+  const [activeTab, setActiveTab] = useState<'home' | 'discover' | 'cart' | 'people' | 'profile' | 'all_live' | 'messages' | 'my_products' | 'address' | 'payment' | 'my_orders' | 'organizer_tools' | 'my_rate' | 'my_schedule' | 'my_gifts' | 'customer_orders'>('home');
   const [returnTab, setReturnTab] = useState<string | null>(null); // For navigation history
   const [homeTab, setHomeTab] = useState<'live' | 'rooms' | 'models'>('live'); // New: Sub-tab for Home
   const [selectedChatUser, setSelectedChatUser] = useState<MessagePreview | null>(null);
@@ -1276,6 +1277,13 @@ const App: React.FC = () => {
             onBack={() => setActiveTab('home')}
           />
         );
+      case 'customer_orders':
+        return (
+          <CustomerOrders
+            language={language}
+            onBack={() => setActiveTab('home')}
+          />
+        );
       case 'organizer_tools':
         return (
           <OrganizerTools
@@ -1610,6 +1618,15 @@ const App: React.FC = () => {
                       <Box size={18} className="text-blue-500 group-hover:text-white" />
                     </div>
                     <span className="font-medium text-base text-gray-200 group-hover:text-white">{t.myProducts}</span>
+                  </div>
+                  <ChevronRight size={18} className="text-gray-600 group-hover:text-white" />
+                </button>
+                <button onClick={() => { setActiveTab('customer_orders'); setIsMenuOpen(false); }} className="w-full flex items-center justify-between px-6 py-3 hover:bg-white/5 transition-colors group">
+                  <div className="flex items-center gap-4">
+                    <div className="w-9 h-9 rounded-lg bg-blue-900/30 border border-blue-500/50 flex items-center justify-center group-hover:bg-blue-600 transition-colors">
+                      <ShoppingBag size={18} className="text-blue-500 group-hover:text-white" />
+                    </div>
+                    <span className="font-medium text-base text-gray-200 group-hover:text-white">{t.customerOrders}</span>
                   </div>
                   <ChevronRight size={18} className="text-gray-600 group-hover:text-white" />
                 </button>
