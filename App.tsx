@@ -348,6 +348,7 @@ const App: React.FC = () => {
     let profilesChannel: any = null;
     let heartbeatId: any = null;
     let uiRefreshId: any = null;
+    let roomsChannel: any = null;
 
     if (session?.user) {
       notificationsChannel = supabase
@@ -399,6 +400,29 @@ const App: React.FC = () => {
         )
         .subscribe();
 
+      // Listener for room updates (bids, viewer counts)
+      roomsChannel = supabase
+        .channel('public:rooms_updates')
+        .on(
+          'postgres_changes',
+          { event: 'UPDATE', schema: 'public', table: 'rooms' },
+          (payload) => {
+            console.log('Room update detected globally:', payload.new.id, payload.new.current_bid);
+            setStreamers(prev => prev.map(s =>
+              s.id === payload.new.id
+                ? {
+                  ...s,
+                  currentBid: payload.new.current_bid,
+                  topBidder: payload.new.top_bidder_name,
+                  viewerCount: payload.new.viewer_count || s.viewerCount,
+                  likes: payload.new.likes || s.likes
+                }
+                : s
+            ));
+          }
+        )
+        .subscribe();
+
       // Heartbeat for online status
       console.log('[Heartbeat] Starting for:', session.user.id);
       supabase.rpc('update_last_seen');
@@ -431,6 +455,9 @@ const App: React.FC = () => {
       }
       if (uiRefreshId) {
         clearInterval(uiRefreshId);
+      }
+      if (roomsChannel) {
+        supabase.removeChannel(roomsChannel);
       }
     };
   }, [session]);

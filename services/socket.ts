@@ -290,12 +290,28 @@ class SupabaseService {
 
     if (event === 'place_bid') {
       const bidData = { amount: data.amount, user: this.userProfile?.username || 'Me' };
+
+      // 1. Broadcast to others (Realtime feedback)
       this.channel?.send({
         type: 'broadcast',
         event: 'bid',
         payload: bidData
       });
       this.triggerEvent('bid_update', bidData);
+
+      // 2. Persist to DB (Persistence)
+      if (this.currentRoomId) {
+        supabase.from('rooms')
+          .update({
+            current_bid: data.amount,
+            top_bidder_name: bidData.user
+          })
+          .eq('id', this.currentRoomId)
+          .then(({ error }) => {
+            if (error) console.error("[Socket] Error updating bid in DB:", error);
+            else console.log("[Socket] Bid successfully saved to DB");
+          });
+      }
     }
   }
 
