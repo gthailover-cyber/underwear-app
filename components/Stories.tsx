@@ -156,16 +156,27 @@ const Stories: React.FC<StoriesProps> = ({ userProfile, language }) => {
                 <div className="flex flex-col items-center gap-1 shrink-0">
                     <div
                         onClick={() => fileInputRef.current?.click()}
-                        className="w-16 h-16 rounded-2xl bg-gray-900 border-2 border-dashed border-gray-700 flex flex-col items-center justify-center cursor-pointer hover:border-red-500 hover:bg-gray-800 transition-all group relative overflow-hidden"
+                        className="w-28 aspect-[9/16] rounded-xl bg-gray-900 border-2 border-dashed border-gray-700 flex flex-col items-center justify-center cursor-pointer hover:border-red-500 hover:bg-gray-800 transition-all group relative overflow-hidden shadow-lg"
                     >
                         {isUploading ? (
-                            <div className="w-6 h-6 border-2 border-red-600 border-t-transparent rounded-full animate-spin"></div>
+                            <div className="flex flex-col items-center gap-2">
+                                <div className="w-8 h-8 border-2 border-red-600 border-t-transparent rounded-full animate-spin"></div>
+                                <span className="text-[10px] text-gray-500 font-bold">Uploading...</span>
+                            </div>
                         ) : (
                             <>
-                                <div className="w-8 h-8 rounded-full bg-red-600/20 flex items-center justify-center text-red-500 group-hover:scale-110 transition-transform">
-                                    <Plus size={20} />
+                                <img
+                                    src={userProfile.avatar}
+                                    className="absolute inset-0 w-full h-full object-cover opacity-20 grayscale"
+                                    alt=""
+                                />
+                                <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent"></div>
+                                <div className="relative z-10 flex flex-col items-center">
+                                    <div className="w-10 h-10 rounded-full bg-red-600 flex items-center justify-center text-white shadow-lg group-hover:scale-110 transition-transform mb-2">
+                                        <Plus size={24} />
+                                    </div>
+                                    <span className="text-xs text-white font-bold">Add Story</span>
                                 </div>
-                                <span className="text-[10px] text-gray-400 mt-1 font-bold">Add Story</span>
                             </>
                         )}
                         <input
