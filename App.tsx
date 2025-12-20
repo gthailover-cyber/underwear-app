@@ -80,6 +80,7 @@ const App: React.FC = () => {
   const [selectionMode, setSelectionMode] = useState<'multiple' | 'single'>('multiple');
   const [auctionSelectedProduct, setAuctionSelectedProduct] = useState<Product | null>(null);
   const [liveSelectedProducts, setLiveSelectedProducts] = useState<Product[]>([]);
+  const [liveType, setLiveType] = useState<'selling' | 'auction' | null>(null);
 
   // Countdown State
   const [isCountdownActive, setIsCountdownActive] = useState(false);
@@ -715,6 +716,7 @@ const App: React.FC = () => {
   };
 
   const handleLiveTypeSelect = (type: 'selling' | 'auction') => {
+    setLiveType(type);
     setIsLiveSelectionOpen(false);
 
     if (type === 'selling') {
@@ -1943,11 +1945,15 @@ const App: React.FC = () => {
       <LiveProductSelectionModal
         isOpen={isProductSelectionOpen}
         onClose={() => setIsProductSelectionOpen(false)}
-        products={myProducts}
+        products={liveType === 'auction'
+          ? myProducts.filter(p => p.type === 'auction')
+          : myProducts.filter(p => p.type !== 'auction')
+        }
         onConfirm={handleProductSelectionConfirm}
         onAddProductRedirect={handleAddProductRedirect}
         language={language}
         selectionMode={selectionMode}
+        liveType={liveType}
       />
 
       <LiveAuctionSetupModal
