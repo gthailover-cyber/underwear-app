@@ -121,7 +121,8 @@ const LiveRoom: React.FC<LiveRoomProps> = ({
 
     // Auction State
     const [currentHighestBid, setCurrentHighestBid] = useState(streamer.currentBid || streamer.auctionStartingPrice || 0);
-    const [myBidAmount, setMyBidAmount] = useState((streamer.currentBid || streamer.auctionStartingPrice || 0) + 50);
+    const [highestBidderName, setHighestBidderName] = useState(streamer.topBidder || '');
+    const [myBidAmount, setMyBidAmount] = useState((streamer.currentBid || streamer.auctionStartingPrice || 0) + 1);
     const [auctionTimeLeft, setAuctionTimeLeft] = useState<string>('');
     const [showBidModal, setShowBidModal] = useState(false);
 
@@ -244,6 +245,7 @@ const LiveRoom: React.FC<LiveRoomProps> = ({
 
         const cleanupBids = socketService.onBidUpdate((data) => {
             setCurrentHighestBid(data.amount);
+            setHighestBidderName(data.user);
             // Also animate or show toast
             const newComment: Comment = {
                 id: Date.now().toString(),
@@ -273,6 +275,9 @@ const LiveRoom: React.FC<LiveRoomProps> = ({
                 }
                 if (typeof payload.new.current_bid === 'number') {
                     setCurrentHighestBid(prev => Math.max(prev, payload.new.current_bid));
+                }
+                if (payload.new.top_bidder_name !== undefined) {
+                    setHighestBidderName(payload.new.top_bidder_name);
                 }
             })
             .subscribe();
@@ -410,10 +415,10 @@ const LiveRoom: React.FC<LiveRoomProps> = ({
     };
 
     // Auction Handlers
-    const increaseBid = () => setMyBidAmount(prev => prev + 50);
+    const increaseBid = () => setMyBidAmount(prev => prev + 1);
     const decreaseBid = () => {
-        if (myBidAmount - 50 > currentHighestBid) {
-            setMyBidAmount(prev => prev - 50);
+        if (myBidAmount - 1 > currentHighestBid) {
+            setMyBidAmount(prev => prev - 1);
         }
     };
     const placeBid = () => {
@@ -1196,6 +1201,11 @@ const LiveRoom: React.FC<LiveRoomProps> = ({
                             <div className="text-center mb-6">
                                 <p className="text-gray-400 text-sm">Current Highest Bid</p>
                                 <p className="text-3xl font-bold text-green-500">฿{currentHighestBid.toLocaleString()}</p>
+                                {highestBidderName && (
+                                    <p className="text-xs text-blue-400 mt-1">
+                                        by <span className="font-bold">{highestBidderName}</span>
+                                    </p>
+                                )}
                             </div>
 
                             <div className="flex items-center gap-4 mb-6">
