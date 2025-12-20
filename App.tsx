@@ -873,15 +873,83 @@ const App: React.FC = () => {
     });
   };
 
-  const handleCheckout = () => {
+  const handleCheckout = async () => {
     const total = cartItems.reduce((acc, item) => acc + (item.price * item.quantity), 0);
 
-    if (walletBalance >= total) {
-      setWalletBalance(prev => prev - total);
-      setCartItems([]); // Clear Cart
-    } else {
+    if (walletBalance < total) {
       alert('Insufficient Balance. Please Top Up.');
       setIsWalletOpen(true);
+      return;
+    }
+
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        alert('Please login to checkout.');
+        return;
+      }
+
+      // 1. Fetch Default Address
+      const { data: addressData } = await supabase
+        .from('addresses')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('is_default', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (!addressData) {
+        alert(language === 'th' ? 'กรุณาเพิ่มที่อยู่จัดส่งก่อนสั่งซื้อ' : 'Please add a shipping address first.');
+        setActiveTab('address');
+        return;
+      }
+
+      const shippingAddress = `${addressData.name} ${addressData.phone}\n${addressData.address} ${addressData.province} ${addressData.postal_code}`;
+
+      // 2. Clear Cart & Deduct Balance UI (Fast response)
+      setWalletBalance(prev => prev - total);
+      const itemsToOrder = [...cartItems];
+      setCartItems([]);
+
+      // 3. Save Order to Supabase
+      const { data: orderData, error: orderError } = await supabase
+        .from('orders')
+        .insert({
+          buyer_id: user.id,
+          total_amount: total,
+          status: 'shipping',
+          shipping_address: shippingAddress
+        })
+        .select()
+        .single();
+
+      if (orderError) throw orderError;
+
+      if (orderData) {
+        // 4. Save Order Items
+        const itemsToInsert = itemsToOrder.map(item => ({
+          order_id: orderData.id,
+          product_id: item.id,
+          product_name: item.name,
+          product_image: item.image,
+          quantity: item.quantity,
+          price: item.price,
+          color: item.color,
+          size: item.size
+        }));
+
+        const { error: itemsError } = await supabase
+          .from('order_items')
+          .insert(itemsToInsert);
+
+        if (itemsError) throw itemsError;
+      }
+
+      alert(language === 'th' ? 'ชำระเงินสำเร็จ!' : 'Payment successful!');
+
+    } catch (err: any) {
+      console.error("Checkout Error:", err);
+      alert('Failed to process order. Please try again.');
     }
   };
 
