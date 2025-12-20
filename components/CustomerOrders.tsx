@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, Package, Truck, CheckCircle, Clock, X, User, ExternalLink, MapPin } from 'lucide-react';
+import { ArrowLeft, Package, Truck, CheckCircle, Clock, X, User, ExternalLink, MapPin, Camera, Scan, Save, RefreshCw } from 'lucide-react';
 import { Language, OrderStatus } from '../types';
 import { TRANSLATIONS } from '../constants';
 import { supabase } from '../lib/supabaseClient';
@@ -37,18 +37,21 @@ const CustomerOrders: React.FC<CustomerOrdersProps> = ({ language, onBack }) => 
     const [orderItems, setOrderItems] = useState<CustomerOrderItem[]>([]);
     const [loading, setLoading] = useState(true);
     const [selectedItem, setSelectedItem] = useState<CustomerOrderItem | null>(null);
+    const [isUpdating, setIsUpdating] = useState(false);
+    const [isScanning, setIsScanning] = useState(false);
+    const [trackingNumber, setTrackingNumber] = useState('');
+    const [selectedStatus, setSelectedStatus] = useState<OrderStatus>('pending');
 
-    useEffect(() => {
-        const fetchCustomerOrders = async () => {
-            setLoading(true);
-            const { data: { user } } = await supabase.auth.getUser();
+    const fetchCustomerOrders = async () => {
+        setLoading(true);
+        const { data: { user } } = await supabase.auth.getUser();
 
-            if (user) {
-                // Fetch order items for products sold by this user
-                // We join with orders to get status and buyer info
-                const { data, error } = await supabase
-                    .from('order_items')
-                    .select(`
+        if (user) {
+            // Fetch order items for products sold by this user
+            // We join with orders to get status and buyer info
+            const { data, error } = await supabase
+                .from('order_items')
+                .select(`
                         id,
                         product_name,
                         product_image,
@@ -75,39 +78,85 @@ const CustomerOrders: React.FC<CustomerOrdersProps> = ({ language, onBack }) => 
                             seller_id
                         )
                     `)
-                    .eq('products.seller_id', user.id)
-                    // @ts-ignore
-                    .order('created_at', { foreignTable: 'orders', ascending: false });
+                .eq('products.seller_id', user.id)
+                // @ts-ignore
+                .order('created_at', { foreignTable: 'orders', ascending: false });
 
-                if (error) {
-                    console.error('Error fetching customer orders:', error);
-                } else if (data) {
-                    const mappedItems: CustomerOrderItem[] = data.map((item: any) => ({
-                        id: item.id,
-                        product_name: item.product_name || 'Unknown Product',
-                        product_image: item.product_image || 'https://via.placeholder.com/150',
-                        price: item.price,
-                        quantity: item.quantity,
-                        color: item.color,
-                        size: item.size,
-                        order: {
-                            id: item.orders.id,
-                            status: item.orders.status,
-                            created_at: item.orders.created_at,
-                            tracking_number: item.orders.tracking_number,
-                            buyer: item.orders.profiles || null,
-                            shipping_address: item.orders.shipping_address
-                        }
-                    }));
+            if (error) {
+                console.error('Error fetching customer orders:', error);
+            } else if (data) {
+                const mappedItems: CustomerOrderItem[] = data.map((item: any) => ({
+                    id: item.id,
+                    product_name: item.product_name || 'Unknown Product',
+                    product_image: item.product_image || 'https://via.placeholder.com/150',
+                    price: item.price,
+                    quantity: item.quantity,
+                    color: item.color,
+                    size: item.size,
+                    order: {
+                        id: item.orders.id,
+                        status: item.orders.status,
+                        created_at: item.orders.created_at,
+                        tracking_number: item.orders.tracking_number,
+                        buyer: item.orders.profiles || null,
+                        shipping_address: item.orders.shipping_address
+                    }
+                }));
 
-                    setOrderItems(mappedItems);
-                }
+                setOrderItems(mappedItems);
             }
-            setLoading(false);
-        };
+        }
+        setLoading(false);
+    };
 
+    useEffect(() => {
         fetchCustomerOrders();
     }, []);
+
+    useEffect(() => {
+        if (selectedItem) {
+            setTrackingNumber(selectedItem.order.tracking_number || '');
+            setSelectedStatus(selectedItem.order.status);
+        }
+    }, [selectedItem]);
+
+    const handleUpdateOrder = async () => {
+        if (!selectedItem) return;
+        setIsUpdating(true);
+
+        try {
+            const { error } = await supabase
+                .from('orders')
+                .update({
+                    status: selectedStatus,
+                    tracking_number: trackingNumber
+                })
+                .eq('id', selectedItem.order.id);
+
+            if (error) throw error;
+
+            alert(language === 'th' ? 'อัปเดตสถานะสำเร็จ!' : 'Status updated successfully!');
+            await fetchCustomerOrders();
+            setSelectedItem(null);
+        } catch (err) {
+            console.error('Update Error:', err);
+            alert('Failed to update order.');
+        } finally {
+            setIsUpdating(false);
+        }
+    };
+
+    const handleSimulateScan = () => {
+        setIsScanning(true);
+        // Simulate OCR processing after 2 seconds
+        setTimeout(() => {
+            const mockTracking = 'TH' + Math.floor(Math.random() * 1000000000).toString();
+            setTrackingNumber(mockTracking);
+            setIsScanning(false);
+            if (selectedStatus === 'pending') setSelectedStatus('shipping');
+            alert(language === 'th' ? `สแกนสำเร็จ! หมายเลขติดตาม: ${mockTracking}` : `Scan complete! Tracking No: ${mockTracking}`);
+        }, 2000);
+    };
 
     const filteredItems = activeTab === 'all'
         ? orderItems
@@ -321,14 +370,69 @@ const CustomerOrders: React.FC<CustomerOrdersProps> = ({ language, onBack }) => 
                                         </div>
                                     </div>
                                 )}
+
+                                <div className="h-px bg-gray-800 my-2"></div>
+
+                                {/* Order Management Section */}
+                                <div className="space-y-4">
+                                    <h5 className="text-gray-400 text-[10px] font-bold uppercase tracking-widest">Manage Order Status</h5>
+
+                                    <div className="grid grid-cols-2 gap-2">
+                                        {(['pending', 'shipping', 'delivered', 'cancelled'] as OrderStatus[]).map(status => (
+                                            <button
+                                                key={status}
+                                                onClick={() => setSelectedStatus(status)}
+                                                className={`py-2 px-3 rounded-xl text-xs font-bold border transition-all ${selectedStatus === status
+                                                        ? 'bg-blue-600 border-blue-500 text-white'
+                                                        : 'bg-gray-800 border-gray-700 text-gray-400 hover:border-gray-600'
+                                                    }`}
+                                            >
+                                                {getStatusLabel(status)}
+                                            </button>
+                                        ))}
+                                    </div>
+
+                                    <div className="space-y-2">
+                                        <label className="text-xs text-gray-500">Tracking Number</label>
+                                        <div className="flex gap-2">
+                                            <div className="flex-1 relative">
+                                                <input
+                                                    type="text"
+                                                    value={trackingNumber}
+                                                    onChange={(e) => setTrackingNumber(e.target.value)}
+                                                    placeholder="Enter tracking number"
+                                                    className="w-full bg-black border border-gray-700 rounded-xl py-2.5 px-3 text-white text-sm focus:border-blue-500 focus:outline-none transition-all"
+                                                />
+                                                <Truck size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-600" />
+                                            </div>
+                                            <button
+                                                onClick={handleSimulateScan}
+                                                disabled={isScanning}
+                                                className="bg-yellow-600 hover:bg-yellow-500 disabled:opacity-50 text-black px-3 rounded-xl flex items-center justify-center transition-all active:scale-95"
+                                                title="Scan Receipt"
+                                            >
+                                                {isScanning ? <RefreshCw size={18} className="animate-spin" /> : <Scan size={18} />}
+                                            </button>
+                                        </div>
+                                        <p className="text-[10px] text-gray-600 italic">Tip: Use Scan button to automatically get tracking number from receipt</p>
+                                    </div>
+                                </div>
                             </div>
                         </div>
-                        <div className="p-6 border-t border-gray-800 bg-black/30">
+                        <div className="p-6 border-t border-gray-800 bg-black/30 flex gap-3">
                             <button
                                 onClick={() => setSelectedItem(null)}
-                                className="w-full py-4 bg-gray-800 hover:bg-gray-700 text-white font-bold rounded-2xl transition-all"
+                                className="flex-1 py-4 bg-gray-800 hover:bg-gray-700 text-white font-bold rounded-2xl transition-all"
                             >
-                                Close
+                                {language === 'th' ? 'ปิด' : 'Close'}
+                            </button>
+                            <button
+                                onClick={handleUpdateOrder}
+                                disabled={isUpdating}
+                                className="flex-1 py-4 bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white font-bold rounded-2xl transition-all flex items-center justify-center gap-2 shadow-lg shadow-blue-900/20"
+                            >
+                                {isUpdating ? <RefreshCw size={18} className="animate-spin" /> : <Save size={18} />}
+                                {language === 'th' ? 'บันทึก' : 'Save Changes'}
                             </button>
                         </div>
                     </div>
