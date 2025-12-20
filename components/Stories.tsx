@@ -31,6 +31,8 @@ const Stories: React.FC<StoriesProps> = ({ userProfile, language }) => {
     const [isViewing, setIsViewing] = useState(false);
     const [currentStoryIndex, setCurrentStoryIndex] = useState(0);
     const [isUploading, setIsUploading] = useState(false);
+    const [pendingStory, setPendingStory] = useState<{ file: File; preview: string; type: 'image' | 'video' } | null>(null);
+    const [caption, setCaption] = useState('');
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     // Group stories by user
@@ -81,12 +83,27 @@ const Stories: React.FC<StoriesProps> = ({ userProfile, language }) => {
         };
     }, []);
 
-    const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (!file) return;
 
+        const reader = new FileReader();
+        reader.onload = () => {
+            setPendingStory({
+                file,
+                preview: reader.result as string,
+                type: file.type.startsWith('video') ? 'video' : 'image'
+            });
+        };
+        reader.readAsDataURL(file);
+    };
+
+    const handlePostStory = async () => {
+        if (!pendingStory) return;
+
         setIsUploading(true);
         try {
+            const file = pendingStory.file;
             const fileExt = file.name.split('.').pop();
             const fileName = `${userProfile.id}/${Math.random()}.${fileExt}`;
             const filePath = `stories/${fileName}`;
@@ -106,13 +123,16 @@ const Stories: React.FC<StoriesProps> = ({ userProfile, language }) => {
                 .insert({
                     user_id: userProfile.id,
                     media_url: publicUrl,
-                    media_type: file.type.startsWith('video') ? 'video' : 'image',
+                    media_type: pendingStory.type,
+                    content: caption,
                     expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()
                 });
 
             if (insertError) throw insertError;
 
             alert(language === 'th' ? 'สร้างสตอรี่สำเร็จ!' : 'Story posted successfully!');
+            setPendingStory(null);
+            setCaption('');
             fetchStories();
         } catch (err) {
             console.error('Error uploading story:', err);
@@ -273,7 +293,7 @@ const Stories: React.FC<StoriesProps> = ({ userProfile, language }) => {
                         </div>
 
                         {/* Content */}
-                        <div className="w-full h-full flex items-center justify-center bg-black">
+                        <div className="w-full h-full flex flex-col items-center justify-center bg-black relative">
                             {viewingStories[currentStoryIndex].media_type === 'video' ? (
                                 <video
                                     src={viewingStories[currentStoryIndex].media_url}
@@ -288,6 +308,15 @@ const Stories: React.FC<StoriesProps> = ({ userProfile, language }) => {
                                     alt=""
                                 />
                             )}
+
+                            {/* Caption Overlay */}
+                            {viewingStories[currentStoryIndex].content && (
+                                <div className="absolute bottom-20 left-4 right-4 z-[10003] text-center">
+                                    <p className="inline-block px-4 py-2 bg-black/50 backdrop-blur-md rounded-xl text-white font-bold shadow-lg">
+                                        {viewingStories[currentStoryIndex].content}
+                                    </p>
+                                </div>
+                            )}
                         </div>
 
                         {/* Navigation Areas */}
@@ -299,6 +328,54 @@ const Stories: React.FC<StoriesProps> = ({ userProfile, language }) => {
                                 setIsViewing(false);
                             }
                         }}></div>
+                    </div>
+                </div>,
+                document.body
+            )}
+            {/* Create Story Modal (Portal to Body) */}
+            {pendingStory && createPortal(
+                <div className="fixed inset-0 z-[9999] bg-black/95 flex flex-col items-center justify-center p-4 animate-fade-in">
+                    <div className="relative w-full max-w-md aspect-[9/16] bg-gray-950 rounded-3xl overflow-hidden shadow-2xl border border-gray-800 flex flex-col">
+                        {/* Preview */}
+                        <div className="flex-1 bg-black relative">
+                            {pendingStory.type === 'video' ? (
+                                <video src={pendingStory.preview} autoPlay muted loop className="w-full h-full object-contain" />
+                            ) : (
+                                <img src={pendingStory.preview} className="w-full h-full object-contain" alt="" />
+                            )}
+
+                            <button onClick={() => setPendingStory(null)} className="absolute top-4 right-4 w-10 h-10 rounded-full bg-black/40 backdrop-blur-md flex items-center justify-center text-white hover:bg-black/60 transition-colors">
+                                <X size={20} />
+                            </button>
+                        </div>
+
+                        {/* Caption Input Field */}
+                        <div className="p-4 bg-gray-900/80 backdrop-blur-md border-t border-gray-800">
+                            <label className="text-xs font-bold text-gray-500 uppercase mb-2 block">Story Caption</label>
+                            <textarea
+                                value={caption}
+                                onChange={(e) => setCaption(e.target.value)}
+                                placeholder="Write something about your story..."
+                                className="w-full bg-black/40 border border-gray-700 rounded-2xl p-4 text-white placeholder-gray-600 focus:outline-none focus:border-red-600 transition-colors resize-none h-24 mb-4"
+                            />
+                            <button
+                                onClick={handlePostStory}
+                                disabled={isUploading}
+                                className="w-full py-4 bg-red-600 hover:bg-red-700 active:scale-95 disabled:opacity-50 transition-all rounded-2xl text-white font-bold flex items-center justify-center gap-2 shadow-lg shadow-red-900/20"
+                            >
+                                {isUploading ? (
+                                    <>
+                                        <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                                        <span>Posting...</span>
+                                    </>
+                                ) : (
+                                    <>
+                                        <Camera size={20} />
+                                        <span>Post Story</span>
+                                    </>
+                                )}
+                            </button>
+                        </div>
                     </div>
                 </div>,
                 document.body
