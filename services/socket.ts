@@ -253,7 +253,9 @@ class SupabaseService {
       });
 
       if (error) {
-        console.error("Error sending message:", error);
+        console.error("[Socket] Error inserting message to DB:", error.message, error.details);
+      } else {
+        console.log("[Socket] Message successfully saved to DB");
       }
     }
 

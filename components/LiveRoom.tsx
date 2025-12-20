@@ -195,16 +195,22 @@ const LiveRoom: React.FC<LiveRoomProps> = ({
     }, [isHost, streamer.id]);
 
     useEffect(() => {
+        console.log(`[Socket] Connecting to room: ${streamer.id} as ${isHost ? 'Host' : 'Viewer'}`);
+
         if (currentUser) {
             socketService.updateUser(currentUser);
         }
+
+        // Ensure we join the room properly
         socketService.joinRoom(streamer.id, streamer.hostId);
 
         const cleanup = socketService.onComment((comment) => {
+            console.log('[Socket] New comment received:', comment);
             setComments(prev => [...prev, comment]);
         });
 
         const cleanupHearts = socketService.on('new_heart', () => {
+            console.log('[Socket] New heart received');
             addFloatingHeart();
         });
 
