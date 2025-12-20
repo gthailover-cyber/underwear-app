@@ -1,5 +1,5 @@
-
 import React, { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { Plus, X, ChevronLeft, ChevronRight, Camera, Clock, Eye } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
 import { UserProfile, Language } from '../types';
@@ -231,12 +231,12 @@ const Stories: React.FC<StoriesProps> = ({ userProfile, language }) => {
                 )}
             </div>
 
-            {/* Story Viewer Overlay */}
-            {isViewing && viewingStories.length > 0 && (
-                <div className="fixed inset-0 z-[100] bg-black flex items-center justify-center">
-                    <div className="relative w-full max-w-lg h-full bg-black overflow-hidden">
+            {/* Story Viewer Overlay (Portal to Body) */}
+            {isViewing && viewingStories.length > 0 && createPortal(
+                <div className="fixed inset-0 z-[9999] bg-black flex items-center justify-center animate-fade-in">
+                    <div className="relative w-full h-full bg-black overflow-hidden flex flex-col">
                         {/* Progress Bars */}
-                        <div className="absolute top-4 left-4 right-4 z-20 flex gap-1">
+                        <div className="absolute top-4 left-4 right-4 z-[10001] flex gap-1">
                             {viewingStories.map((_, idx) => (
                                 <div key={idx} className="flex-1 h-1 bg-gray-800 rounded-full overflow-hidden">
                                     <div
@@ -248,7 +248,7 @@ const Stories: React.FC<StoriesProps> = ({ userProfile, language }) => {
                         </div>
 
                         {/* Header */}
-                        <div className="absolute top-8 left-4 right-4 z-20 flex justify-between items-center bg-gradient-to-b from-black/60 to-transparent p-2 rounded-xl">
+                        <div className="absolute top-8 left-4 right-4 z-[10001] flex justify-between items-center bg-gradient-to-b from-black/60 to-transparent p-2 rounded-xl">
                             <div className="flex items-center gap-3">
                                 <img
                                     src={viewingStories[currentStoryIndex].profiles.avatar}
@@ -273,7 +273,7 @@ const Stories: React.FC<StoriesProps> = ({ userProfile, language }) => {
                         </div>
 
                         {/* Content */}
-                        <div className="w-full h-full flex items-center justify-center">
+                        <div className="w-full h-full flex items-center justify-center bg-black">
                             {viewingStories[currentStoryIndex].media_type === 'video' ? (
                                 <video
                                     src={viewingStories[currentStoryIndex].media_url}
@@ -291,8 +291,8 @@ const Stories: React.FC<StoriesProps> = ({ userProfile, language }) => {
                         </div>
 
                         {/* Navigation Areas */}
-                        <div className="absolute inset-y-0 left-0 w-1/3 z-30" onClick={() => currentStoryIndex > 0 && setCurrentStoryIndex(prev => prev - 1)}></div>
-                        <div className="absolute inset-y-0 right-0 w-2/3 z-30" onClick={() => {
+                        <div className="absolute inset-y-0 left-0 w-1/3 z-[10002]" onClick={() => currentStoryIndex > 0 && setCurrentStoryIndex(prev => prev - 1)}></div>
+                        <div className="absolute inset-y-0 right-0 w-2/3 z-[10002]" onClick={() => {
                             if (currentStoryIndex < viewingStories.length - 1) {
                                 setCurrentStoryIndex(prev => prev + 1);
                             } else {
@@ -300,7 +300,8 @@ const Stories: React.FC<StoriesProps> = ({ userProfile, language }) => {
                             }
                         }}></div>
                     </div>
-                </div>
+                </div>,
+                document.body
             )}
         </div>
     );
