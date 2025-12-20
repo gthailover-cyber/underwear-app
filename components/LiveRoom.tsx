@@ -850,53 +850,49 @@ const LiveRoom: React.FC<LiveRoomProps> = ({
 
                 <div className="absolute bottom-0 left-0 right-0 p-4 pb-safe-bottom z-30 bg-gradient-to-t from-black/90 via-black/40 to-transparent">
 
-                    {/* Integrated Auction Bar (Floating above chat) */}
+                    {/* Floating Auction Bid Box (Custom Position) */}
                     {streamer.isAuction && (
-                        <div className="mb-4 animate-slide-up">
-                            <div className="bg-white/10 backdrop-blur-2xl rounded-2xl p-3 border border-orange-500/30 shadow-xl flex items-center gap-4">
-                                {/* Small Product Preview */}
-                                <div className="relative hidden xs:block">
-                                    <img src={streamer.products[0]?.image} className="w-12 h-12 rounded-lg object-cover bg-gray-800 border border-white/10" alt="Auction Item" />
-                                    <div className="absolute -top-1 -right-1 bg-orange-600 rounded-full p-1 shadow-lg">
-                                        <Flame size={10} className="text-white fill-white" />
-                                    </div>
+                        <div className="absolute bottom-32 right-4 z-[100] animate-slide-up w-32">
+                            <div className="bg-black/60 backdrop-blur-2xl rounded-2xl p-3 border border-orange-500/40 shadow-2xl flex flex-col items-center gap-3 overflow-hidden">
+                                {/* Compact Timer & Item */}
+                                <div className="w-full flex justify-between items-center text-[10px] uppercase font-black tracking-widest text-orange-400">
+                                    <span>Bid</span>
+                                    {auctionTimeLeft && (
+                                        <div className="flex items-center gap-1 text-white">
+                                            <Clock size={10} />
+                                            <span className="font-athletic">{auctionTimeLeft}</span>
+                                        </div>
+                                    )}
                                 </div>
 
-                                {/* Bid Info Section */}
-                                <div className="flex-1 min-w-0">
-                                    <div className="flex items-center gap-2 mb-0.5">
-                                        <span className="text-[10px] font-black text-orange-400 uppercase tracking-widest whitespace-nowrap">Highest Bid</span>
-                                        {highestBidderName && (
-                                            <span className="text-[10px] text-blue-400 font-bold truncate">by {highestBidderName}</span>
-                                        )}
+                                {/* Price Display */}
+                                <div className="text-center">
+                                    <div className="text-2xl font-black text-white font-athletic leading-none mb-1">
+                                        ฿{(currentHighestBid || 0).toLocaleString()}
                                     </div>
-                                    <div className="flex items-baseline gap-2">
-                                        <span className="text-2xl font-black text-white font-athletic">฿{(currentHighestBid || 0).toLocaleString()}</span>
-                                        {auctionTimeLeft && (
-                                            <div className="flex items-center gap-1 text-gray-400">
-                                                <Clock size={12} />
-                                                <span className="text-[11px] font-bold font-athletic uppercase">{auctionTimeLeft}</span>
-                                            </div>
-                                        )}
-                                    </div>
+                                    {highestBidderName && (
+                                        <div className="text-[9px] text-gray-400 truncate w-full px-1">
+                                            by <span className="text-blue-400 font-bold">{highestBidderName}</span>
+                                        </div>
+                                    )}
                                 </div>
 
-                                {/* Bid Actions (Viewer Only) */}
+                                {/* Bid Controls (Viewer Only) */}
                                 {!isHost && (
-                                    <div className="flex items-center gap-2 bg-black/40 p-1.5 rounded-xl border border-white/5">
-                                        <div className="flex items-center gap-2 mr-2">
-                                            <button onClick={decreaseBid} className="w-8 h-8 rounded-lg bg-gray-800 flex items-center justify-center active:scale-90 transition-all">
-                                                <Minus size={14} className="text-white" />
+                                    <div className="w-full space-y-2">
+                                        <div className="flex items-center justify-between bg-black/40 rounded-lg p-1 border border-white/10">
+                                            <button onClick={decreaseBid} className="w-6 h-6 rounded-md bg-gray-800 flex items-center justify-center active:scale-90 transition-all">
+                                                <Minus size={12} className="text-white" />
                                             </button>
-                                            <span className="text-sm font-bold text-yellow-500 min-w-[50px] text-center font-athletic">฿{myBidAmount.toLocaleString()}</span>
-                                            <button onClick={increaseBid} className="w-8 h-8 rounded-lg bg-gray-800 flex items-center justify-center active:scale-90 transition-all">
-                                                <Plus size={14} className="text-white" />
+                                            <span className="text-xs font-bold text-yellow-500 font-athletic">฿{myBidAmount}</span>
+                                            <button onClick={increaseBid} className="w-6 h-6 rounded-md bg-gray-800 flex items-center justify-center active:scale-90 transition-all">
+                                                <Plus size={12} className="text-white" />
                                             </button>
                                         </div>
                                         <button
                                             onClick={placeBid}
                                             disabled={isInsufficientFunds || myBidAmount <= currentHighestBid}
-                                            className={`px-4 py-2 rounded-lg font-black text-[11px] uppercase tracking-wider transition-all shadow-lg ${isInsufficientFunds
+                                            className={`w-full py-2 rounded-xl font-black text-[10px] uppercase tracking-wider transition-all shadow-lg ${isInsufficientFunds
                                                 ? 'bg-gray-700 text-gray-400'
                                                 : myBidAmount <= currentHighestBid
                                                     ? 'bg-gray-800 text-gray-500 opacity-50'
@@ -907,6 +903,13 @@ const LiveRoom: React.FC<LiveRoomProps> = ({
                                         </button>
                                     </div>
                                 )}
+
+                                {/* Item Preview (Small) */}
+                                <div className="absolute -top-1 -left-1">
+                                    <div className="bg-orange-600 rounded-full p-1 shadow-lg">
+                                        <Flame size={8} className="text-white fill-white" />
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     )}
