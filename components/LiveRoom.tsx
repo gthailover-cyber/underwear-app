@@ -951,8 +951,8 @@ const LiveRoom: React.FC<LiveRoomProps> = ({
 
                     {/* Input & Action Buttons */}
                     {!isHost ? (
-                        <div className="flex items-center gap-3">
-                            <div className="flex-1 bg-black/40 backdrop-blur-md border border-white/20 rounded-full flex items-center px-2 py-1 focus-within:border-white/50 focus-within:bg-black/60 transition-all">
+                        <div className="flex items-center gap-3 w-full">
+                            <div className="flex-1 min-w-0 bg-black/40 backdrop-blur-md border border-white/20 rounded-full flex items-center px-2 py-1 focus-within:border-white/50 focus-within:bg-black/60 transition-all">
                                 <input
                                     type="text"
                                     value={newComment}
@@ -971,7 +971,7 @@ const LiveRoom: React.FC<LiveRoomProps> = ({
                             </div>
 
                             {/* Action Buttons Group */}
-                            <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-2 shrink-0">
                                 {!streamer.isAuction && (
                                     <button
                                         onClick={() => setShowProducts(true)}
