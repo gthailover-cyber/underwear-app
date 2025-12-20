@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { Plus, X, ChevronLeft, ChevronRight, Camera, Clock, Eye } from 'lucide-react';
+import { Plus, X, ChevronLeft, ChevronRight, Camera, Clock, Eye, Heart } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
 import { UserProfile, Language } from '../types';
 import { TRANSLATIONS } from '../constants';
@@ -17,6 +17,7 @@ interface Story {
         username: string;
         avatar: string;
     };
+    story_likes: { user_id: string }[];
 }
 
 interface StoriesProps {
@@ -54,7 +55,7 @@ const Stories: React.FC<StoriesProps> = ({ userProfile, language }) => {
         try {
             const { data, error } = await supabase
                 .from('stories')
-                .select('*, profiles:user_id(username, avatar)')
+                .select('*, profiles:user_id(username, avatar), story_likes(user_id)')
                 .gt('expires_at', new Date().toISOString())
                 .order('created_at', { ascending: false });
 
@@ -70,10 +71,13 @@ const Stories: React.FC<StoriesProps> = ({ userProfile, language }) => {
     useEffect(() => {
         fetchStories();
 
-        // Subscribe to new stories
+        // Subscribe to story changes
         const channel = supabase
-            .channel('public:stories')
-            .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'stories' }, () => {
+            .channel('public:stories_realtime')
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'stories' }, () => {
+                fetchStories();
+            })
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'story_likes' }, () => {
                 fetchStories();
             })
             .subscribe();
@@ -151,6 +155,44 @@ const Stories: React.FC<StoriesProps> = ({ userProfile, language }) => {
 
     const [viewingStories, setViewingStories] = useState<Story[]>([]);
     const progressTimer = useRef<any>(null);
+
+    const handleLike = async (storyId: string, ownerId: string) => {
+        if (!userProfile.id) return;
+
+        const story = viewingStories[currentStoryIndex];
+        const hasLiked = story.story_likes?.some(l => l.user_id === userProfile.id);
+
+        try {
+            if (hasLiked) {
+                await supabase
+                    .from('story_likes')
+                    .delete()
+                    .eq('story_id', storyId)
+                    .eq('user_id', userProfile.id);
+            } else {
+                const { error: likeError } = await supabase
+                    .from('story_likes')
+                    .insert({ story_id: storyId, user_id: userProfile.id });
+
+                if (likeError) throw likeError;
+
+                // Send Notification
+                if (ownerId !== userProfile.id) {
+                    await supabase.from('notifications').insert({
+                        user_id: ownerId,
+                        actor_id: userProfile.id,
+                        type: 'like',
+                        content: `${userProfile.username} liked your story!`,
+                        image_url: story.media_url,
+                        is_read: false
+                    });
+                }
+            }
+            fetchStories(); // Refresh to update heart icon immediately
+        } catch (err) {
+            console.error('Error toggling like:', err);
+        }
+    };
 
     useEffect(() => {
         if (isViewing && viewingStories.length > 0) {
@@ -317,6 +359,25 @@ const Stories: React.FC<StoriesProps> = ({ userProfile, language }) => {
                                     </p>
                                 </div>
                             )}
+
+                            {/* Like Button */}
+                            <div className="absolute bottom-8 right-4 z-[10003] flex flex-col items-center gap-1">
+                                <button
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleLike(viewingStories[currentStoryIndex].id, viewingStories[currentStoryIndex].user_id);
+                                    }}
+                                    className={`w-14 h-14 rounded-full flex items-center justify-center backdrop-blur-md transition-all active:scale-75 ${viewingStories[currentStoryIndex].story_likes?.some(l => l.user_id === userProfile.id)
+                                            ? 'bg-red-600 text-white shadow-lg shadow-red-600/40'
+                                            : 'bg-white/10 text-white hover:bg-white/20'
+                                        }`}
+                                >
+                                    <Heart size={28} fill={viewingStories[currentStoryIndex].story_likes?.some(l => l.user_id === userProfile.id) ? "currentColor" : "none"} />
+                                </button>
+                                <span className="text-white text-xs font-bold drop-shadow-md">
+                                    {viewingStories[currentStoryIndex].story_likes?.length || 0}
+                                </span>
+                            </div>
                         </div>
 
                         {/* Navigation Areas */}
