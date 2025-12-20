@@ -284,8 +284,8 @@ export const TRANSLATIONS = {
     status: {
       all: 'All',
       pending: 'To Pay',
-      shipping: 'To Ship',
-      delivered: 'Completed',
+      shipping: 'In Transit',
+      delivered: 'Shipped',
       cancelled: 'Cancelled'
     },
     trackingTitle: 'Delivery Status',
@@ -555,8 +555,8 @@ export const TRANSLATIONS = {
     status: {
       all: 'ทั้งหมด',
       pending: 'ที่ต้องชำระ',
-      shipping: 'ที่ต้องจัดส่ง',
-      delivered: 'สำเร็จ',
+      shipping: 'กำลังจัดส่ง',
+      delivered: 'จัดส่งสำเร็จ (สำเร็จ)',
       cancelled: 'ยกเลิก'
     },
     trackingTitle: 'สถานะการจัดส่ง',

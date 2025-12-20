@@ -198,7 +198,10 @@ const CustomerOrders: React.FC<CustomerOrdersProps> = ({ language, onBack }) => 
                             if (result) {
                                 setTrackingNumber(result.getText());
                                 stopScanning();
-                                if (selectedStatus === 'pending') setSelectedStatus('shipping');
+                                // According to user: Success (delivered) = Seller handed over to transport
+                                if (selectedStatus === 'pending' || selectedStatus === 'shipping') {
+                                    setSelectedStatus('delivered');
+                                }
                                 alert(language === 'th' ? `สแกนสำเร็จ: ${result.getText()}` : `Scan successful: ${result.getText()}`);
                             }
                         }
