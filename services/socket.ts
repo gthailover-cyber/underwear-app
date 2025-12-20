@@ -299,18 +299,16 @@ class SupabaseService {
       });
       this.triggerEvent('bid_update', bidData);
 
-      // 2. Persist to DB (Persistence)
+      // 2. Persist to DB (Persistence via RPC to bypass RLS)
       if (this.currentRoomId) {
-        supabase.from('rooms')
-          .update({
-            current_bid: data.amount,
-            top_bidder_name: bidData.user
-          })
-          .eq('id', this.currentRoomId)
-          .then(({ error }) => {
-            if (error) console.error("[Socket] Error updating bid in DB:", error);
-            else console.log("[Socket] Bid successfully saved to DB");
-          });
+        supabase.rpc('place_room_bid', {
+          room_id: this.currentRoomId,
+          bid_amount: data.amount,
+          bidder_name: bidData.user
+        }).then(({ error }) => {
+          if (error) console.error("[Socket] Error calling place_room_bid RPC:", error);
+          else console.log("[Socket] Bid successfully saved to DB via RPC");
+        });
       }
     }
   }
