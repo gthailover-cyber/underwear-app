@@ -522,6 +522,7 @@ const App: React.FC = () => {
         const safeCover = (data.cover_image && data.cover_image.trim() !== '') ? data.cover_image : DEFAULT_IMAGES.COVER;
 
         setUserProfile({
+          id: data.id,
           username: data.username || email?.split('@')[0] || 'User',
           avatar: safeAvatar,
           coverImage: safeCover,

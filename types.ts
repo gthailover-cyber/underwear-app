@@ -55,6 +55,7 @@ export interface Streamer {
 }
 
 export interface UserProfile {
+  id: string;
   username: string;
   avatar: string;
   coverImage: string;

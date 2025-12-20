@@ -567,6 +567,7 @@ export const TRANSLATIONS = {
 };
 
 export const MOCK_USER_PROFILE: UserProfile = {
+  id: '',
   username: 'New User',
   avatar: DEFAULT_IMAGES.AVATAR,
   coverImage: DEFAULT_IMAGES.COVER,

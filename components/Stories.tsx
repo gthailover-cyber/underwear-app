@@ -92,13 +92,13 @@ const Stories: React.FC<StoriesProps> = ({ userProfile, language }) => {
             const filePath = `stories/${fileName}`;
 
             const { error: uploadError } = await supabase.storage
-                .from('public')
+                .from('gunderwear-bucket')
                 .upload(filePath, file);
 
             if (uploadError) throw uploadError;
 
             const { data: { publicUrl } } = supabase.storage
-                .from('public')
+                .from('gunderwear-bucket')
                 .getPublicUrl(filePath);
 
             const { error: insertError } = await supabase
