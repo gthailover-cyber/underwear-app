@@ -253,15 +253,6 @@ const LiveRoom: React.FC<LiveRoomProps> = ({
             setCurrentHighestBid(data.amount);
             setHighestBidderName(data.user);
             setMyBidAmount(data.amount + 1); // Auto-update bid amount to be ready for next bid
-            // Also animate or show toast
-            const newComment: Comment = {
-                id: Date.now().toString(),
-                username: data.user,
-                message: `placed a bid of ฿${(data.amount || 0).toLocaleString()}`,
-                timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-                isSystem: true // Add styling for system messages
-            };
-            setComments(prev => [...prev, newComment]);
         });
 
         const cleanupViewers = socketService.on('viewer_update', (data: any) => {
