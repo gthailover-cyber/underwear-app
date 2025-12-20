@@ -167,10 +167,9 @@ class SupabaseService {
   }
 
   private handleNewMessage(newRecord: any) {
-    // Skip if it's my own message AND it's not a system message
-    if (this.userId && newRecord.sender_id === this.userId && newRecord.type !== 'system') {
-      return;
-    }
+    console.log('[SupabaseService] Realtime message received:', newRecord);
+    // We no longer skip self-messages because we want the DB to be the single source of truth
+    // and we removed optimistic updates earlier.
 
     const comment = {
       id: newRecord.id,

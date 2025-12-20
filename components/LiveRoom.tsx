@@ -228,7 +228,7 @@ const LiveRoom: React.FC<LiveRoomProps> = ({
         socketService.joinRoom(streamer.id, streamer.hostId);
 
         const cleanup = socketService.onComment((comment) => {
-            console.log('[Socket] New comment received:', comment);
+            console.log('[LiveRoom] New comment UI update:', comment);
             setComments(prev => [...prev, comment]);
         });
 
