@@ -182,6 +182,36 @@ const App: React.FC = () => {
     }
   };
 
+  const handleNotificationClick = async (notif: AppNotification) => {
+    setIsNotificationsOpen(false);
+
+    if (notif.type === 'follow' || notif.type === 'like' || notif.type === 'gift') {
+      try {
+        const { data: profile, error } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', notif.actor_id)
+          .single();
+
+        if (profile) {
+          const person: Person = {
+            id: profile.id,
+            username: profile.username,
+            avatar: profile.avatar || DEFAULT_IMAGES.AVATAR,
+            isOnline: isOnline(profile.last_seen_at),
+            followers: profile.followers || 0,
+            role: profile.role,
+            lastSeenAt: profile.last_seen_at
+          };
+          setSelectedPerson(person);
+          setActiveTab('people');
+        }
+      } catch (err) {
+        console.error('Error handling notification click:', err);
+      }
+    }
+  };
+
   const toggleFollow = async (followedId: string) => {
     if (!session?.user) {
       alert(t.pleaseLoginToFollow || "Please login to follow");
@@ -1990,6 +2020,7 @@ const App: React.FC = () => {
                 notifications.map((notif) => (
                   <div
                     key={notif.id}
+                    onClick={() => handleNotificationClick(notif)}
                     className={`flex gap-3 px-4 py-3 hover:bg-white/5 transition-colors cursor-pointer border-l-2 ${notif.is_read ? 'border-transparent' : 'border-red-600 bg-red-600/5'}`}
                   >
                     <div className="w-10 h-10 rounded-full bg-gray-800 overflow-hidden flex-shrink-0 border border-gray-700">

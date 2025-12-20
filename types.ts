@@ -164,7 +164,7 @@ export interface ReceivedGift {
   };
 }
 
-export type NotificationType = 'follow' | 'gift' | 'mention' | 'system';
+export type NotificationType = 'follow' | 'like' | 'gift' | 'mention' | 'system';
 
 export interface AppNotification {
   id: string;
