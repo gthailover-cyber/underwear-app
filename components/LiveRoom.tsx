@@ -389,14 +389,24 @@ const LiveRoom: React.FC<LiveRoomProps> = ({
         // Simulate getting hearts when commenting
         if (Math.random() > 0.7) {
             socketService.emit('send_heart', {});
-            supabase.rpc('increment_likes', { room_id: streamer.id });
+            console.log('[Comment-Like] Simulating like for room:', streamer.id);
+            supabase.rpc('increment_likes', { room_id: streamer.id }).then(({ error }) => {
+                if (error) console.error('[Comment-Like] Error:', error);
+                else console.log('[Comment-Like] Success');
+            });
         }
     };
 
-    const handleLike = () => {
+    const handleLike = async () => {
         socketService.emit('send_heart', {});
         // Persist to DB
-        supabase.rpc('increment_likes', { room_id: streamer.id });
+        console.log('[Like] Incrementing likes for room:', streamer.id);
+        const { error } = await supabase.rpc('increment_likes', { room_id: streamer.id });
+        if (error) {
+            console.error('[Like] Error incrementing likes:', error);
+        } else {
+            console.log('[Like] Success incrementing likes');
+        }
     };
 
     // Auction Handlers
