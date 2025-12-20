@@ -1107,6 +1107,7 @@ const App: React.FC = () => {
             language={language}
             onOpenStream={handleOpenStream}
             streamers={streamers}
+            userProfile={userProfile}
           />
         );
       case 'cart':
@@ -1421,25 +1422,22 @@ const App: React.FC = () => {
             </div>
 
             {/* Sub-tab Content */}
-            <div className={`pb-6 animate-fade-in ${homeTab === 'live' ? 'pt-0' : 'pt-12'}`}>
+            <div className="pt-12 pb-6 animate-fade-in">
               {homeTab === 'live' && (
-                <>
-                  <Stories userProfile={userProfile} language={language} />
-                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 px-2">
-                    {streamers.length > 0 ? streamers.map(streamer => (
-                      <StreamCard
-                        key={streamer.id}
-                        streamer={streamer}
-                        onPress={handleOpenStream}
-                      />
-                    )) : (
-                      <div className="col-span-full flex flex-col items-center justify-center py-20 text-gray-500">
-                        <Video size={48} className="mb-4 opacity-30" />
-                        <p>No live streams found</p>
-                      </div>
-                    )}
-                  </div>
-                </>
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 px-2">
+                  {streamers.length > 0 ? streamers.map(streamer => (
+                    <StreamCard
+                      key={streamer.id}
+                      streamer={streamer}
+                      onPress={handleOpenStream}
+                    />
+                  )) : (
+                    <div className="col-span-full flex flex-col items-center justify-center py-20 text-gray-500">
+                      <Video size={48} className="mb-4 opacity-30" />
+                      <p>No live streams found</p>
+                    </div>
+                  )}
+                </div>
               )}
 
               {homeTab === 'rooms' && (
