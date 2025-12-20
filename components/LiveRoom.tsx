@@ -252,6 +252,7 @@ const LiveRoom: React.FC<LiveRoomProps> = ({
         const cleanupBids = socketService.onBidUpdate((data) => {
             setCurrentHighestBid(data.amount);
             setHighestBidderName(data.user);
+            setMyBidAmount(data.amount + 1); // Auto-update bid amount to be ready for next bid
             // Also animate or show toast
             const newComment: Comment = {
                 id: Date.now().toString(),
@@ -281,6 +282,7 @@ const LiveRoom: React.FC<LiveRoomProps> = ({
                 }
                 if (typeof payload.new.current_bid === 'number') {
                     setCurrentHighestBid(prev => Math.max(prev, payload.new.current_bid));
+                    setMyBidAmount(prev => Math.max(prev, payload.new.current_bid + 1)); // Sync my bid amount from DB updates
                 }
                 if (payload.new.top_bidder_name !== undefined) {
                     setHighestBidderName(payload.new.top_bidder_name);
