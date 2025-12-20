@@ -3,6 +3,7 @@ import React from 'react';
 import { MapPin, Pencil, Grid, Settings, Crown, Star, User, Camera, Share2, MessageCircle, Heart, CheckCircle, BicepsFlexed, ChevronRight, Video, Package } from 'lucide-react';
 import { UserProfile, Language, UserRole } from '../types';
 import { TRANSLATIONS } from '../constants';
+import UserBadge from './UserBadge';
 
 interface ProfileProps {
    language: Language;
@@ -67,9 +68,7 @@ const Profile: React.FC<ProfileProps> = ({ language, user, onEdit, onEditGallery
 
                   {/* Verified/Role Badge */}
                   <div className="flex items-center gap-2 mb-2">
-                     <div className="bg-yellow-500 text-black text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-wider flex items-center gap-1">
-                        <BicepsFlexed size={10} className="text-black" strokeWidth={3} /> Official Model
-                     </div>
+                     <UserBadge role={user.role} size="sm" className="relative" />
                      <div className="bg-black/50 backdrop-blur text-white text-[10px] font-bold px-2 py-0.5 rounded border border-white/20 flex items-center gap-1">
                         <CheckCircle size={10} className="text-blue-400" /> Verified
                      </div>
@@ -236,17 +235,17 @@ const Profile: React.FC<ProfileProps> = ({ language, user, onEdit, onEditGallery
 
             {/* Centered Avatar with Gold Ring */}
             <div className="relative px-4 -mt-20 mb-4 flex flex-col items-center">
-               <div className="w-32 h-32 rounded-full p-1 bg-gradient-to-tr from-yellow-300 via-yellow-500 to-yellow-700 shadow-2xl shadow-yellow-900/50">
+               <div className="w-32 h-32 rounded-full p-1 bg-gradient-to-tr from-yellow-300 via-yellow-500 to-yellow-700 shadow-2xl shadow-yellow-900/50 relative">
                   <div className="w-full h-full rounded-full border-4 border-gray-900 bg-gray-800 overflow-hidden">
                      <img src={user.avatar} className="w-full h-full object-cover" alt="Profile" />
                   </div>
+                  <UserBadge role={user.role} size="md" className="absolute -top-1 -right-1" />
                </div>
 
                {/* Name & Badge */}
                <div className="text-center mt-3">
                   <h1 className="text-2xl font-bold text-white flex items-center gap-2 justify-center">
                      {user.username}
-                     <Crown size={20} className="text-yellow-500 fill-yellow-500" />
                   </h1>
                   <div className="inline-block mt-1 px-3 py-0.5 rounded-full bg-yellow-900/30 border border-yellow-600/50 text-yellow-500 text-[10px] font-bold uppercase tracking-wider shadow-sm">
                      {t.roles.organizer}
@@ -325,8 +324,9 @@ const Profile: React.FC<ProfileProps> = ({ language, user, onEdit, onEditGallery
 
          {/* Centered Avatar - Simple */}
          <div className="relative px-4 -mt-16 mb-4 flex flex-col items-center">
-            <div className="w-28 h-28 rounded-full border-4 border-black bg-gray-800 overflow-hidden shadow-xl">
+            <div className="w-28 h-28 rounded-full border-4 border-black bg-gray-800 overflow-hidden shadow-xl relative">
                <img src={user.avatar} className="w-full h-full object-cover" alt="Profile" />
+               <UserBadge role={user.role} size="md" className="absolute -top-1 -right-1" />
             </div>
 
             <h1 className="text-xl font-bold text-white mt-3">{user.username}</h1>

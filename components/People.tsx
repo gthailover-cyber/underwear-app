@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import { Users, Crown, User, BicepsFlexed, UserPlus, UserCheck } from 'lucide-react';
 import { Language, Person, UserRole, Streamer } from '../types';
 import { TRANSLATIONS } from '../constants';
+import UserBadge from './UserBadge';
 
 interface PeopleProps {
   language: Language;
@@ -65,8 +66,8 @@ const People: React.FC<PeopleProps> = ({ language, onUserClick, streamers, peopl
               key={f.id}
               onClick={() => setFilter(f.id)}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold transition-all whitespace-nowrap border ${filter === f.id
-                  ? 'bg-red-600 border-red-600 text-white'
-                  : 'bg-gray-900 border-gray-800 text-gray-400 hover:bg-gray-800 hover:text-white'
+                ? 'bg-red-600 border-red-600 text-white'
+                : 'bg-gray-900 border-gray-800 text-gray-400 hover:bg-gray-800 hover:text-white'
                 }`}
             >
               {f.icon} {f.label}
@@ -98,12 +99,11 @@ const People: React.FC<PeopleProps> = ({ language, onUserClick, streamers, peopl
                   {/* Gradient Overlay */}
                   <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-80"></div>
 
-                  {/* Role Badge (Top Right) */}
-                  {(person.role === 'model' || person.role === 'organizer') && (
-                    <div className={`absolute top-2 right-2 w-5 h-5 rounded-full flex items-center justify-center shadow-lg z-10 ${getRoleColor(person.role)}`}>
-                      {getRoleIcon(person.role)}
-                    </div>
-                  )}
+                  <UserBadge
+                    role={person.role}
+                    size="sm"
+                    className="absolute top-2 right-2"
+                  />
 
                   {/* LIVE Status or Online Dot (Bottom Right/Left of Image Area) */}
                   {isLive ? (
@@ -132,8 +132,8 @@ const People: React.FC<PeopleProps> = ({ language, onUserClick, streamers, peopl
                           onFollow(person.id);
                         }}
                         className={`ml-2 w-7 h-7 rounded-full flex items-center justify-center transition-all active:scale-90 ${followingIds.includes(person.id)
-                            ? 'bg-gray-800/80 text-white'
-                            : 'bg-red-600/90 text-white'
+                          ? 'bg-gray-800/80 text-white'
+                          : 'bg-red-600/90 text-white'
                           }`}
                       >
                         {followingIds.includes(person.id) ? <UserCheck size={14} /> : <UserPlus size={14} />}

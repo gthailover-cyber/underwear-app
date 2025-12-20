@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { Plus, X, ChevronLeft, ChevronRight, Camera, Clock, Eye, Heart } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
+import UserBadge from './UserBadge';
 import { UserProfile, Language } from '../types';
 import { TRANSLATIONS } from '../constants';
 
@@ -16,6 +17,7 @@ interface Story {
     profiles: {
         username: string;
         avatar: string;
+        role: any;
     };
     story_likes: { user_id: string }[];
 }
@@ -55,7 +57,7 @@ const Stories: React.FC<StoriesProps> = ({ userProfile, language }) => {
         try {
             const { data, error } = await supabase
                 .from('stories')
-                .select('*, profiles:user_id(username, avatar), story_likes(user_id)')
+                .select('*, profiles:user_id(username, avatar, role), story_likes(user_id)')
                 .gt('expires_at', new Date().toISOString())
                 .order('created_at', { ascending: false });
 
@@ -239,20 +241,22 @@ const Stories: React.FC<StoriesProps> = ({ userProfile, language }) => {
                                 <span className="text-[10px] text-gray-500 font-bold">Uploading...</span>
                             </div>
                         ) : (
-                            <>
+                            <div className="relative z-10 flex flex-col items-center justify-center w-full h-full">
                                 <img
                                     src={userProfile.avatar}
-                                    className="absolute inset-0 w-full h-full object-cover opacity-20 grayscale"
+                                    className="w-12 h-12 rounded-full border-2 border-red-600 object-cover mb-2"
                                     alt=""
                                 />
-                                <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent"></div>
-                                <div className="relative z-10 flex flex-col items-center">
-                                    <div className="w-10 h-10 rounded-full bg-red-600 flex items-center justify-center text-white shadow-lg group-hover:scale-110 transition-transform mb-2">
-                                        <Plus size={24} />
-                                    </div>
-                                    <span className="text-xs text-white font-bold">Add Story</span>
+                                <div className="absolute -bottom-1 -right-1 bg-red-600 rounded-full w-6 h-6 flex items-center justify-center border-2 border-black">
+                                    <Plus size={16} className="text-white" />
                                 </div>
-                            </>
+                                <UserBadge
+                                    role={userProfile.role}
+                                    size="sm"
+                                    className="absolute -top-1 -right-1"
+                                />
+                                <span className="text-xs text-white font-bold mt-2">Add Story</span>
+                            </div>
                         )}
                         <input
                             type="file"
@@ -281,11 +285,18 @@ const Stories: React.FC<StoriesProps> = ({ userProfile, language }) => {
 
                         {/* User Avatar Overlay (Top Left) */}
                         <div className="absolute top-2 left-2 p-[2px] rounded-xl bg-gradient-to-tr from-red-600 via-pink-600 to-orange-500 shadow-md">
-                            <img
-                                src={item.user?.avatar}
-                                className="w-8 h-8 rounded-lg border-2 border-black object-cover"
-                                alt={item.user?.username}
-                            />
+                            <div className="relative">
+                                <img
+                                    src={item.user?.avatar}
+                                    className="w-8 h-8 rounded-lg border-2 border-black object-cover"
+                                    alt={item.user?.username}
+                                />
+                                <UserBadge
+                                    role={item.user?.role}
+                                    size="sm"
+                                    className="absolute -top-1 -right-1"
+                                />
+                            </div>
                         </div>
 
                         {/* Username Overlay (Bottom) */}
@@ -325,11 +336,18 @@ const Stories: React.FC<StoriesProps> = ({ userProfile, language }) => {
                         {/* Header */}
                         <div className="absolute top-8 left-4 right-4 z-[10001] flex justify-between items-center bg-gradient-to-b from-black/60 to-transparent p-2 rounded-xl">
                             <div className="flex items-center gap-3">
-                                <img
-                                    src={viewingStories[currentStoryIndex].profiles.avatar}
-                                    className="w-10 h-10 rounded-full border border-white/20 object-cover"
-                                    alt=""
-                                />
+                                <div className="relative">
+                                    <img
+                                        src={viewingStories[currentStoryIndex].profiles.avatar}
+                                        className="w-10 h-10 rounded-full border border-white/20 object-cover"
+                                        alt=""
+                                    />
+                                    <UserBadge
+                                        role={viewingStories[currentStoryIndex].profiles.role}
+                                        size="sm"
+                                        className="absolute -top-1 -right-1"
+                                    />
+                                </div>
                                 <div>
                                     <h4 className="text-sm font-bold text-white shadow-sm">
                                         {viewingStories[currentStoryIndex].profiles.username}

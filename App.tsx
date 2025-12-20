@@ -21,6 +21,7 @@ import Profile from './components/Profile';
 import People from './components/People';
 import UserProfileDetail from './components/UserProfileDetail';
 import EditProfile from './components/EditProfile';
+import UserBadge from './components/UserBadge';
 import EditGallery from './components/EditGallery';
 import Messages from './components/Messages';
 import ChatDetail from './components/ChatDetail';
@@ -131,7 +132,7 @@ const App: React.FC = () => {
         .from('notifications')
         .select(`
           *,
-          actor:actor_id (username, avatar)
+          actor:actor_id (username, avatar, role)
         `)
         .eq('user_id', userId)
         .order('created_at', { ascending: false })
@@ -440,7 +441,7 @@ const App: React.FC = () => {
         .from('rooms')
         .select(`
             *,
-            profiles:host_id (username, avatar, last_seen_at)
+            profiles:host_id (username, avatar, last_seen_at, role)
           `)
         .or(`last_active_at.gt.${twoMinutesAgo},last_active_at.is.null`)
         .neq('host_id', userId)
@@ -476,6 +477,7 @@ const App: React.FC = () => {
           hostId: room.host_id, // Explicitly map host_id
           name: room.profiles?.username || 'Unknown Host',
           avatar: room.profiles?.avatar || DEFAULT_IMAGES.AVATAR,
+          role: room.profiles?.role, // Map role from DB
           title: room.title,
           viewerCount: room.viewer_count || 0,
           likes: room.likes || 0, // Map likes from DB
@@ -2023,12 +2025,19 @@ const App: React.FC = () => {
                     onClick={() => handleNotificationClick(notif)}
                     className={`flex gap-3 px-4 py-3 hover:bg-white/5 transition-colors cursor-pointer border-l-2 ${notif.is_read ? 'border-transparent' : 'border-red-600 bg-red-600/5'}`}
                   >
-                    <div className="w-10 h-10 rounded-full bg-gray-800 overflow-hidden flex-shrink-0 border border-gray-700">
+                    <div className="w-10 h-10 rounded-full bg-gray-800 overflow-hidden flex-shrink-0 border border-gray-700 relative">
                       <img
                         src={notif.image_url || notif.actor?.avatar || DEFAULT_IMAGES.AVATAR}
                         className="w-full h-full object-cover"
                         alt="Notification Image"
                       />
+                      {notif.actor?.role && (
+                        <UserBadge
+                          role={notif.actor.role}
+                          size="xs"
+                          className="absolute -top-0.5 -right-0.5"
+                        />
+                      )}
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-sm text-gray-200 leading-tight">

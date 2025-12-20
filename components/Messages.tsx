@@ -4,6 +4,7 @@ import { ArrowLeft, Search, CheckCheck, BadgeCheck, Users, Lock, Globe, Plus } f
 import { Language, MessagePreview, ChatRoom, UserProfile } from '../types';
 import { TRANSLATIONS, DEFAULT_IMAGES } from '../constants';
 import { supabase } from '../lib/supabaseClient';
+import UserBadge from './UserBadge';
 
 interface MessagesProps {
   language: Language;
@@ -75,6 +76,7 @@ const Messages: React.FC<MessagesProps> = ({
             userId: c.partner_id,
             username: c.username || 'User',
             avatar: c.avatar || DEFAULT_IMAGES.AVATAR,
+            role: c.role,
             lastMessage: c.last_message,
             time: new Date(c.last_message_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
             unread: Number(c.unread_count),
@@ -88,6 +90,12 @@ const Messages: React.FC<MessagesProps> = ({
     } finally {
       setLoading(false);
     }
+  };
+
+  const isOnline = (lastSeenAt: string | null) => {
+    if (!lastSeenAt) return false;
+    const lastSeen = new Date(lastSeenAt).getTime();
+    return (new Date().getTime() - lastSeen) < (10 * 60 * 1000); // 10 minutes
   };
 
   const filteredMessages = conversations.filter(msg =>
@@ -160,12 +168,22 @@ const Messages: React.FC<MessagesProps> = ({
                   className="flex items-center gap-4 px-4 py-4 hover:bg-gray-900/40 cursor-pointer transition-colors active:bg-gray-900/80 group"
                 >
                   <div className="relative">
-                    <div className="w-14 h-14 rounded-full bg-gray-800 overflow-hidden border border-gray-700 group-hover:border-gray-500 transition-colors">
-                      <img src={msg.avatar} className="w-full h-full object-cover" />
+                    <div className="w-14 h-14 rounded-full bg-gray-800 border-2 border-gray-900 overflow-hidden shadow-inner">
+                      <img
+                        src={msg.avatar}
+                        className="w-full h-full object-cover"
+                        alt={msg.username}
+                      />
                     </div>
-                    {msg.isOnline && (
-                      <span className="absolute bottom-0 right-1 w-3.5 h-3.5 bg-green-500 border-2 border-black rounded-full shadow-lg"></span>
+                    {/* Online indicator */}
+                    {isOnline(msg.lastSeenAt) && (
+                      <div className="absolute bottom-0.5 right-0.5 w-3.5 h-3.5 bg-green-500 rounded-full border-4 border-black"></div>
                     )}
+                    <UserBadge
+                      role={msg.role}
+                      size="xs"
+                      className="absolute -top-1 -right-1"
+                    />
                   </div>
 
                   <div className="flex-1 min-w-0">
@@ -196,7 +214,6 @@ const Messages: React.FC<MessagesProps> = ({
             </div>
           )
         ) : (
-          // --- Group Chats ---
           filteredGroups.length > 0 ? (
             <div className="divide-y divide-gray-800/50 pb-20">
               {filteredGroups.map((room) => (
@@ -205,7 +222,6 @@ const Messages: React.FC<MessagesProps> = ({
                   onClick={() => onOpenGroup(room)}
                   className="flex items-center gap-4 px-4 py-4 hover:bg-gray-900/40 cursor-pointer transition-colors active:bg-gray-900/80 group"
                 >
-                  {/* Group Avatar */}
                   <div className="relative">
                     <div className="w-14 h-14 rounded-xl bg-gray-800 overflow-hidden border border-gray-700 group-hover:border-gray-500 transition-colors">
                       <img src={room.image} className="w-full h-full object-cover" />
@@ -215,7 +231,6 @@ const Messages: React.FC<MessagesProps> = ({
                     </div>
                   </div>
 
-                  {/* Content */}
                   <div className="flex-1 min-w-0">
                     <div className="flex justify-between items-baseline mb-1">
                       <h3 className="font-bold text-white truncate text-base">{room.name}</h3>
@@ -244,7 +259,6 @@ const Messages: React.FC<MessagesProps> = ({
           )
         )}
 
-        {/* Create Room Button (Organizer Only) */}
         {activeTab === 'groups' && userProfile.role === 'organizer' && (
           <button
             onClick={onCreateRoom}

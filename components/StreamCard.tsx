@@ -1,7 +1,7 @@
-
 import React from 'react';
 import { User, Package, Gavel } from 'lucide-react';
 import { Streamer } from '../types';
+import UserBadge from './UserBadge';
 
 interface StreamCardProps {
   streamer: Streamer;
@@ -10,17 +10,17 @@ interface StreamCardProps {
 
 const StreamCard: React.FC<StreamCardProps> = ({ streamer, onPress }) => {
   return (
-    <div 
+    <div
       onClick={() => onPress(streamer)}
       className="relative aspect-[9/16] rounded-xl overflow-hidden cursor-pointer group hover:opacity-95 transition-opacity bg-gray-800 border border-gray-800 shadow-lg"
     >
       {/* Background Image */}
-      <img 
-        src={streamer.coverImage} 
-        alt={streamer.name} 
+      <img
+        src={streamer.coverImage}
+        alt={streamer.name}
         className="w-full h-full object-cover"
       />
-      
+
       {/* Gradient Overlay */}
       <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-black/90"></div>
 
@@ -43,15 +43,22 @@ const StreamCard: React.FC<StreamCardProps> = ({ streamer, onPress }) => {
       <div className="absolute bottom-0 left-0 right-0 p-3">
         <div className="flex items-center space-x-2 mb-1">
           <div className="relative">
-            <div className="w-6 h-6 rounded-full bg-gray-300 overflow-hidden border border-white">
-              <img src={streamer.coverImage} alt="avatar" className="w-full h-full object-cover" />
-            </div>
+            <img
+              src={streamer.avatar}
+              className="w-10 h-10 rounded-full border border-white/20 object-cover"
+              alt={streamer.name}
+            />
+            <UserBadge
+              role={streamer.role}
+              size="sm"
+              className="absolute -top-1 -right-1"
+            />
             {/* Online Indicator for Streamer (Always online when live) */}
             <div className="absolute bottom-0 right-0 w-2 h-2 bg-green-500 border border-black rounded-full"></div>
           </div>
           <span className="text-xs font-semibold text-gray-200 truncate">{streamer.name}</span>
         </div>
-        
+
         <h3 className="text-sm font-bold text-white line-clamp-2 leading-tight mb-2">
           {streamer.title}
         </h3>

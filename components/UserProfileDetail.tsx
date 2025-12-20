@@ -4,6 +4,7 @@ import { MapPin, ArrowLeft, MessageCircle, UserPlus, UserCheck, Grid, Share2, Mo
 import { Person, Language, UserProfile } from '../types';
 import { TRANSLATIONS, DEFAULT_IMAGES } from '../constants';
 import { supabase } from '../lib/supabaseClient';
+import UserBadge from './UserBadge';
 
 interface UserProfileDetailProps {
     language: Language;
@@ -24,7 +25,6 @@ const UserProfileDetail: React.FC<UserProfileDetailProps> = ({ language, person,
     useEffect(() => {
         const fetchProfile = async () => {
             setLoading(true);
-            // Try to fetch full profile details if available in DB
             const { data, error } = await supabase
                 .from('profiles')
                 .select('*')
@@ -51,9 +51,6 @@ const UserProfileDetail: React.FC<UserProfileDetailProps> = ({ language, person,
                     rate_onsite: data.rate_onsite,
                 });
             } else {
-                // Fallback if not found in DB (e.g. newly created via mock array previously)
-                // Since we removed mocks, this shouldn't happen often if data integrity is good.
-                // But we display what we have from 'person' prop
                 setProfile({
                     username: person.username,
                     avatar: person.avatar,
@@ -78,7 +75,6 @@ const UserProfileDetail: React.FC<UserProfileDetailProps> = ({ language, person,
 
     if (loading || !profile) return <div className="h-screen bg-black flex items-center justify-center text-white"><div className="w-8 h-8 border-4 border-red-600 border-t-transparent rounded-full animate-spin"></div></div>;
 
-    // Helper to render stats
     const renderPhysicalStats = (bgColor: string = 'bg-gray-900') => (
         <div className={`${bgColor} border-y border-gray-800 py-4 px-6 mb-4`}>
             <div className="flex justify-between items-center max-w-sm mx-auto">
@@ -100,11 +96,9 @@ const UserProfileDetail: React.FC<UserProfileDetailProps> = ({ language, person,
         </div>
     );
 
-    // --- MODEL VIEW ---
     if (profile.role === 'model') {
         return (
             <div className="h-full overflow-y-auto no-scrollbar pb-0 animate-slide-in bg-black relative z-30">
-                {/* Nav */}
                 <div className="fixed top-0 left-0 right-0 z-50 px-4 py-4 flex items-center justify-between bg-gradient-to-b from-black/60 to-transparent pointer-events-none">
                     <button onClick={onBack} className="w-10 h-10 rounded-full bg-black/20 backdrop-blur-md flex items-center justify-center text-white hover:bg-white/20 transition-colors pointer-events-auto border border-white/10">
                         <ArrowLeft size={22} />
@@ -115,15 +109,12 @@ const UserProfileDetail: React.FC<UserProfileDetailProps> = ({ language, person,
                     </div>
                 </div>
 
-                {/* Hero */}
                 <div className="relative h-[80vh] w-full">
                     <img src={profile.coverImage} className="w-full h-full object-cover" alt="Model Cover" />
                     <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-transparent to-black/90"></div>
                     <div className="absolute bottom-0 left-0 right-0 px-6 pb-32 pt-6 flex flex-col items-start z-10">
                         <div className="flex items-center gap-2 mb-2 animate-fade-in">
-                            <div className="bg-yellow-500 text-black text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-wider flex items-center gap-1 shadow-lg shadow-yellow-500/20">
-                                <BicepsFlexed size={10} strokeWidth={3} /> Official Model
-                            </div>
+                            <UserBadge role={profile.role} size="sm" className="relative" />
                             <div className="bg-white/10 backdrop-blur-md text-white text-[10px] font-bold px-2 py-0.5 rounded border border-white/20 flex items-center gap-1">
                                 <CheckCircle size={10} className="text-blue-400" /> Verified
                             </div>
@@ -140,7 +131,6 @@ const UserProfileDetail: React.FC<UserProfileDetailProps> = ({ language, person,
                     </div>
                 </div>
 
-                {/* Body */}
                 <div className="bg-black relative z-20 -mt-6 rounded-t-3xl border-t border-gray-800/50 shadow-[0_-10px_40px_rgba(0,0,0,0.8)]">
                     <div className="flex justify-center -mt-8 mb-6 gap-4 px-6 relative z-30">
                         <button
@@ -156,17 +146,14 @@ const UserProfileDetail: React.FC<UserProfileDetailProps> = ({ language, person,
                         <button onClick={onChat} className="flex-1 bg-white hover:bg-gray-200 text-black h-14 rounded-2xl font-bold text-lg shadow-lg flex items-center justify-center gap-2 transition-all active:scale-95"><MessageCircle size={20} /> Chat</button>
                     </div>
 
-                    {/* Physical Stats for Model */}
                     {renderPhysicalStats('bg-black border-gray-900')}
 
-                    {/* Social Stats */}
                     <div className="flex items-center justify-around px-6 mb-8">
                         <div className="text-center"><span className="text-2xl font-bold text-white font-athletic">{profile.followers.toLocaleString()}</span><span className="text-xs text-gray-500 uppercase tracking-wider block">{t.followers}</span></div>
                         <div className="w-px h-8 bg-gray-800"></div>
                         <div className="text-center"><span className="text-2xl font-bold text-white font-athletic">{profile.following.toLocaleString()}</span><span className="text-xs text-gray-500 uppercase tracking-wider block">{t.following}</span></div>
                     </div>
 
-                    {/* Model Rates Section */}
                     {(profile.rate_event_live || profile.rate_product_presentation || profile.rate_onsite) ? (
                         <div className="px-6 mb-10">
                             <h3 className="text-white font-bold text-lg font-athletic tracking-wide mb-4 flex items-center gap-2">
@@ -230,7 +217,6 @@ const UserProfileDetail: React.FC<UserProfileDetailProps> = ({ language, person,
                         </div>
                     ) : null}
 
-                    {/* Gallery */}
                     <div className="pb-24">
                         <div className="flex items-center justify-between px-6 mb-4">
                             <h3 className="text-white font-bold text-xl font-athletic tracking-wide flex items-center gap-2">PORTFOLIO <span className="text-xs font-sans font-normal text-gray-500 bg-gray-900 px-2 py-0.5 rounded-full">{profile.gallery.length}</span></h3>
@@ -254,7 +240,6 @@ const UserProfileDetail: React.FC<UserProfileDetailProps> = ({ language, person,
         );
     }
 
-    // --- ORGANIZER & SUPPORTER VIEWS (Simpler) ---
     return (
         <div className="h-full overflow-y-auto no-scrollbar pb-24 animate-slide-in bg-black relative z-30">
             <div className="fixed top-0 left-0 right-0 z-40 px-4 py-3 flex items-center justify-between pointer-events-none">
@@ -274,11 +259,12 @@ const UserProfileDetail: React.FC<UserProfileDetailProps> = ({ language, person,
                     {person.isOnline && (
                         <div className="absolute bottom-2 right-2 w-4 h-4 bg-green-500 rounded-full border-4 border-black"></div>
                     )}
+                    <UserBadge role={profile.role} size="md" className="absolute -top-1 -right-1" />
                 </div>
 
                 <h1 className="text-xl font-bold text-white mt-3">{profile.username}</h1>
                 <div className="flex items-center gap-1.5 text-gray-400 text-xs mt-1">
-                    <User size={12} /> <span>{t.roles.supporter}</span>
+                    <User size={12} /> <span>{t.roles[profile.role]}</span>
                     <span className="text-gray-600">•</span>
                     <span>{profile.location}</span>
                 </div>
@@ -326,7 +312,6 @@ const UserProfileDetail: React.FC<UserProfileDetailProps> = ({ language, person,
                 </div>
             </div>
 
-            {/* Gallery Section */}
             <div className="mt-8 border-t border-gray-800 pt-6">
                 <h3 className="px-6 text-white font-bold text-lg mb-4 flex items-center gap-2">
                     <Grid size={18} className="text-gray-400" /> Gallery
@@ -340,7 +325,6 @@ const UserProfileDetail: React.FC<UserProfileDetailProps> = ({ language, person,
                 </div>
             </div>
 
-            {/* Lightbox */}
             {lightboxIndex !== null && (
                 <div className="fixed inset-0 z-[100] bg-black/95 backdrop-blur-md flex items-center justify-center animate-fade-in" onClick={() => setLightboxIndex(null)}>
                     <img src={profile.gallery[lightboxIndex]} className="max-h-[85vh] max-w-[95vw] object-contain rounded-lg shadow-2xl" />

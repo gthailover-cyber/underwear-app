@@ -52,6 +52,7 @@ export interface Streamer {
   currentBid?: number; // Added: Current highest bid
   topBidder?: string; // Added: Username of the current top bidder
   hostId?: string; // Added: ID of the host user
+  role?: UserRole; // Added for badges
 }
 
 export interface UserProfile {
@@ -89,6 +90,7 @@ export interface MessagePreview {
   userId: string;
   username: string;
   avatar: string;
+  role?: UserRole; // Added for badges
   lastMessage: string;
   time: string;
   unread: number;

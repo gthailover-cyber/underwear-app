@@ -13,6 +13,7 @@ import { socketService } from '../services/socket';
 import { supabase } from '../lib/supabaseClient';
 import { liveKitService } from '../services/livekit';
 import LiveKitVideo from './LiveKitVideo';
+import UserBadge from './UserBadge';
 
 interface LiveRoomProps {
     streamer: Streamer;
@@ -704,7 +705,14 @@ const LiveRoom: React.FC<LiveRoomProps> = ({
                     <div className="flex justify-between items-start">
                         {/* Host Info */}
                         <div className="flex items-center gap-2 bg-black/30 backdrop-blur-md rounded-full p-1 pr-4 border border-white/10">
-                            <img src={streamer.avatar || streamer.coverImage} className="w-9 h-9 rounded-full border border-white object-cover" alt="Host" />
+                            <div className="relative">
+                                <img src={streamer.avatar || streamer.coverImage} className="w-9 h-9 rounded-full border border-white object-cover" alt="Host" />
+                                <UserBadge
+                                    role={streamer.role}
+                                    size="xs"
+                                    className="absolute -top-1 -right-1"
+                                />
+                            </div>
                             <div>
                                 <h3 className="text-xs font-bold text-white max-w-[100px] truncate">{streamer.name}</h3>
                                 <p className="text-[10px] text-gray-300 flex items-center gap-1">
