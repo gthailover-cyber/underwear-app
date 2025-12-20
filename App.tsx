@@ -33,6 +33,7 @@ import ModelApplicationModal from './components/ModelApplicationModal';
 import StartLiveModal from './components/StartLiveModal';
 import UpdatePasswordModal from './components/UpdatePasswordModal';
 import CustomerOrders from './components/CustomerOrders';
+import Stories from './components/Stories';
 import { TRANSLATIONS, MOCK_USER_PROFILE, DEFAULT_IMAGES } from './constants';
 import { Streamer, Language, CartItem, UserProfile, MessagePreview, Product, Person, ChatRoom, ReceivedGift, AppNotification } from './types';
 const HEARTBEAT_INTERVAL = 60 * 1000; // 1 minute
@@ -1420,22 +1421,25 @@ const App: React.FC = () => {
             </div>
 
             {/* Sub-tab Content */}
-            <div className="pt-12 pb-6 animate-fade-in">
+            <div className={`pb-6 animate-fade-in ${homeTab === 'live' ? 'pt-0' : 'pt-12'}`}>
               {homeTab === 'live' && (
-                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 px-2">
-                  {streamers.length > 0 ? streamers.map(streamer => (
-                    <StreamCard
-                      key={streamer.id}
-                      streamer={streamer}
-                      onPress={handleOpenStream}
-                    />
-                  )) : (
-                    <div className="col-span-full flex flex-col items-center justify-center py-20 text-gray-500">
-                      <Video size={48} className="mb-4 opacity-30" />
-                      <p>No live streams found</p>
-                    </div>
-                  )}
-                </div>
+                <>
+                  <Stories userProfile={userProfile} language={language} />
+                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 px-2">
+                    {streamers.length > 0 ? streamers.map(streamer => (
+                      <StreamCard
+                        key={streamer.id}
+                        streamer={streamer}
+                        onPress={handleOpenStream}
+                      />
+                    )) : (
+                      <div className="col-span-full flex flex-col items-center justify-center py-20 text-gray-500">
+                        <Video size={48} className="mb-4 opacity-30" />
+                        <p>No live streams found</p>
+                      </div>
+                    )}
+                  </div>
+                </>
               )}
 
               {homeTab === 'rooms' && (
