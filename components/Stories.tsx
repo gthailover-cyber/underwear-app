@@ -162,6 +162,17 @@ const Stories: React.FC<StoriesProps> = ({ userProfile, language }) => {
         const story = viewingStories[currentStoryIndex];
         const hasLiked = story.story_likes?.some(l => l.user_id === userProfile.id);
 
+        // 1. Optimistic Update
+        setViewingStories(prev => prev.map(s => {
+            if (s.id === storyId) {
+                const updatedLikes = hasLiked
+                    ? (s.story_likes || []).filter(l => l.user_id !== userProfile.id)
+                    : [...(s.story_likes || []), { user_id: userProfile.id }];
+                return { ...s, story_likes: updatedLikes };
+            }
+            return s;
+        }));
+
         try {
             if (hasLiked) {
                 await supabase
@@ -188,9 +199,11 @@ const Stories: React.FC<StoriesProps> = ({ userProfile, language }) => {
                     });
                 }
             }
-            fetchStories(); // Refresh to update heart icon immediately
+            // 2. Sync with background data (updates the main stories list too)
+            fetchStories();
         } catch (err) {
             console.error('Error toggling like:', err);
+            // Optional: Revert on error if needed
         }
     };
 
@@ -368,8 +381,8 @@ const Stories: React.FC<StoriesProps> = ({ userProfile, language }) => {
                                         handleLike(viewingStories[currentStoryIndex].id, viewingStories[currentStoryIndex].user_id);
                                     }}
                                     className={`w-14 h-14 rounded-full flex items-center justify-center backdrop-blur-md transition-all active:scale-75 ${viewingStories[currentStoryIndex].story_likes?.some(l => l.user_id === userProfile.id)
-                                            ? 'bg-red-600 text-white shadow-lg shadow-red-600/40'
-                                            : 'bg-white/10 text-white hover:bg-white/20'
+                                        ? 'bg-red-600 text-white shadow-lg shadow-red-600/40'
+                                        : 'bg-white/10 text-white hover:bg-white/20'
                                         }`}
                                 >
                                     <Heart size={28} fill={viewingStories[currentStoryIndex].story_likes?.some(l => l.user_id === userProfile.id) ? "currentColor" : "none"} />
