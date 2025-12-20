@@ -268,11 +268,11 @@ const LiveRoom: React.FC<LiveRoomProps> = ({
                 table: 'rooms',
                 filter: `id=eq.${streamer.id}`
             }, (payload) => {
-                if (payload.new.likes !== undefined) {
-                    setHeartCount(payload.new.likes);
+                if (typeof payload.new.likes === 'number') {
+                    setHeartCount(prev => Math.max(prev, payload.new.likes));
                 }
-                if (payload.new.current_bid !== undefined) {
-                    setCurrentHighestBid(payload.new.current_bid);
+                if (typeof payload.new.current_bid === 'number') {
+                    setCurrentHighestBid(prev => Math.max(prev, payload.new.current_bid));
                 }
             })
             .subscribe();
