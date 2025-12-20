@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, Package, Truck, CheckCircle, Clock, X, User, ExternalLink } from 'lucide-react';
+import { ArrowLeft, Package, Truck, CheckCircle, Clock, X, User, ExternalLink, MapPin } from 'lucide-react';
 import { Language, OrderStatus } from '../types';
 import { TRANSLATIONS } from '../constants';
 import { supabase } from '../lib/supabaseClient';
@@ -27,6 +27,7 @@ interface CustomerOrderItem {
             username: string;
             avatar: string;
         } | null;
+        shipping_address: string | null;
     };
 }
 
@@ -63,6 +64,7 @@ const CustomerOrders: React.FC<CustomerOrdersProps> = ({ language, onBack }) => 
                             created_at,
                             tracking_number,
                             buyer_id,
+                            shipping_address,
                             profiles:buyer_id (
                                 username,
                                 avatar
@@ -93,7 +95,8 @@ const CustomerOrders: React.FC<CustomerOrdersProps> = ({ language, onBack }) => 
                             status: item.orders.status,
                             created_at: item.orders.created_at,
                             tracking_number: item.orders.tracking_number,
-                            buyer: item.orders.profiles || null
+                            buyer: item.orders.profiles || null,
+                            shipping_address: item.orders.shipping_address
                         }
                     }));
 
@@ -304,6 +307,20 @@ const CustomerOrders: React.FC<CustomerOrdersProps> = ({ language, onBack }) => 
                                         <p className="text-xs text-gray-500 mt-1">Ordered on {new Date(selectedItem.order.created_at).toLocaleString()}</p>
                                     </div>
                                 </div>
+
+                                {selectedItem.order.shipping_address && (
+                                    <div className="mt-4 pt-4 border-t border-gray-700/50">
+                                        <div className="flex items-start gap-2 text-gray-400">
+                                            <MapPin size={14} className="mt-0.5 flex-shrink-0" />
+                                            <div>
+                                                <p className="text-[10px] uppercase tracking-wider font-bold mb-1">Shipping Address & Contact</p>
+                                                <p className="text-white text-sm whitespace-pre-wrap leading-relaxed">
+                                                    {selectedItem.order.shipping_address}
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
                             </div>
                         </div>
                         <div className="p-6 border-t border-gray-800 bg-black/30">
