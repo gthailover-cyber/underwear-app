@@ -183,26 +183,31 @@ const Stories: React.FC<StoriesProps> = ({ userProfile, language }) => {
                     <div
                         key={item.userId}
                         onClick={() => openStory(item.userId)}
-                        className="flex flex-col items-center gap-1 shrink-0 cursor-pointer active:scale-95 transition-transform"
+                        className="flex-shrink-0 w-28 aspect-[9/16] relative rounded-xl overflow-hidden cursor-pointer group border border-gray-800 shadow-lg active:scale-95 transition-all"
                     >
-                        <div className="w-16 h-16 rounded-2xl p-[2px] bg-gradient-to-tr from-red-600 via-pink-600 to-orange-500 shadow-lg">
-                            <div className="w-full h-full rounded-2xl bg-black border-2 border-black overflow-hidden relative">
-                                <img
-                                    src={item.items[0].media_url}
-                                    className="w-full h-full object-cover opacity-80"
-                                    alt=""
-                                />
-                                <div className="absolute inset-0 bg-black/20"></div>
-                                <img
-                                    src={item.user?.avatar}
-                                    className="absolute bottom-1 right-1 w-6 h-6 rounded-lg border border-black shadow-md object-cover"
-                                    alt={item.user?.username}
-                                />
-                            </div>
+                        {/* Background Media Preview */}
+                        <img
+                            src={item.items[0].media_url}
+                            className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                            alt=""
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-transparent to-black/80"></div>
+
+                        {/* User Avatar Overlay (Top Left) */}
+                        <div className="absolute top-2 left-2 p-[2px] rounded-xl bg-gradient-to-tr from-red-600 via-pink-600 to-orange-500 shadow-md">
+                            <img
+                                src={item.user?.avatar}
+                                className="w-8 h-8 rounded-lg border-2 border-black object-cover"
+                                alt={item.user?.username}
+                            />
                         </div>
-                        <span className="text-[10px] text-gray-400 font-bold max-w-[64px] truncate">
-                            {item.userId === userProfile.id ? 'Your Story' : item.user?.username}
-                        </span>
+
+                        {/* Username Overlay (Bottom) */}
+                        <div className="absolute bottom-2 left-2 right-2">
+                            <span className="text-[10px] text-white font-bold truncate block drop-shadow-md">
+                                {item.userId === userProfile.id ? 'Your Story' : item.user?.username}
+                            </span>
+                        </div>
                     </div>
                 ))}
 
