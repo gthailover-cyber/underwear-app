@@ -488,7 +488,11 @@ const App: React.FC = () => {
           videoUrl: room.video_url,
           youtubeId: room.youtube_id,
           itemCount: productsMap[room.host_id]?.length || 0, // Populated
-          products: productsMap[room.host_id] || [], // Populated
+          products: (productsMap[room.host_id] || []).filter(p =>
+            Array.isArray(room.product_ids) && room.product_ids.length > 0
+              ? room.product_ids.includes(p.id)
+              : true
+          ), // Filter only selected products if column exists
           isAuction: room.is_auction,
           auctionEndTime: room.auction_end_time ? Number(room.auction_end_time) : undefined,
           auctionStartingPrice: room.auction_starting_price,
@@ -813,6 +817,7 @@ const App: React.FC = () => {
               auction_end_time: auctionEndTime ? auctionEndTime.toString() : null,
               auction_starting_price: isAuction ? auctionStartingPrice : 0,
               current_bid: isAuction ? auctionStartingPrice : 0,
+              product_ids: liveSelectedProducts.map(p => p.id),
               created_at: new Date().toISOString()
             }).select(); // Select to confirm return
 

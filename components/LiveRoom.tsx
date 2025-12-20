@@ -809,77 +809,79 @@ const LiveRoom: React.FC<LiveRoomProps> = ({
                     </div>
                 </div>
 
-                {/* Auction Interactive Card (Floating) */}
+                {/* Auction Interactive Card (Compact Sidebar Design) */}
                 {streamer.isAuction && (
-                    <div className="absolute top-24 left-4 right-4 z-20 animate-slide-in flex flex-col items-center">
-                        <div className="bg-black/80 backdrop-blur-xl rounded-2xl p-4 border border-orange-500/50 shadow-2xl shadow-orange-900/30 w-full max-w-[280px]">
-                            {/* Product Info */}
-                            <div className="flex gap-3 mb-3">
-                                <img src={streamer.products[0]?.image} className="w-12 h-12 rounded-lg object-cover bg-gray-800" alt="Auction Item" />
-                                <div className="flex-1 min-w-0">
-                                    <div className="flex items-center gap-1 mb-0.5">
-                                        <Flame size={12} className="text-orange-500 fill-orange-500 animate-pulse" />
-                                        <span className="text-[10px] font-bold text-orange-400 uppercase tracking-tighter">Live Auction</span>
+                    <div className="absolute top-32 right-4 z-20 animate-slide-in flex flex-col items-end">
+                        <div className="bg-black/50 backdrop-blur-xl rounded-2xl p-3 border border-orange-500/30 shadow-2xl w-44 overflow-hidden ring-1 ring-orange-500/20">
+                            {/* Product Info - Mini */}
+                            <div className="flex items-center gap-2 mb-2">
+                                <div className="relative">
+                                    <img src={streamer.products[0]?.image} className="w-10 h-10 rounded-lg object-cover bg-gray-800 border border-white/10" alt="Auction Item" />
+                                    <div className="absolute -top-1 -right-1 bg-orange-600 rounded-full p-0.5 shadow-lg">
+                                        <Flame size={10} className="text-white fill-white" />
                                     </div>
-                                    <h3 className="text-xs font-bold text-white truncate">{streamer.products[0]?.name}</h3>
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                    <h3 className="text-[10px] font-bold text-white truncate leading-tight">{streamer.products[0]?.name}</h3>
+                                    <p className="text-[8px] text-orange-400 font-black uppercase tracking-widest mt-0.5">Auction</p>
                                 </div>
                             </div>
 
-                            {/* Current Bid Display */}
-                            <div className="bg-gray-900/50 rounded-xl p-2 mb-4 text-center border border-white/5">
-                                <p className="text-[10px] text-gray-400 uppercase font-bold tracking-widest mb-1">Highest Bid</p>
-                                <p className="text-2xl font-black text-white font-athletic tracking-tight">฿{(currentHighestBid || 0).toLocaleString()}</p>
+                            {/* Current Bid Display - Compact */}
+                            <div className="bg-white/5 rounded-xl py-2 px-1 mb-2 text-center border border-white/5">
+                                <p className="text-[8px] text-gray-400 uppercase font-black tracking-widest mb-0.5">Highest Bid</p>
+                                <p className="text-xl font-black text-white font-athletic tracking-tighter">฿{(currentHighestBid || 0).toLocaleString()}</p>
                                 {highestBidderName && (
-                                    <p className="text-[10px] text-blue-400 font-bold mt-1">
-                                        by <span className="underline decoration-blue-500/30 underline-offset-2">{highestBidderName}</span>
-                                    </p>
+                                    <div className="flex items-center justify-center gap-1 mt-0.5">
+                                        <div className="w-1 h-1 rounded-full bg-blue-500 animate-pulse"></div>
+                                        <p className="text-[9px] text-blue-400 font-bold truncate max-w-[80px]">{highestBidderName}</p>
+                                    </div>
                                 )}
                             </div>
 
                             {/* Interaction Box (Viewer Only) */}
                             {!isHost && (
-                                <div className="space-y-3">
-                                    <div className="flex items-center justify-between gap-4">
+                                <div className="space-y-2">
+                                    <div className="flex items-center justify-between bg-black/40 rounded-xl p-1 border border-white/5">
                                         <button
                                             onClick={decreaseBid}
-                                            className="w-10 h-10 rounded-full bg-gray-800 hover:bg-gray-700 flex items-center justify-center transition-all border border-gray-700 active:scale-90"
+                                            className="w-7 h-7 rounded-lg bg-gray-800 hover:bg-gray-700 flex items-center justify-center transition-all active:scale-90"
                                         >
-                                            <Minus size={18} className="text-white" />
+                                            <Minus size={14} className="text-white" />
                                         </button>
 
-                                        <div className="flex-1 text-center bg-black/40 rounded-lg py-1">
-                                            <p className="text-[9px] text-gray-500 font-bold">Your Bid</p>
-                                            <p className="text-lg font-bold text-yellow-500 font-athletic">฿{myBidAmount.toLocaleString()}</p>
+                                        <div className="text-center px-1">
+                                            <p className="text-[12px] font-bold text-yellow-500 font-athletic">฿{myBidAmount.toLocaleString()}</p>
                                         </div>
 
                                         <button
                                             onClick={increaseBid}
-                                            className="w-10 h-10 rounded-full bg-gray-800 hover:bg-gray-700 flex items-center justify-center transition-all border border-gray-700 active:scale-90"
+                                            className="w-7 h-7 rounded-lg bg-gray-800 hover:bg-gray-700 flex items-center justify-center transition-all active:scale-90"
                                         >
-                                            <Plus size={18} className="text-white" />
+                                            <Plus size={14} className="text-white" />
                                         </button>
                                     </div>
 
                                     <button
                                         onClick={placeBid}
                                         disabled={isInsufficientFunds || myBidAmount <= currentHighestBid}
-                                        className={`w-full py-2.5 rounded-xl font-black text-sm uppercase tracking-wide transition-all active:scale-95 shadow-lg ${isInsufficientFunds
-                                            ? 'bg-gray-700 text-gray-500 cursor-not-allowed'
-                                            : myBidAmount <= currentHighestBid
-                                                ? 'bg-gray-800 text-gray-400 opacity-50 cursor-not-allowed'
-                                                : 'bg-gradient-to-r from-orange-600 to-red-600 text-white shadow-red-900/50 hover:from-orange-500 hover:to-red-500'
+                                        className={`w-full py-2 rounded-xl font-black text-[10px] uppercase tracking-wider transition-all active:scale-95 shadow-lg ${isInsufficientFunds
+                                                ? 'bg-gray-700 text-gray-500 cursor-not-allowed'
+                                                : myBidAmount <= currentHighestBid
+                                                    ? 'bg-gray-800 text-gray-400 opacity-50 cursor-not-allowed'
+                                                    : 'bg-gradient-to-br from-orange-500 to-red-600 text-white shadow-red-900/40 hover:brightness-110'
                                             }`}
                                     >
-                                        {isInsufficientFunds ? 'No Balance' : 'Confirm Bid'}
+                                        {isInsufficientFunds ? 'No Balance' : 'Bid Now'}
                                     </button>
                                 </div>
                             )}
 
-                            {/* Timer / Host Status */}
+                            {/* Timer - Mini */}
                             {auctionTimeLeft && (
-                                <div className="mt-3 pt-2 border-t border-white/5 flex items-center justify-center gap-2">
-                                    <Clock size={12} className="text-orange-500" />
-                                    <span className={`text-xs font-bold font-athletic ${auctionTimeLeft === 'ENDED' ? 'text-red-500' : 'text-gray-200'}`}>
+                                <div className="mt-2 pt-2 border-t border-white/5 flex items-center justify-center gap-1.5">
+                                    <Clock size={10} className="text-gray-400" />
+                                    <span className={`text-[10px] font-bold font-athletic ${auctionTimeLeft === 'ENDED' ? 'text-red-500' : 'text-gray-300'}`}>
                                         {auctionTimeLeft}
                                     </span>
                                 </div>
