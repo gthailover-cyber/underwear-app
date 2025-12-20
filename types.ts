@@ -16,6 +16,7 @@ export interface Product {
   colors?: string[]; // Array of hex codes or color names
   sizes?: string[];  // Array of size codes (S, M, L, XL)
   description?: string;
+  type?: 'normal' | 'auction'; // Added: normal or auction product
 }
 
 export interface CartItem extends Product {

@@ -235,6 +235,10 @@ export const TRANSLATIONS = {
     sizes: 'Sizes',
     deleteConfirm: 'Delete this product?',
     manageStock: 'Manage Stock',
+    normalProduct: 'Normal Product',
+    auctionProduct: 'Auction Product',
+    productType: 'Product Type',
+    auctionUniqueLimit: 'Auction products have only 1 unique item (1 color, 1 size).',
     // Live Product Selection
     selectProductsTitle: 'Select Products for Live',
     noProductsFound: 'No Products Found',
@@ -507,6 +511,10 @@ export const TRANSLATIONS = {
     sizes: 'ไซส์',
     deleteConfirm: 'ต้องการลบสินค้านี้ใช่ไหม?',
     manageStock: 'จัดการสต็อก',
+    normalProduct: 'สินค้าปกติ',
+    auctionProduct: 'สินค้าสำหรับประมูล',
+    productType: 'ประเภทสินค้า',
+    auctionUniqueLimit: 'สินค้าสำหรับประมูลจะมีแค่ตัวเดียวเท่านั้น (1 สี, 1 ขนาด)',
     // Live Product Selection
     selectProductsTitle: 'เลือกสินค้าสำหรับไลฟ์',
     noProductsFound: 'ไม่พบสินค้า',

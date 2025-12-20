@@ -1,6 +1,6 @@
 
 import React, { useState, useRef } from 'react';
-import { Plus, Edit2, Trash2, X, Package, Check, ImagePlus, ArrowLeft, Loader2, Save } from 'lucide-react';
+import { Plus, Edit2, Trash2, X, Package, Check, ImagePlus, ArrowLeft, Loader2, Save, Gavel, ShoppingBag } from 'lucide-react';
 import { Product, Language } from '../types';
 import { TRANSLATIONS } from '../constants';
 import { supabase } from '../lib/supabaseClient';
@@ -29,7 +29,7 @@ const MyProducts: React.FC<MyProductsProps> = ({ language, onBack, products, set
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [isSaving, setIsSaving] = useState(false);
-  
+
   // Image Upload State
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [imageFile, setImageFile] = useState<File | null>(null);
@@ -42,14 +42,18 @@ const MyProducts: React.FC<MyProductsProps> = ({ language, onBack, products, set
     stock: 0,
     colors: [],
     sizes: [],
-    image: ''
+    image: '',
+    type: 'normal'
   });
 
   const handleOpenModal = (product?: Product) => {
     setImageFile(null); // Reset file
     if (product) {
       setEditingProduct(product);
-      setFormData({ ...product });
+      setFormData({
+        ...product,
+        type: product.type || 'normal'
+      });
       setPreviewImage(product.image);
     } else {
       setEditingProduct(null);
@@ -59,7 +63,8 @@ const MyProducts: React.FC<MyProductsProps> = ({ language, onBack, products, set
         stock: 1,
         colors: [],
         sizes: [],
-        image: ''
+        image: '',
+        type: 'normal'
       });
       setPreviewImage('');
     }
@@ -73,7 +78,7 @@ const MyProducts: React.FC<MyProductsProps> = ({ language, onBack, products, set
   };
 
   // --- IMAGE HANDLING ---
-  
+
   const handleFileClick = () => {
     fileInputRef.current?.click();
   };
@@ -86,7 +91,6 @@ const MyProducts: React.FC<MyProductsProps> = ({ language, onBack, products, set
     }
   };
 
-  // Utility to resize image before upload
   const resizeImage = (file: File, maxWidth: number): Promise<Blob> => {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
@@ -123,24 +127,24 @@ const MyProducts: React.FC<MyProductsProps> = ({ language, onBack, products, set
   };
 
   const uploadImageToSupabase = async (file: File): Promise<string | null> => {
-      try {
-          const resizedBlob = await resizeImage(file, 800);
-          const fileExt = 'jpg';
-          const fileName = `products/${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
-          
-          const { error: uploadError } = await supabase.storage
-              .from('gunderwear-bucket') 
-              .upload(fileName, resizedBlob, { contentType: 'image/jpeg' });
+    try {
+      const resizedBlob = await resizeImage(file, 800);
+      const fileExt = 'jpg';
+      const fileName = `products/${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
 
-          if (uploadError) throw uploadError;
+      const { error: uploadError } = await supabase.storage
+        .from('gunderwear-bucket')
+        .upload(fileName, resizedBlob, { contentType: 'image/jpeg' });
 
-          const { data } = supabase.storage.from('gunderwear-bucket').getPublicUrl(fileName);
-          return data.publicUrl;
-      } catch (error: any) {
-          console.error("Error uploading product image:", error);
-          alert(`Failed to upload image: ${error.message}`);
-          return null;
-      }
+      if (uploadError) throw uploadError;
+
+      const { data } = supabase.storage.from('gunderwear-bucket').getPublicUrl(fileName);
+      return data.publicUrl;
+    } catch (error: any) {
+      console.error("Error uploading product image:", error);
+      alert(`Failed to upload image: ${error.message}`);
+      return null;
+    }
   };
 
   // --- DATABASE ACTIONS ---
@@ -153,12 +157,12 @@ const MyProducts: React.FC<MyProductsProps> = ({ language, onBack, products, set
     setProducts(prev => prev.filter(p => p.id !== id));
 
     try {
-        const { error } = await supabase.from('products').delete().eq('id', id);
-        if (error) throw error;
+      const { error } = await supabase.from('products').delete().eq('id', id);
+      if (error) throw error;
     } catch (error: any) {
-        console.error("Error deleting product:", error);
-        alert("Failed to delete product.");
-        setProducts(previousProducts); // Revert
+      console.error("Error deleting product:", error);
+      alert("Failed to delete product.");
+      setProducts(previousProducts); // Revert
     }
   };
 
@@ -167,92 +171,97 @@ const MyProducts: React.FC<MyProductsProps> = ({ language, onBack, products, set
     setIsSaving(true);
 
     try {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) throw new Error("Not authenticated");
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Not authenticated");
 
-        // 1. Upload Image if new file selected
-        let finalImageUrl = formData.image;
-        if (imageFile) {
-            const uploadedUrl = await uploadImageToSupabase(imageFile);
-            if (uploadedUrl) {
-                finalImageUrl = uploadedUrl;
-            } else {
-                throw new Error("Image upload failed");
-            }
-        }
-
-        // Validate Image
-        if (!finalImageUrl) {
-            alert("Please upload a product image.");
-            setIsSaving(false);
-            return;
-        }
-
-        // 2. Prepare Data Payload
-        const payload = {
-            seller_id: user.id,
-            name: formData.name,
-            price: Number(formData.price),
-            stock: Number(formData.stock),
-            colors: formData.colors,
-            sizes: formData.sizes,
-            image: finalImageUrl,
-            description: formData.description || ''
-        };
-
-        if (editingProduct) {
-            // UPDATE
-            const { data, error } = await supabase
-                .from('products')
-                .update(payload)
-                .eq('id', editingProduct.id)
-                .select()
-                .single();
-
-            if (error) throw error;
-
-            // Update Local State
-            setProducts(prev => prev.map(p => (p.id === editingProduct.id ? { ...p, ...data } as Product : p)));
-
+      // 1. Upload Image if new file selected
+      let finalImageUrl = formData.image;
+      if (imageFile) {
+        const uploadedUrl = await uploadImageToSupabase(imageFile);
+        if (uploadedUrl) {
+          finalImageUrl = uploadedUrl;
         } else {
-            // CREATE
-            const { data, error } = await supabase
-                .from('products')
-                .insert(payload)
-                .select()
-                .single();
-
-            if (error) throw error;
-
-            // Update Local State
-            if (data) {
-                const newProduct: Product = {
-                    id: data.id,
-                    name: data.name,
-                    price: data.price,
-                    stock: data.stock,
-                    image: data.image,
-                    colors: data.colors,
-                    sizes: data.sizes,
-                    sold: data.sold
-                };
-                setProducts(prev => [newProduct, ...prev]);
-            }
+          throw new Error("Image upload failed");
         }
+      }
 
-        handleCloseModal();
+      // Validate Image
+      if (!finalImageUrl) {
+        alert("Please upload a product image.");
+        setIsSaving(false);
+        return;
+      }
+
+      // 2. Prepare Data Payload
+      const payload = {
+        seller_id: user.id,
+        name: formData.name,
+        price: Number(formData.price),
+        stock: formData.type === 'auction' ? 1 : Number(formData.stock),
+        colors: formData.colors,
+        sizes: formData.sizes,
+        image: finalImageUrl,
+        description: formData.description || '',
+        type: formData.type || 'normal'
+      };
+
+      if (editingProduct) {
+        // UPDATE
+        const { data, error } = await supabase
+          .from('products')
+          .update(payload)
+          .eq('id', editingProduct.id)
+          .select()
+          .single();
+
+        if (error) throw error;
+
+        // Update Local State
+        setProducts(prev => prev.map(p => (p.id === editingProduct.id ? { ...p, ...data } as Product : p)));
+
+      } else {
+        // CREATE
+        const { data, error } = await supabase
+          .from('products')
+          .insert(payload)
+          .select()
+          .single();
+
+        if (error) throw error;
+
+        // Update Local State
+        if (data) {
+          const newProduct: Product = {
+            id: data.id,
+            name: data.name,
+            price: data.price,
+            stock: data.stock,
+            image: data.image,
+            colors: data.colors,
+            sizes: data.sizes,
+            sold: data.sold,
+            type: data.type as 'normal' | 'auction'
+          };
+          setProducts(prev => [newProduct, ...prev]);
+        }
+      }
+
+      handleCloseModal();
 
     } catch (error: any) {
-        console.error("Error saving product:", error);
-        alert(`Failed to save product: ${error.message}`);
+      console.error("Error saving product:", error);
+      alert(`Failed to save product: ${error.message}`);
     } finally {
-        setIsSaving(false);
+      setIsSaving(false);
     }
   };
 
   const toggleSize = (size: string) => {
     setFormData(prev => {
       const sizes = prev.sizes || [];
+      if (prev.type === 'auction') {
+        return { ...prev, sizes: [size] };
+      }
       if (sizes.includes(size)) {
         return { ...prev, sizes: sizes.filter(s => s !== size) };
       } else {
@@ -264,6 +273,9 @@ const MyProducts: React.FC<MyProductsProps> = ({ language, onBack, products, set
   const toggleColor = (hex: string) => {
     setFormData(prev => {
       const colors = prev.colors || [];
+      if (prev.type === 'auction') {
+        return { ...prev, colors: [hex] };
+      }
       if (colors.includes(hex)) {
         return { ...prev, colors: colors.filter(c => c !== hex) };
       } else {
@@ -272,21 +284,37 @@ const MyProducts: React.FC<MyProductsProps> = ({ language, onBack, products, set
     });
   };
 
+  const handleTypeChange = (type: 'normal' | 'auction') => {
+    setFormData(prev => {
+      const newColors = type === 'auction' && (prev.colors?.length || 0) > 1 ? [prev.colors![0]] : prev.colors;
+      const newSizes = type === 'auction' && (prev.sizes?.length || 0) > 1 ? [prev.sizes![0]] : prev.sizes;
+      const newStock = type === 'auction' ? 1 : prev.stock;
+
+      return {
+        ...prev,
+        type,
+        colors: newColors,
+        sizes: newSizes,
+        stock: newStock
+      };
+    });
+  };
+
   return (
     <div className="pb-24 animate-fade-in min-h-screen bg-black text-white">
-      
+
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-4 sticky top-0 bg-black/90 backdrop-blur z-30 border-b border-gray-800">
         <div className="flex items-center gap-3">
-            <button 
-                onClick={onBack}
-                className="w-10 h-10 rounded-full bg-gray-800 flex items-center justify-center hover:bg-gray-700 transition-colors border border-gray-700"
-            >
-                <ArrowLeft size={20} className="text-white" />
-            </button>
-            <h2 className="text-xl font-athletic tracking-wide text-white">{t.myProducts}</h2>
+          <button
+            onClick={onBack}
+            className="w-10 h-10 rounded-full bg-gray-800 flex items-center justify-center hover:bg-gray-700 transition-colors border border-gray-700"
+          >
+            <ArrowLeft size={20} className="text-white" />
+          </button>
+          <h2 className="text-xl font-athletic tracking-wide text-white">{t.myProducts}</h2>
         </div>
-        <button 
+        <button
           onClick={() => handleOpenModal()}
           className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-full font-bold flex items-center gap-2 text-sm shadow-lg shadow-red-900/50 transition-all active:scale-95"
         >
@@ -302,23 +330,28 @@ const MyProducts: React.FC<MyProductsProps> = ({ language, onBack, products, set
               {/* Image */}
               <div className="w-24 h-24 bg-gray-800 rounded-lg overflow-hidden flex-shrink-0 relative">
                 <img src={product.image} className="w-full h-full object-cover" alt={product.name} />
+                {product.type === 'auction' && (
+                  <div className="absolute top-1 left-1 bg-yellow-600 text-[8px] font-black px-1.5 py-0.5 rounded flex items-center gap-1 shadow-lg backdrop-blur-sm">
+                    <Gavel size={8} /> AUCTION
+                  </div>
+                )}
               </div>
-              
+
               {/* Info */}
               <div className="flex-1 min-w-0 flex flex-col justify-between py-1">
                 <div>
                   <h3 className="font-bold text-white line-clamp-2 leading-tight mb-1">{product.name}</h3>
                   <div className="flex flex-wrap gap-1 mb-2">
                     {product.colors?.map(c => (
-                        <span key={c} className="w-3 h-3 rounded-full border border-gray-600" style={{ backgroundColor: c }}></span>
+                      <span key={c} className="w-3 h-3 rounded-full border border-gray-600" style={{ backgroundColor: c }}></span>
                     ))}
                     {product.sizes?.length ? <span className="text-gray-500 text-xs">| {product.sizes.join(', ')}</span> : null}
                   </div>
                 </div>
-                
+
                 <div className="flex items-end justify-between">
                   <div>
-                    <span className="text-xs text-gray-500 block">{t.stock}: {product.stock}</span>
+                    <span className="text-xs text-gray-500 block">{product.type === 'auction' ? 'Rare Piece' : `${t.stock}: ${product.stock}`}</span>
                     <span className="text-lg font-bold text-yellow-400">฿{product.price.toLocaleString()}</span>
                   </div>
                 </div>
@@ -327,27 +360,27 @@ const MyProducts: React.FC<MyProductsProps> = ({ language, onBack, products, set
 
             {/* Actions */}
             <div className="bg-gray-950/50 p-2 flex gap-2 border-t border-gray-800">
-               <button 
-                 onClick={() => handleOpenModal(product)}
-                 className="flex-1 py-1.5 rounded-lg bg-gray-800 hover:bg-gray-700 text-white text-xs font-bold flex items-center justify-center gap-1 transition-colors"
-               >
-                 <Edit2 size={12} /> {t.editProduct}
-               </button>
-               <button 
-                 onClick={() => handleDelete(product.id)}
-                 className="w-10 flex items-center justify-center rounded-lg bg-red-900/20 hover:bg-red-900/40 text-red-500 transition-colors"
-               >
-                 <Trash2 size={14} />
-               </button>
+              <button
+                onClick={() => handleOpenModal(product)}
+                className="flex-1 py-1.5 rounded-lg bg-gray-800 hover:bg-gray-700 text-white text-xs font-bold flex items-center justify-center gap-1 transition-colors"
+              >
+                <Edit2 size={12} /> {t.editProduct}
+              </button>
+              <button
+                onClick={() => handleDelete(product.id)}
+                className="w-10 flex items-center justify-center rounded-lg bg-red-900/20 hover:bg-red-900/40 text-red-500 transition-colors"
+              >
+                <Trash2 size={14} />
+              </button>
             </div>
           </div>
         ))}
 
         {products.length === 0 && (
-           <div className="col-span-full flex flex-col items-center justify-center py-20 text-gray-500">
-              <Package size={48} className="mb-4 opacity-50" />
-              <p>No products yet. Add your first item!</p>
-           </div>
+          <div className="col-span-full flex flex-col items-center justify-center py-20 text-gray-500">
+            <Package size={48} className="mb-4 opacity-50" />
+            <p>No products yet. Add your first item!</p>
+          </div>
         )}
       </div>
 
@@ -355,147 +388,199 @@ const MyProducts: React.FC<MyProductsProps> = ({ language, onBack, products, set
       {isModalOpen && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/90 backdrop-blur-sm" onClick={handleCloseModal} />
-          <div className="relative w-full max-w-lg bg-gray-900 rounded-2xl border border-gray-800 shadow-2xl flex flex-col max-h-[90vh] animate-fade-in">
-            
+          <div className="relative w-full max-w-lg bg-gray-900 rounded-2xl border border-gray-800 shadow-2xl flex flex-col max-h-[90vh] animate-fade-in shadow-[0_20px_50px_rgba(220,38,38,0.15)]">
+
             {/* Modal Header */}
             <div className="p-4 border-b border-gray-800 flex items-center justify-between">
               <h3 className="text-lg font-bold text-white">{editingProduct ? t.editProduct : t.addProduct}</h3>
-              <button onClick={handleCloseModal} className="text-gray-400 hover:text-white"><X size={20}/></button>
+              <button onClick={handleCloseModal} className="text-gray-400 hover:text-white"><X size={20} /></button>
             </div>
 
             {/* Form */}
-            <form onSubmit={handleSave} className="overflow-y-auto p-6 space-y-6">
-               
-               {/* Image Upload Area */}
-               <div className="flex justify-center">
-                  <input 
-                    type="file" 
-                    ref={fileInputRef} 
-                    className="hidden" 
-                    accept="image/*" 
-                    onChange={handleFileChange}
-                  />
-                  <div 
-                    onClick={handleFileClick}
-                    className="relative w-32 h-32 bg-gray-800 rounded-xl overflow-hidden border-2 border-dashed border-gray-700 group cursor-pointer hover:border-red-500 transition-colors"
+            <form onSubmit={handleSave} className="overflow-y-auto p-6 space-y-6 scrollbar-hide">
+
+              {/* Product Type Selector */}
+              <div>
+                <label className="text-xs font-bold text-gray-500 uppercase ml-1 block mb-3">{t.productType}</label>
+                <div className="grid grid-cols-2 gap-3">
+                  <button
+                    type="button"
+                    onClick={() => handleTypeChange('normal')}
+                    className={`flex flex-col items-center gap-2 p-3 rounded-xl border-2 transition-all ${formData.type === 'normal'
+                        ? 'bg-red-600/10 border-red-600 text-white'
+                        : 'bg-gray-800/50 border-gray-800 text-gray-500 hover:border-gray-700'
+                      }`}
                   >
-                     {previewImage ? (
-                        <>
-                           <img src={previewImage} className="w-full h-full object-cover" />
-                           <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity text-white">
-                              <Edit2 size={24} />
-                              <span className="text-[10px] font-bold mt-1">Change</span>
-                           </div>
-                        </>
-                     ) : (
-                        <div className="absolute inset-0 flex flex-col items-center justify-center text-gray-400 group-hover:text-white">
-                           <ImagePlus size={24} />
-                           <span className="text-[10px] font-bold mt-1">Upload</span>
-                        </div>
-                     )}
-                  </div>
-               </div>
+                    <ShoppingBag size={20} className={formData.type === 'normal' ? 'text-red-500' : 'text-gray-600'} />
+                    <span className="text-xs font-bold">{t.normalProduct}</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleTypeChange('auction')}
+                    className={`flex flex-col items-center gap-2 p-3 rounded-xl border-2 transition-all ${formData.type === 'auction'
+                        ? 'bg-yellow-600/10 border-yellow-600 text-white'
+                        : 'bg-gray-800/50 border-gray-800 text-gray-500 hover:border-gray-700'
+                      }`}
+                  >
+                    <Gavel size={20} className={formData.type === 'auction' ? 'text-yellow-500' : 'text-gray-600'} />
+                    <span className="text-xs font-bold">{t.auctionProduct}</span>
+                  </button>
+                </div>
+                {formData.type === 'auction' && (
+                  <p className="text-[10px] text-yellow-500/80 mt-2 px-1 flex items-center gap-1 italic">
+                    * {t.auctionUniqueLimit}
+                  </p>
+                )}
+              </div>
 
-               {/* Name */}
-               <div className="space-y-4">
-                  <div>
-                    <label className="text-xs font-bold text-gray-500 uppercase ml-1 block mb-1">{t.productName}</label>
-                    <input 
-                      required
-                      type="text" 
-                      value={formData.name}
-                      onChange={e => setFormData({...formData, name: e.target.value})}
-                      className="w-full bg-gray-800 border border-gray-700 rounded-xl p-3 text-white focus:border-red-600 focus:outline-none"
-                    />
-                  </div>
-               </div>
+              {/* Image Upload Area */}
+              <div className="flex justify-center">
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  className="hidden"
+                  accept="image/*"
+                  onChange={handleFileChange}
+                />
+                <div
+                  onClick={handleFileClick}
+                  className="relative w-32 h-32 bg-gray-800 rounded-xl overflow-hidden border-2 border-dashed border-gray-700 group cursor-pointer hover:border-red-500 transition-colors shadow-inner"
+                >
+                  {previewImage ? (
+                    <>
+                      <img src={previewImage} className="w-full h-full object-cover" />
+                      <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity text-white">
+                        <Edit2 size={24} />
+                        <span className="text-[10px] font-bold mt-1">Change</span>
+                      </div>
+                    </>
+                  ) : (
+                    <div className="absolute inset-0 flex flex-col items-center justify-center text-gray-400 group-hover:text-white">
+                      <ImagePlus size={24} />
+                      <span className="text-[10px] font-bold mt-1">Upload</span>
+                    </div>
+                  )}
+                </div>
+              </div>
 
-               {/* Price & Stock */}
-               <div className="grid grid-cols-2 gap-4">
-                 <div>
-                    <label className="text-xs font-bold text-gray-500 uppercase ml-1 block mb-1">{t.price} (THB)</label>
-                    <input 
-                      required
-                      type="number" 
-                      min="0"
-                      value={formData.price}
-                      onChange={e => setFormData({...formData, price: Number(e.target.value)})}
-                      className="w-full bg-gray-800 border border-gray-700 rounded-xl p-3 text-white focus:border-red-600 focus:outline-none"
-                    />
-                 </div>
-                 <div>
-                    <label className="text-xs font-bold text-gray-500 uppercase ml-1 block mb-1">{t.stock}</label>
-                    <input 
-                      required
-                      type="number"
-                      min="0" 
-                      value={formData.stock}
-                      onChange={e => setFormData({...formData, stock: Number(e.target.value)})}
-                      className="w-full bg-gray-800 border border-gray-700 rounded-xl p-3 text-white focus:border-red-600 focus:outline-none"
-                    />
-                 </div>
-               </div>
+              {/* Name */}
+              <div className="space-y-4">
+                <div>
+                  <label className="text-xs font-bold text-gray-500 uppercase ml-1 block mb-1">{t.productName}</label>
+                  <input
+                    required
+                    type="text"
+                    placeholder="e.g. Signature Briefs '24"
+                    value={formData.name}
+                    onChange={e => setFormData({ ...formData, name: e.target.value })}
+                    className="w-full bg-gray-800 border border-gray-700 rounded-xl p-3 text-white focus:border-red-600 focus:outline-none transition-colors"
+                  />
+                </div>
+              </div>
 
-               {/* Sizes */}
-               <div>
-                  <label className="text-xs font-bold text-gray-500 uppercase ml-1 block mb-2">{t.sizes}</label>
-                  <div className="flex flex-wrap gap-2">
-                    {AVAILABLE_SIZES.map(size => (
+              {/* Price & Stock */}
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="text-xs font-bold text-gray-500 uppercase ml-1 block mb-1">{formData.type === 'auction' ? t.startingPrice : t.price} (THB)</label>
+                  <input
+                    required
+                    type="number"
+                    min="0"
+                    value={formData.price}
+                    onChange={e => setFormData({ ...formData, price: Number(e.target.value) })}
+                    className="w-full bg-gray-800 border border-gray-700 rounded-xl p-3 text-white focus:border-red-600 focus:outline-none transition-colors"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs font-bold text-gray-500 uppercase ml-1 block mb-1">{t.stock}</label>
+                  <input
+                    required
+                    type="number"
+                    min="0"
+                    disabled={formData.type === 'auction'}
+                    value={formData.type === 'auction' ? 1 : formData.stock}
+                    onChange={e => setFormData({ ...formData, stock: Number(e.target.value) })}
+                    className={`w-full bg-gray-800 border border-gray-700 rounded-xl p-3 text-white focus:border-red-600 focus:outline-none transition-colors ${formData.type === 'auction' ? 'opacity-50 cursor-not-allowed' : ''}`}
+                  />
+                </div>
+              </div>
+
+              {/* Sizes */}
+              <div>
+                <div className="flex justify-between items-center mb-2">
+                  <label className="text-xs font-bold text-gray-500 uppercase ml-1">{t.sizes}</label>
+                  {formData.type === 'auction' && <span className="text-[10px] text-yellow-600 font-bold uppercase">Select 1</span>}
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {AVAILABLE_SIZES.map(size => (
+                    <button
+                      type="button"
+                      key={size}
+                      onClick={() => toggleSize(size)}
+                      className={`w-10 h-10 rounded-lg font-bold text-sm transition-all border ${formData.sizes?.includes(size)
+                          ? (formData.type === 'auction' ? 'bg-yellow-600 border-yellow-600 text-white' : 'bg-red-600 border-red-600 text-white')
+                          : 'bg-gray-800 border-gray-700 text-gray-400 hover:border-gray-500'
+                        }`}
+                    >
+                      {size}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Colors */}
+              <div>
+                <div className="flex justify-between items-center mb-2">
+                  <label className="text-xs font-bold text-gray-500 uppercase ml-1">{t.colors}</label>
+                  {formData.type === 'auction' && <span className="text-[10px] text-yellow-600 font-bold uppercase">Select 1</span>}
+                </div>
+                <div className="flex flex-wrap gap-3 p-1">
+                  {AVAILABLE_COLORS.map(color => {
+                    const isSelected = formData.colors?.includes(color.hex);
+                    return (
                       <button
                         type="button"
-                        key={size}
-                        onClick={() => toggleSize(size)}
-                        className={`w-10 h-10 rounded-lg font-bold text-sm transition-all border ${
-                          formData.sizes?.includes(size)
-                           ? 'bg-red-600 border-red-600 text-white'
-                           : 'bg-gray-800 border-gray-700 text-gray-400 hover:border-gray-500'
-                        }`}
+                        key={color.hex}
+                        onClick={() => toggleColor(color.hex)}
+                        className={`w-8 h-8 rounded-full border-2 relative transition-all ${isSelected ? 'border-white scale-125 shadow-lg' : 'border-transparent hover:scale-110'}`}
+                        style={{ backgroundColor: color.hex }}
+                        title={color.name}
                       >
-                        {size}
+                        {isSelected && <Check size={14} className={`absolute inset-0 m-auto ${['#FFFFFF', '#FFFF00'].includes(color.hex) ? 'text-black' : 'text-white'}`} />}
                       </button>
-                    ))}
-                  </div>
-               </div>
+                    );
+                  })}
+                </div>
+              </div>
 
-               {/* Colors */}
-               <div>
-                  <label className="text-xs font-bold text-gray-500 uppercase ml-1 block mb-2">{t.colors}</label>
-                  <div className="flex flex-wrap gap-3">
-                    {AVAILABLE_COLORS.map(color => {
-                      const isSelected = formData.colors?.includes(color.hex);
-                      return (
-                        <button
-                          type="button"
-                          key={color.hex}
-                          onClick={() => toggleColor(color.hex)}
-                          className={`w-8 h-8 rounded-full border-2 relative transition-transform ${isSelected ? 'border-white scale-110' : 'border-transparent hover:scale-105'}`}
-                          style={{ backgroundColor: color.hex }}
-                          title={color.name}
-                        >
-                          {isSelected && <Check size={14} className={`absolute inset-0 m-auto ${['#FFFFFF', '#FFFF00'].includes(color.hex) ? 'text-black' : 'text-white'}`} />}
-                        </button>
-                      );
-                    })}
-                  </div>
-               </div>
+              {/* Description */}
+              <div>
+                <label className="text-xs font-bold text-gray-500 uppercase ml-1 block mb-1">{t.description}</label>
+                <textarea
+                  value={formData.description}
+                  onChange={e => setFormData({ ...formData, description: e.target.value })}
+                  placeholder="Describe your product..."
+                  className="w-full bg-gray-800 border border-gray-700 rounded-xl p-3 text-white focus:border-red-600 focus:outline-none h-24 resize-none transition-colors"
+                />
+              </div>
 
-               <div className="pt-4">
-                 <button 
-                   type="submit"
-                   disabled={isSaving}
-                   className="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-3 rounded-xl shadow-lg shadow-red-900/30 transition-all active:scale-95 disabled:opacity-70 flex items-center justify-center gap-2"
-                 >
-                   {isSaving ? (
-                       <>
-                         <Loader2 className="w-5 h-5 animate-spin" /> {t.saving}
-                       </>
-                   ) : (
-                       <>
-                         <Save size={18} /> {t.save}
-                       </>
-                   )}
-                 </button>
-               </div>
+              <div className="pt-4 pb-2">
+                <button
+                  type="submit"
+                  disabled={isSaving}
+                  className="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-3.5 rounded-xl shadow-lg shadow-red-900/40 transition-all active:scale-95 disabled:opacity-70 flex items-center justify-center gap-2"
+                >
+                  {isSaving ? (
+                    <>
+                      <Loader2 className="w-5 h-5 animate-spin" /> {t.saving}
+                    </>
+                  ) : (
+                    <>
+                      <Save size={18} /> {t.save}
+                    </>
+                  )}
+                </button>
+              </div>
 
             </form>
           </div>
