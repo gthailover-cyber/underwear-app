@@ -972,17 +972,19 @@ const LiveRoom: React.FC<LiveRoomProps> = ({
 
                             {/* Action Buttons Group */}
                             <div className="flex items-center gap-2">
-                                <button
-                                    onClick={() => setShowProducts(true)}
-                                    className="relative w-10 h-10 flex items-center justify-center bg-black/40 backdrop-blur-md rounded-full border border-white/20 text-white hover:bg-white/10 active:scale-90 transition-all"
-                                >
-                                    <ShoppingBag size={20} />
-                                    {streamer.products.length > 0 && (
-                                        <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-600 rounded-full text-[10px] flex items-center justify-center font-bold border border-black">
-                                            {streamer.products.length}
-                                        </span>
-                                    )}
-                                </button>
+                                {!streamer.isAuction && (
+                                    <button
+                                        onClick={() => setShowProducts(true)}
+                                        className="relative w-10 h-10 flex items-center justify-center bg-black/40 backdrop-blur-md rounded-full border border-white/20 text-white hover:bg-white/10 active:scale-90 transition-all"
+                                    >
+                                        <ShoppingBag size={20} />
+                                        {streamer.products.length > 0 && (
+                                            <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-600 rounded-full text-[10px] flex items-center justify-center font-bold border border-black">
+                                                {streamer.products.length}
+                                            </span>
+                                        )}
+                                    </button>
+                                )}
 
                                 <button
                                     onClick={() => setShowGiftSelector(true)}
@@ -1004,19 +1006,21 @@ const LiveRoom: React.FC<LiveRoomProps> = ({
                         // Host Controls (Professional UX)
                         <div className="flex items-center w-full">
                             {/* Product Button (10%) */}
-                            <div className="w-[10%] flex justify-center">
-                                <button
-                                    onClick={() => setShowProducts(true)}
-                                    className="relative w-10 h-10 flex items-center justify-center bg-black/40 backdrop-blur-md rounded-full border border-white/20 text-white hover:bg-white/10 active:scale-90 transition-all"
-                                >
-                                    <ShoppingBag size={20} />
-                                    {streamer.products.length > 0 && (
-                                        <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-600 rounded-full text-[10px] flex items-center justify-center font-bold border border-black">
-                                            {streamer.products.length}
-                                        </span>
-                                    )}
-                                </button>
-                            </div>
+                            {!streamer.isAuction && (
+                                <div className="w-[10%] flex justify-center">
+                                    <button
+                                        onClick={() => setShowProducts(true)}
+                                        className="relative w-10 h-10 flex items-center justify-center bg-black/40 backdrop-blur-md rounded-full border border-white/20 text-white hover:bg-white/10 active:scale-90 transition-all"
+                                    >
+                                        <ShoppingBag size={20} />
+                                        {streamer.products.length > 0 && (
+                                            <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-600 rounded-full text-[10px] flex items-center justify-center font-bold border border-black">
+                                                {streamer.products.length}
+                                            </span>
+                                        )}
+                                    </button>
+                                </div>
+                            )}
 
                             {/* Chat Input for Host (80%) */}
                             <div className="w-[80%] bg-black/40 backdrop-blur-md border border-white/20 rounded-full flex items-center px-2 py-1 mx-1 focus-within:border-white/50 focus-within:bg-black/60 transition-all">
