@@ -170,15 +170,31 @@ const LiveRoom: React.FC<LiveRoomProps> = ({
                 .limit(50);
 
             if (history) {
-                const formattedHistory = history.map((m: any) => ({
-                    id: m.id,
-                    username: m.username || 'User',
-                    message: m.content,
-                    isSystem: m.type === 'system',
-                    avatar: m.avatar || 'https://picsum.photos/200/200',
-                    timestamp: new Date(m.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-                    isHost: m.sender_id === streamer.hostId
-                }));
+                const formattedHistory = history.map((m: any) => {
+                    let displayMessage = m.content;
+                    let isGift = m.type === 'gift';
+
+                    if (isGift) {
+                        try {
+                            const meta = JSON.parse(m.content);
+                            const gift = GIFTS.find(g => g.id == meta.giftId);
+                            displayMessage = `sent a ${gift?.name || 'gift'}!`;
+                        } catch (e) {
+                            displayMessage = 'sent a gift!';
+                        }
+                    }
+
+                    return {
+                        id: m.id,
+                        username: m.username || 'User',
+                        message: displayMessage,
+                        isSystem: m.type === 'system',
+                        isGift: isGift,
+                        avatar: m.avatar || 'https://picsum.photos/200/200',
+                        timestamp: new Date(m.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+                        isHost: m.sender_id === streamer.hostId
+                    };
+                });
                 setComments(formattedHistory);
             }
 
@@ -238,15 +254,19 @@ const LiveRoom: React.FC<LiveRoomProps> = ({
         });
 
         const cleanupGifts = socketService.on('new_gift', (data: any) => {
-            const gift = GIFTS.find(g => g.id === data.giftId);
+            console.log('[LiveRoom] Gift broadcast received locally:', data);
+            const gift = GIFTS.find(g => g.id == data.giftId); // Loose eq for ID
             if (gift) {
+                console.log('[LiveRoom] Gift found in constants:', gift.name);
+                console.log('[LiveRoom] Sender check - Sender:', data.senderId, 'Me:', currentUser?.id);
                 // Only animate if it's NOT from me (since I already animated it locally on click)
-                if (data.senderId !== currentUser?.id) {
+                if (data.senderId != currentUser?.id) {
+                    console.log('[LiveRoom] Triggering animation for external gift');
                     triggerGiftAnimation(gift, data.sender);
 
                     // Add to Chat Stream
                     const giftComment: any = {
-                        id: Date.now().toString() + Math.random(),
+                        id: 'gift-' + Date.now() + '-' + Math.random(),
                         username: data.sender || 'User',
                         message: `a ${gift.name}!`,
                         timestamp: new Date().toLocaleTimeString(),
@@ -493,6 +513,7 @@ const LiveRoom: React.FC<LiveRoomProps> = ({
         triggerGiftAnimation(gift, 'Me');
 
         // Emit to server
+        console.log('[LiveRoom] Emitting gift to socket:', gift.id);
         socketService.emit('send_gift', { giftId: gift.id });
 
         // Add to Chat Locally
