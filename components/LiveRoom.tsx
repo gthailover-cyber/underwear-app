@@ -926,6 +926,14 @@ const LiveRoom: React.FC<LiveRoomProps> = ({
                                         >
                                             {isInsufficientFunds ? 'No Money' : 'Bid Now'}
                                         </button>
+                                        {isInsufficientFunds && (
+                                            <button
+                                                onClick={onOpenWallet}
+                                                className="w-full py-2 bg-yellow-500 hover:bg-yellow-400 text-black rounded-xl font-black text-[10px] uppercase tracking-wider transition-all shadow-lg active:scale-95"
+                                            >
+                                                {t.topUp}
+                                            </button>
+                                        )}
                                     </div>
                                 )}
 
