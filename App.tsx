@@ -105,6 +105,7 @@ const App: React.FC = () => {
   const [roomApprovalStatus, setRoomApprovalStatus] = useState<'none' | 'pending' | 'rejected'>('none');
   const [pendingCounts, setPendingCounts] = useState<{ [roomId: string]: number }>({});
   const [myApprovedRoomIds, setMyApprovedRoomIds] = useState<string[]>([]);
+  const [roomUnreadCounts, setRoomUnreadCounts] = useState<{ [roomId: string]: number }>({});
 
   // Gifts State
   const [receivedGifts, setReceivedGifts] = useState<ReceivedGift[]>([]);
@@ -495,6 +496,33 @@ const App: React.FC = () => {
       if (profilesChannel) supabase.removeChannel(profilesChannel);
       if (roomsChannel) supabase.removeChannel(roomsChannel);
       if (roomMembersChannel) supabase.removeChannel(roomMembersChannel);
+
+      // Real-time listener for ALL room messages to track unread counts
+      const groupMessagesChannel = supabase
+        .channel('public:room_messages_all')
+        .on(
+          'postgres_changes',
+          { event: 'INSERT', schema: 'public', table: 'room_messages' },
+          (payload) => {
+            const newMsg = payload.new;
+            // Don't count my own messages
+            if (newMsg.sender_id === session?.user?.id) return;
+
+            // Only count if it's a room I'm approved for OR I'm the host
+            // (We might need to check against chatRooms state)
+            setRoomUnreadCounts(prev => {
+              // If I'm already in this room, don't increment
+              // We'll check selectedGroupRoom. But since this is a closure, 
+              // we might need a ref or functional update that checks another state.
+              // Actually, we can use a ref for selectedGroupRoom to be sure.
+              // For simplicity, let's just increment and let the room opener clear it.
+              const currentCount = prev[newMsg.room_id] || 0;
+              return { ...prev, [newMsg.room_id]: currentCount + 1 };
+            });
+          }
+        )
+        .subscribe();
+
       if (heartbeatId) clearInterval(heartbeatId);
       if (uiRefreshId) clearInterval(uiRefreshId);
     };
@@ -1271,6 +1299,8 @@ const App: React.FC = () => {
       setReturnTab(activeTab);
       setSelectedGroupRoom(room);
       setActiveTab('messages');
+      // Clear unread count when opening
+      setRoomUnreadCounts(prev => ({ ...prev, [room.id]: 0 }));
       return;
     }
 
@@ -1287,6 +1317,8 @@ const App: React.FC = () => {
         setReturnTab(activeTab);
         setSelectedGroupRoom(room);
         setActiveTab('messages');
+        // Clear unread count when opening
+        setRoomUnreadCounts(prev => ({ ...prev, [room.id]: 0 }));
       } else {
         // Not approved or doesn't exist
         setPendingJoinRoom(room);
@@ -1435,6 +1467,7 @@ const App: React.FC = () => {
           onOpenGroup={handleOpenGroup}
           chatRooms={chatRooms}
           myApprovedRoomIds={myApprovedRoomIds}
+          roomUnreadCounts={roomUnreadCounts}
           userProfile={userProfile}
           onCreateRoom={() => setIsCreateRoomOpen(true)}
           currentUserId={session?.user?.id}

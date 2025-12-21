@@ -13,6 +13,7 @@ interface MessagesProps {
   onOpenGroup: (room: ChatRoom) => void;
   chatRooms: ChatRoom[];
   myApprovedRoomIds: string[];
+  roomUnreadCounts: { [roomId: string]: number };
   userProfile: UserProfile;
   onCreateRoom: () => void;
   currentUserId?: string;
@@ -25,6 +26,7 @@ const Messages: React.FC<MessagesProps> = ({
   onOpenGroup,
   chatRooms,
   myApprovedRoomIds,
+  roomUnreadCounts,
   userProfile,
   onCreateRoom,
   currentUserId
@@ -240,12 +242,18 @@ const Messages: React.FC<MessagesProps> = ({
                       <span className="text-[10px] text-gray-500">{room.lastMessageTime}</span>
                     </div>
                     <div className="flex justify-between items-center">
-                      <p className="truncate text-sm text-gray-500 pr-4">
-                        <span className="text-gray-400 font-medium mr-1">{room.lastMessage?.split(':')[0]}:</span>
+                      <p className={`truncate text-sm pr-4 ${roomUnreadCounts[room.id] > 0 ? 'text-white font-bold' : 'text-gray-500'}`}>
                         {room.lastMessage}
                       </p>
-                      <div className="flex items-center gap-1 text-[10px] text-gray-600 bg-gray-900 px-1.5 py-0.5 rounded">
-                        <Users size={10} /> {room.members}
+                      <div className="flex items-center gap-2">
+                        {roomUnreadCounts[room.id] > 0 && (
+                          <div className="bg-red-600 text-white text-[10px] font-bold h-5 min-w-[20px] px-1.5 rounded-full flex items-center justify-center shadow-lg shadow-red-900/40 animate-pulse">
+                            {roomUnreadCounts[room.id]}
+                          </div>
+                        )}
+                        <div className="flex items-center gap-1 text-[10px] text-gray-600 bg-gray-900 px-1.5 py-0.5 rounded">
+                          <Users size={10} /> {room.members}
+                        </div>
                       </div>
                     </div>
                   </div>
