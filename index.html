@@ -132,6 +132,22 @@
       }
     }
 
+    @keyframes scaleUp {
+      from {
+        transform: scale(0.9);
+        opacity: 0;
+      }
+
+      to {
+        transform: scale(1);
+        opacity: 1;
+      }
+    }
+
+    .animate-scale-up {
+      animation: scaleUp 0.3s ease-out forwards;
+    }
+
     .mask-image-linear-gradient {
       mask-image: linear-gradient(to bottom, transparent 0%, black 15%);
       -webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 15%);

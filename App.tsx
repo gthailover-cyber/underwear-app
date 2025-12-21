@@ -14,6 +14,7 @@ import UpgradeOrganizerModal from './components/UpgradeOrganizerModal';
 import CreateRoomModal from './components/CreateRoomModal';
 import GroupChatRoom from './components/GroupChatRoom';
 import OrganizerTools from './components/OrganizerTools';
+import JoinRequestModal from './components/JoinRequestModal';
 import CountdownOverlay from './components/CountdownOverlay';
 import Discover from './components/Discover';
 import Cart from './components/Cart';
@@ -98,6 +99,11 @@ const App: React.FC = () => {
 
   // Wallet State
   const [walletBalance, setWalletBalance] = useState(0);
+
+  // Approval Request State
+  const [pendingJoinRoom, setPendingJoinRoom] = useState<ChatRoom | null>(null);
+  const [roomApprovalStatus, setRoomApprovalStatus] = useState<'none' | 'pending' | 'rejected'>('none');
+  const [pendingCounts, setPendingCounts] = useState<{ [roomId: string]: number }>({});
 
   // Gifts State
   const [receivedGifts, setReceivedGifts] = useState<ReceivedGift[]>([]);
@@ -368,6 +374,7 @@ const App: React.FC = () => {
     let heartbeatId: any = null;
     let uiRefreshId: any = null;
     let roomsChannel: any = null;
+    let roomMembersChannel: any = null;
 
     if (session?.user) {
       notificationsChannel = supabase
@@ -442,6 +449,21 @@ const App: React.FC = () => {
         )
         .subscribe();
 
+      // Listener for room membership changes (for private room approval notifications)
+      roomMembersChannel = supabase
+        .channel('public:room_members_approval')
+        .on(
+          'postgres_changes',
+          { event: '*', schema: 'public', table: 'room_members' },
+          (payload) => {
+            console.log('Room members change detected:', payload);
+            if (session?.user?.id) {
+              fetchGlobalData(session.user.id);
+            }
+          }
+        )
+        .subscribe();
+
       // Heartbeat for online status
       console.log('[Heartbeat] Starting for:', session.user.id);
       supabase.rpc('update_last_seen');
@@ -461,24 +483,13 @@ const App: React.FC = () => {
     return () => {
       supabase.removeChannel(channel);
       supabase.removeChannel(chatRoomsChannel);
-      if (notificationsChannel) {
-        supabase.removeChannel(notificationsChannel);
-      }
-      if (messagesChannel) {
-        supabase.removeChannel(messagesChannel);
-      }
-      if (profilesChannel) {
-        supabase.removeChannel(profilesChannel);
-      }
-      if (heartbeatId) {
-        clearInterval(heartbeatId);
-      }
-      if (uiRefreshId) {
-        clearInterval(uiRefreshId);
-      }
-      if (roomsChannel) {
-        supabase.removeChannel(roomsChannel);
-      }
+      if (notificationsChannel) supabase.removeChannel(notificationsChannel);
+      if (messagesChannel) supabase.removeChannel(messagesChannel);
+      if (profilesChannel) supabase.removeChannel(profilesChannel);
+      if (roomsChannel) supabase.removeChannel(roomsChannel);
+      if (roomMembersChannel) supabase.removeChannel(roomMembersChannel);
+      if (heartbeatId) clearInterval(heartbeatId);
+      if (uiRefreshId) clearInterval(uiRefreshId);
     };
   }, [session]);
 
@@ -606,6 +617,22 @@ const App: React.FC = () => {
             : 'Just now'
         }));
         setChatRooms(formattedRooms);
+
+        // Fetch pending counts for organizers
+        if (userId) {
+          const { data: countsData } = await supabase
+            .from('room_members')
+            .select('room_id')
+            .eq('status', 'pending');
+
+          if (countsData) {
+            const counts: { [key: string]: number } = {};
+            countsData.forEach((row: any) => {
+              counts[row.room_id] = (counts[row.room_id] || 0) + 1;
+            });
+            setPendingCounts(counts);
+          }
+        }
       }
     } catch (err) {
       console.error('Error fetching chat rooms:', err);
@@ -1220,10 +1247,58 @@ const App: React.FC = () => {
     }
   };
 
-  const handleOpenGroup = (room: ChatRoom) => {
-    setReturnTab(activeTab); // Store current tab to return to
-    setSelectedGroupRoom(room);
-    setActiveTab('messages'); // Force switch to messages tab to render GroupChatRoom
+  const handleOpenGroup = async (room: ChatRoom) => {
+    // 1. If it's public or I'm the host, just open it
+    if (room.type === 'public' || room.hostId === session?.user?.id) {
+      setReturnTab(activeTab);
+      setSelectedGroupRoom(room);
+      setActiveTab('messages');
+      return;
+    }
+
+    // 2. If it's private, check membership status
+    try {
+      const { data: membership, error } = await supabase
+        .from('room_members')
+        .select('status')
+        .eq('room_id', room.id)
+        .eq('user_id', session?.user?.id)
+        .maybeSingle();
+
+      if (membership?.status === 'approved') {
+        setReturnTab(activeTab);
+        setSelectedGroupRoom(room);
+        setActiveTab('messages');
+      } else {
+        // Not approved or doesn't exist
+        setPendingJoinRoom(room);
+        setRoomApprovalStatus(membership?.status === 'pending' ? 'pending' : 'none');
+      }
+    } catch (err) {
+      console.error('Error checking room membership:', err);
+    }
+  };
+
+  const handleRequestJoin = async () => {
+    if (!pendingJoinRoom || !session?.user) return;
+
+    try {
+      const { error } = await supabase
+        .from('room_members')
+        .insert({
+          room_id: pendingJoinRoom.id,
+          user_id: session.user.id,
+          status: 'pending'
+        });
+
+      if (error) throw error;
+
+      setRoomApprovalStatus('pending');
+      showAlert({ message: 'Request sent to host!', type: 'success' });
+    } catch (err) {
+      console.error('Error requesting join:', err);
+      showAlert({ message: 'Failed to send request', type: 'error' });
+    }
   };
 
   const handleCloseGroup = () => {
@@ -1713,7 +1788,14 @@ const App: React.FC = () => {
                         </div>
                       </div>
                       <div className="flex-1 min-w-0">
-                        <h3 className="font-bold text-white text-base truncate">{room.name}</h3>
+                        <div className="flex items-center justify-between gap-2">
+                          <h3 className="font-bold text-white text-base truncate">{room.name}</h3>
+                          {room.hostId === session?.user?.id && pendingCounts[room.id] > 0 && (
+                            <div className="bg-red-600 text-white text-[10px] font-black h-5 min-w-[20px] px-1.5 rounded-full flex items-center justify-center animate-bounce shadow-lg shadow-red-900/50">
+                              {pendingCounts[room.id]}
+                            </div>
+                          )}
+                        </div>
                         <p className="text-sm text-gray-500 truncate mt-0.5">{room.lastMessage}</p>
                         <div className="flex items-center gap-1 mt-2 text-xs text-gray-400">
                           <Users size={12} /> {room.members} Members
@@ -2305,6 +2387,20 @@ const App: React.FC = () => {
         language={language}
       />
 
+      {/* Approval Modal */}
+      {pendingJoinRoom && (
+        <JoinRequestModal
+          room={{
+            id: pendingJoinRoom.id,
+            name: pendingJoinRoom.name,
+            image: pendingJoinRoom.image,
+            host_name: pendingJoinRoom.hostName
+          }}
+          status={roomApprovalStatus}
+          onClose={() => setPendingJoinRoom(null)}
+          onRequestJoin={handleRequestJoin}
+        />
+      )}
     </div>
   );
 };
