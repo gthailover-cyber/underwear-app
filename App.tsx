@@ -56,6 +56,7 @@ const App: React.FC = () => {
   const [currentStreamer, setCurrentStreamer] = useState<Streamer | null>(null);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [language, setLanguage] = useState<Language>('th');
+  const t = TRANSLATIONS[language];
   const [activeTab, setActiveTab] = useState<'home' | 'discover' | 'cart' | 'people' | 'profile' | 'all_live' | 'messages' | 'my_products' | 'address' | 'payment' | 'my_orders' | 'organizer_tools' | 'my_rate' | 'my_schedule' | 'my_gifts' | 'customer_orders'>('home');
   const [returnTab, setReturnTab] = useState<string | null>(null); // For navigation history
   const [homeTab, setHomeTab] = useState<'live' | 'rooms' | 'models'>('live'); // New: Sub-tab for Home
@@ -98,6 +99,12 @@ const App: React.FC = () => {
 
   // Gifts State
   const [receivedGifts, setReceivedGifts] = useState<ReceivedGift[]>([]);
+
+  const memoizedUser = React.useMemo(() => session?.user ? {
+    id: session?.user?.id,
+    username: userProfile.username,
+    avatar: userProfile.avatar
+  } : undefined, [session?.user?.id, userProfile.username, userProfile.avatar]);
 
   // Cart State (In real app, fetch from DB order_items with status 'in_cart' if implemented)
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
@@ -216,7 +223,7 @@ const App: React.FC = () => {
     }
   };
 
-  const toggleFollow = async (followedId: string) => {
+  const toggleFollow = React.useCallback(async (followedId: string) => {
     if (!session?.user) {
       alert(t.pleaseLoginToFollow || "Please login to follow");
       return;
@@ -261,7 +268,7 @@ const App: React.FC = () => {
       console.error('Toggle Follow Error:', err);
       alert(err.message || "Failed to update follow status");
     }
-  };
+  }, [session?.user?.id, followingIds, t]);
 
   const fetchReceivedGifts = async (userId: string) => {
     console.log('[FetchGifts] Fetching for user:', userId);
@@ -285,7 +292,6 @@ const App: React.FC = () => {
     }
   };
 
-  const t = TRANSLATIONS[language];
 
   // --- SUPABASE INTEGRATION: Auth & Data ---
   useEffect(() => {
@@ -627,25 +633,16 @@ const App: React.FC = () => {
     setCurrentStreamer(streamer);
   };
 
-  const handleCloseStream = async () => {
+  const handleCloseStream = React.useCallback(async () => {
     console.log("handleCloseStream Triggered");
 
     // Check if I am the host
     if (session?.user && currentStreamer) {
-      console.log("Closing Stream:", {
-        streamId: currentStreamer.id,
-        hostId: currentStreamer.hostId,
-        myId: session?.user?.id
-      });
-
       if (currentStreamer.hostId === session.user.id) {
         try {
           const { error } = await supabase.from('rooms').delete().eq('id', currentStreamer.id);
           if (error) {
             console.error("❌ Error deleting room from DB:", error.message);
-            alert("Failed to end stream on server: " + error.message);
-          } else {
-            console.log("✅ Room successfully deleted from DB");
           }
         } catch (err) {
           console.error("❌ Error running delete command:", err);
@@ -655,7 +652,7 @@ const App: React.FC = () => {
 
     // Always clear local state to close the modal
     setCurrentStreamer(null);
-  };
+  }, [session?.user, currentStreamer?.id, currentStreamer?.hostId]);
 
   const handleTopUp = async (amount: number) => {
     setWalletBalance(prev => prev + amount);
@@ -663,22 +660,19 @@ const App: React.FC = () => {
       const { error } = await supabase.rpc('add_coins', { amount });
       if (error) {
         console.error("Error adding coins:", error);
-        // Optional: Revert on error
-        // setWalletBalance(prev => prev - amount);
       }
     }
   };
 
-  const handleUseCoins = async (amount: number) => {
+  const handleUseCoins = React.useCallback(async (amount: number) => {
     setWalletBalance(prev => Math.max(0, prev - amount));
     if (session?.user) {
       const { error } = await supabase.rpc('deduct_coins', { amount });
       if (error) {
         console.error("Error deducting coins:", error);
-        // Optional: Revert
       }
     }
-  };
+  }, [session?.user]);
 
   // --- PROFILE UPDATE LOGIC ---
   const handleSaveProfile = async (updatedProfile: UserProfile) => {
@@ -935,7 +929,7 @@ const App: React.FC = () => {
     setCartItems(prev => prev.filter(item => item.id !== id));
   };
 
-  const handleAddToCart = (newItem: CartItem) => {
+  const handleAddToCart = React.useCallback((newItem: CartItem) => {
     setCartItems(prev => {
       const existingItemIndex = prev.findIndex(
         item => item.id === newItem.id && item.color === newItem.color && item.size === newItem.size
@@ -949,7 +943,7 @@ const App: React.FC = () => {
         return [...prev, newItem];
       }
     });
-  };
+  }, []);
 
   const handleCheckout = async () => {
     const total = cartItems.reduce((acc, item) => acc + (item.price * item.quantity), 0);
@@ -1946,27 +1940,20 @@ const App: React.FC = () => {
 
       {/* Overlays / Modals */}
       {currentStreamer && (
-        <>
-
-          <LiveRoom
-            streamer={currentStreamer}
-            isHost={currentStreamer.hostId === session?.user?.id}
-            onClose={handleCloseStream}
-            language={language}
-            walletBalance={walletBalance}
-            onUseCoins={handleUseCoins}
-            onOpenWallet={() => setIsWalletOpen(true)}
-            onAddToCart={handleAddToCart}
-            onNewOrder={() => { setHasNewOrders(true); setCartItems([]); }}
-            currentUser={session?.user ? {
-              id: session?.user?.id,
-              username: userProfile.username,
-              avatar: userProfile.avatar
-            } : undefined}
-            onFollow={toggleFollow}
-            followingIds={followingIds}
-          />
-        </>
+        <LiveRoom
+          streamer={currentStreamer}
+          isHost={currentStreamer.hostId === session?.user?.id}
+          onClose={handleCloseStream}
+          language={language}
+          walletBalance={walletBalance}
+          onUseCoins={handleUseCoins}
+          onOpenWallet={() => setIsWalletOpen(true)}
+          onAddToCart={handleAddToCart}
+          onNewOrder={() => { setHasNewOrders(true); setCartItems([]); }}
+          currentUser={memoizedUser}
+          onFollow={toggleFollow}
+          followingIds={followingIds}
+        />
       )}
 
       <WalletModal

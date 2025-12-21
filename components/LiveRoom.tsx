@@ -1379,4 +1379,4 @@ const LiveRoom: React.FC<LiveRoomProps> = ({
     );
 };
 
-export default LiveRoom;
+export default React.memo(LiveRoom);
