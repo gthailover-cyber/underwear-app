@@ -1133,7 +1133,7 @@ const LiveRoom: React.FC<LiveRoomProps> = ({
                                     </div>
                                 ) : (
                                     <div className={`px-3 py-1.5 rounded-2xl text-sm break-words shadow-sm backdrop-blur-sm border ${comment.isHost
-                                        ? 'bg-black/60 border-red-500/50 text-white rounded-br-none self-end'
+                                        ? 'bg-black/60 border-red-500/50 text-white rounded-bl-none self-start'
                                         : 'bg-black/40 border-white/10 text-white rounded-bl-none self-start'
                                         }`}>
                                         <span className={`font-bold mr-2 text-xs opacity-90 ${comment.isHost ? 'text-red-500' : 'text-gray-300'}`}>
