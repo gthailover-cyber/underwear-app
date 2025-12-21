@@ -126,6 +126,7 @@ export interface ChatRoom {
   type: 'public' | 'private';
   hostId: string; // ID of the organizer
   hostName: string;
+  hostAvatar?: string; // Added: host avatar URL
   members: number;
   lastMessage?: string;
   lastMessageTime?: string;

@@ -5,6 +5,7 @@ import { ChatRoom, ChatMessage, Language } from '../types';
 import { TRANSLATIONS } from '../constants';
 import { supabase } from '../lib/supabaseClient';
 import { useAlert } from '../context/AlertContext';
+import { DEFAULT_IMAGES } from '../constants';
 
 interface GroupChatRoomProps {
   room: ChatRoom;
@@ -143,7 +144,7 @@ const GroupChatRoom: React.FC<GroupChatRoomProps> = ({
               id: data.id,
               senderId: data.sender_id,
               senderName: data.sender?.username || 'User',
-              senderAvatar: data.sender?.avatar || 'https://picsum.photos/200',
+              senderAvatar: data.sender?.avatar || DEFAULT_IMAGES.AVATAR,
               text: data.content,
               type: 'text',
               timestamp: new Date(data.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
@@ -229,7 +230,7 @@ const GroupChatRoom: React.FC<GroupChatRoomProps> = ({
           id: msg.id,
           senderId: msg.sender_id,
           senderName: msg.sender?.username || 'User',
-          senderAvatar: msg.sender?.avatar || 'https://picsum.photos/200',
+          senderAvatar: msg.sender?.avatar || DEFAULT_IMAGES.AVATAR,
           text: msg.content,
           type: 'text',
           timestamp: new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
@@ -258,7 +259,7 @@ const GroupChatRoom: React.FC<GroupChatRoomProps> = ({
           .map((m: any) => ({
             id: m.user?.id,
             username: m.user?.username || 'User',
-            avatar: m.user?.avatar || 'https://picsum.photos/200',
+            avatar: m.user?.avatar || DEFAULT_IMAGES.AVATAR,
             role: m.user?.role,
             isOnline: m.user?.last_seen_at ?
               (new Date().getTime() - new Date(m.user.last_seen_at).getTime()) < 600000 : false
@@ -527,7 +528,7 @@ const GroupChatRoom: React.FC<GroupChatRoomProps> = ({
                 onClick={() => onUserClick(room.hostId)}
                 className="relative active:scale-95 transition-transform"
               >
-                <img src={`https://picsum.photos/seed/${room.hostName}/200`} className="w-12 h-12 rounded-full object-cover border-2 border-yellow-500" />
+                <img src={room.hostAvatar || DEFAULT_IMAGES.AVATAR} className="w-12 h-12 rounded-full object-cover border-2 border-yellow-500" />
                 <div className="absolute -bottom-1 -right-1 bg-yellow-500 text-black p-0.5 rounded-full">
                   <Crown size={10} fill="black" />
                 </div>

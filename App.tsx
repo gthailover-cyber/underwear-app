@@ -569,33 +569,34 @@ const App: React.FC = () => {
           }
         }
 
-        const dbStreamers: Streamer[] = data.map((room: any) => ({
-          id: room.id,
-          hostId: room.host_id, // Explicitly map host_id
-          name: room.profiles?.username || 'Unknown Host',
-          avatar: room.profiles?.avatar || DEFAULT_IMAGES.AVATAR,
-          role: room.profiles?.role, // Map role from DB
-          title: room.title,
-          viewerCount: room.viewer_count || 0,
-          likes: room.likes || 0, // Map likes from DB
-          coverImage: room.cover_image || DEFAULT_IMAGES.COVER,
-          videoUrl: room.video_url,
-          youtubeId: room.youtube_id,
-          itemCount: productsMap[room.host_id]?.length || 0, // Populated
-          products: (productsMap[room.host_id] || []).filter(p =>
-            Array.isArray(room.product_ids) && room.product_ids.length > 0
-              ? room.product_ids.includes(p.id)
-              : true
-          ), // Filter only selected products if column exists
-          isAuction: room.is_auction,
-          auctionEndTime: room.auction_end_time ? Number(room.auction_end_time) : undefined,
-          auctionStartingPrice: room.auction_starting_price,
-          currentBid: room.current_bid,
-          topBidder: room.top_bidder_name,
-          // Assuming default to LiveKit if no specific video URL is provided, or forcing it for now
-          useLiveKit: !room.video_url && !room.youtube_id,
-          // hostId is already mapped above
-        }));
+        const dbStreamers: Streamer[] = data.map((room: any) => {
+          const hostProfile = Array.isArray(room.profiles) ? room.profiles[0] : room.profiles;
+          return {
+            id: room.id,
+            hostId: room.host_id,
+            name: hostProfile?.username || 'Unknown Host',
+            avatar: hostProfile?.avatar || DEFAULT_IMAGES.AVATAR,
+            role: hostProfile?.role,
+            title: room.title,
+            viewerCount: room.viewer_count || 0,
+            likes: room.likes || 0,
+            coverImage: room.cover_image || DEFAULT_IMAGES.COVER,
+            videoUrl: room.video_url,
+            youtubeId: room.youtube_id,
+            itemCount: productsMap[room.host_id]?.length || 0,
+            products: (productsMap[room.host_id] || []).filter(p =>
+              Array.isArray(room.product_ids) && room.product_ids.length > 0
+                ? room.product_ids.includes(p.id)
+                : true
+            ),
+            isAuction: room.is_auction,
+            auctionEndTime: room.auction_end_time ? Number(room.auction_end_time) : undefined,
+            auctionStartingPrice: room.auction_starting_price,
+            currentBid: room.current_bid,
+            topBidder: room.top_bidder_name,
+            useLiveKit: !room.video_url && !room.youtube_id,
+          };
+        });
         setStreamers(dbStreamers);
       }
     } catch (err) {
@@ -635,7 +636,7 @@ const App: React.FC = () => {
     try {
       const { data: roomsData, error } = await supabase
         .from('chat_rooms')
-        .select('*')
+        .select('*, host:profiles!host_id(avatar)')
         .order('created_at', { ascending: false });
 
       if (roomsData && !error) {
@@ -646,6 +647,7 @@ const App: React.FC = () => {
           type: room.type,
           hostId: room.host_id,
           hostName: room.host_name,
+          hostAvatar: Array.isArray(room.host) ? room.host[0]?.avatar : room.host?.avatar,
           members: room.members || 1,
           lastMessage: room.last_message || 'No messages yet',
           lastMessageTime: room.last_message_time
@@ -1101,6 +1103,7 @@ const App: React.FC = () => {
           type: data.type,
           hostId: data.host_id,
           hostName: data.host_name,
+          hostAvatar: userProfile.avatar,
           members: data.members,
           lastMessage: data.last_message,
           lastMessageTime: 'Just now'
