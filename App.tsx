@@ -37,6 +37,7 @@ import CustomerOrders from './components/CustomerOrders';
 import Stories from './components/Stories';
 import { TRANSLATIONS, MOCK_USER_PROFILE, DEFAULT_IMAGES } from './constants';
 import { Streamer, Language, CartItem, UserProfile, MessagePreview, Product, Person, ChatRoom, ReceivedGift, AppNotification } from './types';
+import { useAlert } from './context/AlertContext';
 const HEARTBEAT_INTERVAL = 60 * 1000; // 1 minute
 const UI_REFRESH_INTERVAL = 30 * 1000; // 30 seconds
 
@@ -57,6 +58,7 @@ const App: React.FC = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [language, setLanguage] = useState<Language>('th');
   const t = TRANSLATIONS[language];
+  const { showAlert } = useAlert();
   const [activeTab, setActiveTab] = useState<'home' | 'discover' | 'cart' | 'people' | 'profile' | 'all_live' | 'messages' | 'my_products' | 'address' | 'payment' | 'my_orders' | 'organizer_tools' | 'my_rate' | 'my_schedule' | 'my_gifts' | 'customer_orders'>('home');
   const [returnTab, setReturnTab] = useState<string | null>(null); // For navigation history
   const [homeTab, setHomeTab] = useState<'live' | 'rooms' | 'models'>('live'); // New: Sub-tab for Home
@@ -225,7 +227,7 @@ const App: React.FC = () => {
 
   const toggleFollow = React.useCallback(async (followedId: string) => {
     if (!session?.user) {
-      alert(t.pleaseLoginToFollow || "Please login to follow");
+      showAlert({ message: t.pleaseLoginToFollow || "Please login to follow", type: 'warning' });
       return;
     }
 
@@ -254,7 +256,7 @@ const App: React.FC = () => {
         if (error) {
           // Check if error is missing table
           if (error.code === 'PGRST204' || error.message?.includes('not found')) {
-            alert("Database table 'follows' not found. Please run the SQL migration.");
+            showAlert({ message: "Database table 'follows' not found. Please run the SQL migration.", type: 'error' });
             return;
           }
           throw error;
@@ -266,7 +268,7 @@ const App: React.FC = () => {
       if (session?.user?.id) fetchGlobalData(session.user.id);
     } catch (err: any) {
       console.error('Toggle Follow Error:', err);
-      alert(err.message || "Failed to update follow status");
+      showAlert({ message: err.message || "Failed to update follow status", type: 'error' });
     }
   }, [session?.user?.id, followingIds, t]);
 
@@ -627,7 +629,7 @@ const App: React.FC = () => {
 
   const handleOpenStream = (streamer: Streamer) => {
     if (session?.user && streamer.hostId === session.user.id && streamer.id !== currentStreamer?.id) {
-      alert(language === 'th' ? "คุณไม่สามารถดูไลฟ์ของตัวเองได้" : "You cannot watch your own live stream.");
+      showAlert({ message: language === 'th' ? "คุณไม่สามารถดูไลฟ์ของตัวเองได้" : "You cannot watch your own live stream.", type: 'info' });
       return;
     }
     setCurrentStreamer(streamer);
@@ -702,7 +704,7 @@ const App: React.FC = () => {
         console.log("Profile updated successfully in DB");
       } catch (error: any) {
         console.error("Error updating profile in DB:", error.message || error);
-        alert("Failed to save changes to the server. " + (error.message || ''));
+        showAlert({ message: "Failed to save changes to the server. " + (error.message || ''), type: 'error' });
       }
     }
   };
@@ -727,7 +729,7 @@ const App: React.FC = () => {
         console.log("Gallery updated successfully in DB");
       } catch (error: any) {
         console.error("Error updating gallery in DB:", error.message || error);
-        alert("Failed to save gallery changes. Make sure you ran the SQL to add the 'gallery' column.");
+        showAlert({ message: "Failed to save gallery changes. Make sure you ran the SQL to add the 'gallery' column.", type: 'error' });
       }
     }
   };
@@ -735,7 +737,7 @@ const App: React.FC = () => {
   const handlePlusClick = () => {
     // Only Models and Organizers can start a live stream
     if (userProfile.role === 'supporter') {
-      alert(language === 'th' ? "เฉพาะนายแบบและผู้จัดเท่านั้นที่สามารถเริ่มไลฟ์ได้ กรุณาสมัครเป็นนายแบบก่อน" : "Only Models and Organizers can start a live stream. Please apply to become a Model.");
+      showAlert({ message: language === 'th' ? "เฉพาะนายแบบและผู้จัดเท่านั้นที่สามารถเริ่มไลฟ์ได้ กรุณาสมัครเป็นนายแบบก่อน" : "Only Models and Organizers can start a live stream. Please apply to become a Model.", type: 'warning' });
       setIsMenuOpen(true); // Open menu to guide them to apply
       return;
     }
@@ -844,7 +846,7 @@ const App: React.FC = () => {
 
             if (error) {
               console.error("❌ Error creating room in DB:", error.message, error.details, error.hint);
-              alert(`Error starting live in DB: ${error.message}`);
+              showAlert({ message: `Error starting live in DB: ${error.message}`, type: 'error' });
             } else {
               console.log("✅ Room successfully inserted:", data);
             }
@@ -853,7 +855,7 @@ const App: React.FC = () => {
           }
         } else {
           console.error("❌ Cannot insert room: User not authenticated session=", session);
-          alert("You must be logged in to start a live stream.");
+          showAlert({ message: "You must be logged in to start a live stream.", type: 'warning' });
         }
       }
     }, 1000);
@@ -901,11 +903,11 @@ const App: React.FC = () => {
       }));
 
       // 4. Success feedback
-      alert(t.upgradeSuccess);
+      showAlert({ message: t.upgradeSuccess, type: 'success' });
 
     } catch (error: any) {
       console.error('[Upgrade] Error:', error);
-      alert('Failed to upgrade: ' + (error.message || 'Unknown error'));
+      showAlert({ message: 'Failed to upgrade: ' + (error.message || 'Unknown error'), type: 'error' });
     }
   };
 
@@ -924,10 +926,12 @@ const App: React.FC = () => {
     }));
 
     // 2. Feedback
-    alert(language === 'th'
-      ? "อนุมัติเรียบร้อย! คุณเป็น 'นายแบบ' แล้ว สามารถเริ่มไลฟ์ขายของได้เลย"
-      : "Approved! You are now a 'Model' and can start selling."
-    );
+    showAlert({
+      message: language === 'th'
+        ? "อนุมัติเรียบร้อย! คุณเป็น 'นายแบบ' แล้ว สามารถเริ่มไลฟ์ขายของได้เลย"
+        : "Approved! You are now a 'Model' and can start selling.",
+      type: 'success'
+    });
 
     // 3. Persist to Supabase
     if (session?.user) {
@@ -981,7 +985,7 @@ const App: React.FC = () => {
     const total = cartItems.reduce((acc, item) => acc + (item.price * item.quantity), 0);
 
     if (walletBalance < total) {
-      alert('Insufficient Balance. Please Top Up.');
+      showAlert({ message: 'Insufficient Balance. Please Top Up.', type: 'error' });
       setIsWalletOpen(true);
       return;
     }
@@ -989,7 +993,7 @@ const App: React.FC = () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
-        alert('Please login to checkout.');
+        showAlert({ message: 'Please login to checkout.', type: 'warning' });
         return;
       }
 
@@ -1003,7 +1007,7 @@ const App: React.FC = () => {
         .maybeSingle();
 
       if (!addressData) {
-        alert(language === 'th' ? 'กรุณาเพิ่มที่อยู่จัดส่งก่อนสั่งซื้อ' : 'Please add a shipping address first.');
+        showAlert({ message: language === 'th' ? 'กรุณาเพิ่มที่อยู่จัดส่งก่อนสั่งซื้อ' : 'Please add a shipping address first.', type: 'warning' });
         setActiveTab('address');
         return;
       }
@@ -1049,11 +1053,11 @@ const App: React.FC = () => {
         if (itemsError) throw itemsError;
       }
 
-      alert(language === 'th' ? 'ชำระเงินสำเร็จ!' : 'Payment successful!');
+      showAlert({ message: language === 'th' ? 'ชำระเงินสำเร็จ!' : 'Payment successful!', type: 'success' });
 
     } catch (err: any) {
       console.error("Checkout Error:", err);
-      alert('Failed to process order. Please try again.');
+      showAlert({ message: 'Failed to process order. Please try again.', type: 'error' });
     }
   };
 
