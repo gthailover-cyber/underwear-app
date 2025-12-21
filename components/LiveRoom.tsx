@@ -905,60 +905,6 @@ const LiveRoom: React.FC<LiveRoomProps> = ({
                     </div>
                 )}
 
-                {/* Auction Winner Overlay (PROFESSIONAL WIN UI) */}
-                {isAuctionOver && highestBidderName && (
-                    <div className="absolute inset-0 z-[150] flex items-center justify-center p-6 bg-black/60 backdrop-blur-sm animate-fade-in">
-                        <div className="w-full max-w-sm bg-gradient-to-b from-gray-900 via-gray-900 to-black rounded-3xl border-2 border-yellow-500/50 p-8 text-center shadow-[0_0_50px_rgba(234,179,8,0.3)] animate-scale-in overflow-hidden relative">
-                            {/* Decorative Background effects */}
-                            <div className="absolute -top-20 -left-20 w-40 h-40 bg-yellow-500/10 rounded-full blur-3xl animate-pulse"></div>
-                            <div className="absolute -bottom-20 -right-20 w-40 h-40 bg-orange-500/10 rounded-full blur-3xl animate-pulse"></div>
-
-                            <div className="relative z-10">
-                                <div className="w-20 h-20 bg-gradient-to-tr from-yellow-400 to-orange-600 rounded-full flex items-center justify-center mx-auto mb-6 shadow-lg shadow-yellow-900/40 border-4 border-black/20 animate-bounce">
-                                    <Trophy size={40} className="text-black" />
-                                </div>
-
-                                <h1 className="text-3xl font-athletic text-white mb-2 tracking-widest uppercase">
-                                    Win Bid !
-                                </h1>
-
-                                <div className="h-px bg-gradient-to-r from-transparent via-gray-700 to-transparent my-6"></div>
-
-                                <div className="space-y-4">
-                                    <div>
-                                        <p className="text-gray-500 text-[10px] uppercase font-bold tracking-[0.2em] mb-1">Winning Username</p>
-                                        <div className="text-2xl font-black text-white bg-white/5 rounded-xl py-2 border border-white/10">
-                                            {highestBidderName}
-                                        </div>
-                                    </div>
-
-                                    <div>
-                                        <p className="text-gray-500 text-[10px] uppercase font-bold tracking-[0.2em] mb-1">Final Auction Price</p>
-                                        <div className="text-4xl font-black text-yellow-500 font-athletic tracking-tight">
-                                            ฿{currentHighestBid.toLocaleString()}
-                                        </div>
-                                    </div>
-                                </div>
-
-                                {currentUser?.username === highestBidderName && (
-                                    <div className="mt-8 bg-green-500/10 border border-green-500/30 rounded-2xl p-4 animate-pulse">
-                                        <p className="text-green-400 font-bold text-xs flex items-center justify-center gap-2">
-                                            <Check size={16} /> ORDER CREATED AUTOMATICALLY
-                                        </p>
-                                        <p className="text-gray-500 text-[9px] mt-1 italic">Check your Orders page for details</p>
-                                    </div>
-                                )}
-
-                                <button
-                                    onClick={() => setIsAuctionOver(false)}
-                                    className="mt-8 w-full py-3 bg-gray-800 hover:bg-gray-700 text-white rounded-xl font-bold text-sm transition-all"
-                                >
-                                    {t.close}
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                )}
 
 
                 <div className="absolute bottom-0 left-0 right-0 p-4 pb-safe-bottom z-30 bg-gradient-to-t from-black/90 via-black/40 to-transparent">
@@ -1470,6 +1416,63 @@ const LiveRoom: React.FC<LiveRoomProps> = ({
                             <button onClick={() => handleConfirmPurchase('buy_now')} className="flex-1 bg-red-600 hover:bg-red-500 text-white py-3 rounded-xl font-bold transition-colors">Buy Now</button>
                         </div>
                         <button onClick={() => setSelectedProductForPurchase(null)} className="absolute top-4 right-4 text-white hover:text-gray-300"><X /></button>
+                    </div>
+                )}
+                {/* Auction Winner Overlay (PROFESSIONAL WIN UI) - Placed at end for highest priority click accessibility */}
+                {isAuctionOver && highestBidderName && (
+                    <div className="absolute inset-0 z-[999] flex items-center justify-center p-6 bg-black/80 backdrop-blur-sm animate-fade-in">
+                        <div className="w-full max-w-sm bg-gradient-to-b from-gray-900 via-gray-900 to-black rounded-3xl border-2 border-yellow-500/50 p-8 text-center shadow-[0_0_50px_rgba(234,179,8,0.3)] animate-scale-in overflow-hidden relative">
+                            {/* Decorative Background effects */}
+                            <div className="absolute -top-20 -left-20 w-40 h-40 bg-yellow-500/10 rounded-full blur-3xl animate-pulse"></div>
+                            <div className="absolute -bottom-20 -right-20 w-40 h-40 bg-orange-500/10 rounded-full blur-3xl animate-pulse"></div>
+
+                            <div className="relative z-10">
+                                <div className="w-20 h-20 bg-gradient-to-tr from-yellow-400 to-orange-600 rounded-full flex items-center justify-center mx-auto mb-6 shadow-lg shadow-yellow-900/40 border-4 border-black/20 animate-bounce">
+                                    <Trophy size={40} className="text-black" />
+                                </div>
+
+                                <h1 className="text-3xl font-athletic text-white mb-2 tracking-widest uppercase">
+                                    Win Bid !
+                                </h1>
+
+                                <div className="h-px bg-gradient-to-r from-transparent via-gray-700 to-transparent my-6"></div>
+
+                                <div className="space-y-4">
+                                    <div>
+                                        <p className="text-gray-500 text-[10px] uppercase font-bold tracking-[0.2em] mb-1">Winning Username</p>
+                                        <div className="text-2xl font-black text-white bg-white/5 rounded-xl py-2 border border-white/10">
+                                            {highestBidderName}
+                                        </div>
+                                    </div>
+
+                                    <div>
+                                        <p className="text-gray-500 text-[10px] uppercase font-bold tracking-[0.2em] mb-1">Final Auction Price</p>
+                                        <div className="text-4xl font-black text-yellow-500 font-athletic tracking-tight">
+                                            ฿{currentHighestBid.toLocaleString()}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {currentUser?.username === highestBidderName && (
+                                    <div className="mt-8 bg-green-500/10 border border-green-500/30 rounded-2xl p-4 animate-pulse">
+                                        <p className="text-green-400 font-bold text-xs flex items-center justify-center gap-2">
+                                            <Check size={16} /> ORDER CREATED AUTOMATICALLY
+                                        </p>
+                                        <p className="text-gray-500 text-[9px] mt-1 italic">Check your Orders page for details</p>
+                                    </div>
+                                )}
+
+                                <button
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        setIsAuctionOver(false);
+                                    }}
+                                    className="mt-8 w-full py-3 bg-gray-800 hover:bg-gray-700 text-white rounded-xl font-bold text-sm transition-all"
+                                >
+                                    {t.close}
+                                </button>
+                            </div>
+                        </div>
                     </div>
                 )}
             </div>
