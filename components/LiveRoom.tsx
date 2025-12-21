@@ -137,9 +137,11 @@ const LiveRoom: React.FC<LiveRoomProps> = ({
     // Checkout State
     const [showCheckoutModal, setShowCheckoutModal] = useState(false);
     const [userAddress, setUserAddress] = useState<string | null>(null);
+    const [userPhone, setUserPhone] = useState<string | null>(null);
     const [selectedAddressId, setSelectedAddressId] = useState<string | null>(null);
     const [isEditingAddress, setIsEditingAddress] = useState(false);
     const [tempAddress, setTempAddress] = useState('');
+    const [tempPhone, setTempPhone] = useState('');
 
     // Host Controls
     const [giftLogs, setGiftLogs] = useState<GiftLogItem[]>([]);
@@ -213,10 +215,12 @@ const LiveRoom: React.FC<LiveRoomProps> = ({
                     .maybeSingle();
 
                 if (data) {
-                    const formatted = `${data.name} ${data.phone}\n${data.address} ${data.province} ${data.postal_code}`;
+                    const formatted = `${data.name}\n${data.address} ${data.province} ${data.postal_code}`;
                     setUserAddress(formatted);
+                    setUserPhone(data.phone || '');
                     setSelectedAddressId(data.id);
-                    setTempAddress(formatted); // Sync temp address initially
+                    setTempAddress(data.address || ''); // Sync temp address initially
+                    setTempPhone(data.phone || '');
                 }
             }
         };
@@ -608,8 +612,8 @@ const LiveRoom: React.FC<LiveRoomProps> = ({
     const processOrder = async (items: CartItem[]) => {
         const total = items.reduce((acc, item) => acc + (item.price * item.quantity), 0);
 
-        if (!userAddress) {
-            alert(language === 'th' ? "กรุณาป้อนที่อยู่จัดส่งก่อนดำเนินการต่อ" : "Please add a shipping address before proceeding.");
+        if (!userAddress || !userPhone) {
+            alert(language === 'th' ? "กรุณาป้อนที่อยู่และเบอร์โทรศัพท์ก่อนดำเนินการต่อ" : "Please add a shipping address and phone number before proceeding.");
             setCart(items); // Pre-fill cart with the items being bought
             setIsEditingAddress(true);
             setShowCheckoutModal(true);
@@ -683,7 +687,14 @@ const LiveRoom: React.FC<LiveRoomProps> = ({
     };
 
     const handleSaveAddress = async () => {
-        if (!tempAddress.trim()) return;
+        if (!tempAddress.trim()) {
+            alert(language === 'th' ? "กรุณาป้อนที่อยู่" : "Please enter address");
+            return;
+        }
+        if (!tempPhone.trim()) {
+            alert(language === 'th' ? "กรุณาป้อนเบอร์โทรศัพท์" : "Please enter phone number");
+            return;
+        }
 
         try {
             const { data: { user } } = await supabase.auth.getUser();
@@ -695,17 +706,11 @@ const LiveRoom: React.FC<LiveRoomProps> = ({
                 .update({ is_default: false })
                 .eq('user_id', user.id);
 
-            // 2. Save current address as default
-            // Since we only have a single textarea, we'll store the whole block in 'address'
-            // and use placeholders for others if we don't have separate fields.
-            // To be more robust, we try to split by newline if possible icon/phone?
-            // For now, let's keep it simple as a consolidated record.
-
             const addressData = {
                 user_id: user.id,
                 name: currentUser?.username || 'User',
-                phone: '', // Extracted or fallback
-                address: tempAddress,
+                phone: tempPhone.trim(),
+                address: tempAddress.trim(),
                 province: '',
                 postal_code: '',
                 is_default: true
@@ -731,7 +736,9 @@ const LiveRoom: React.FC<LiveRoomProps> = ({
 
             if (res.data) {
                 setSelectedAddressId(res.data.id);
-                setUserAddress(tempAddress);
+                const formatted = `${res.data.name}\n${res.data.address} ${res.data.province} ${res.data.postal_code}`;
+                setUserAddress(formatted);
+                setUserPhone(tempPhone.trim());
                 setIsEditingAddress(false);
                 console.log('[Address] Saved successfully as default');
             }
@@ -1305,17 +1312,33 @@ const LiveRoom: React.FC<LiveRoomProps> = ({
                                         <button onClick={() => setIsEditingAddress(true)} className="text-blue-400 text-xs text-blue-500">Edit</button>
                                     </div>
                                     {isEditingAddress ? (
-                                        <div>
-                                            <textarea
-                                                className="w-full bg-black border border-gray-700 rounded p-2 text-sm text-white"
-                                                value={tempAddress}
-                                                onChange={e => setTempAddress(e.target.value)}
-                                                placeholder="Enter full address..."
-                                            />
-                                            <button onClick={handleSaveAddress} className="mt-2 bg-white text-black text-xs px-3 py-1 rounded font-bold">Save</button>
+                                        <div className="space-y-3">
+                                            <div>
+                                                <label className="text-[10px] uppercase text-gray-500 font-bold mb-1 block">Phone Number *</label>
+                                                <input
+                                                    type="tel"
+                                                    className="w-full bg-black border border-gray-700 rounded-lg p-3 text-sm text-white focus:border-blue-500 outline-none"
+                                                    value={tempPhone}
+                                                    onChange={e => setTempPhone(e.target.value)}
+                                                    placeholder="081-xxxxxxx"
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="text-[10px] uppercase text-gray-500 font-bold mb-1 block">Full Address *</label>
+                                                <textarea
+                                                    className="w-full bg-black border border-gray-700 rounded-lg p-3 text-sm text-white focus:border-blue-500 outline-none h-24"
+                                                    value={tempAddress}
+                                                    onChange={e => setTempAddress(e.target.value)}
+                                                    placeholder="Enter full address..."
+                                                />
+                                            </div>
+                                            <button onClick={handleSaveAddress} className="w-full bg-blue-600 hover:bg-blue-500 text-white py-2 rounded-xl font-bold transition-all">Save Changes</button>
                                         </div>
                                     ) : (
-                                        <p className="text-sm text-gray-300 whitespace-pre-line">{userAddress || "No address set. Please edit."}</p>
+                                        <div className="space-y-1">
+                                            {userPhone && <p className="text-sm font-bold text-white flex items-center gap-2"><MapPin size={14} className="text-blue-400" /> {userPhone}</p>}
+                                            <p className="text-sm text-gray-400 whitespace-pre-line pl-5">{userAddress || "No address set. Please edit."}</p>
+                                        </div>
                                     )}
                                 </div>
 
