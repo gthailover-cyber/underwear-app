@@ -137,6 +137,9 @@ export const TRANSLATIONS = {
     muteUser: 'Mute',
     activeRooms: 'Active Rooms',
     totalMembers: 'Total Members',
+    approveRequests: 'Approve Requests',
+    deleteRoom: 'Delete Room',
+    confirmDelete: 'Are you sure you want to delete this room?',
     // Wallet Translations
     wallet: 'Wallet',
     currentBalance: 'Current Balance',
@@ -415,6 +418,9 @@ export const TRANSLATIONS = {
     muteUser: 'ปิดเสียง',
     activeRooms: 'ห้องที่ใช้งานอยู่',
     totalMembers: 'สมาชิกทั้งหมด',
+    approveRequests: 'อนุมัติคำขอ',
+    deleteRoom: 'ลบห้องนี้',
+    confirmDelete: 'คุณแน่ใจหรือไม่ว่าต้องการลบห้องนี้?',
     // Wallet Translations
     wallet: 'กระเป๋าเงิน',
     currentBalance: 'ยอดเงินคงเหลือ',

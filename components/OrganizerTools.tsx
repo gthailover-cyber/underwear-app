@@ -33,6 +33,9 @@ const OrganizerTools: React.FC<OrganizerToolsProps> = ({
     const [searchTerm, setSearchTerm] = useState('');
     const [dbMembers, setDbMembers] = useState<any[]>([]);
     const [loading, setLoading] = useState(false);
+    const [menuOpenRoomId, setMenuOpenRoomId] = useState<string | null>(null);
+    const [roomToDelete, setRoomToDelete] = useState<ChatRoom | null>(null);
+    const [filterRoomId, setFilterRoomId] = useState<string | null>(null);
 
     const isOnline = (lastSeenAt?: string) => {
         if (!lastSeenAt) return false;
@@ -166,6 +169,29 @@ const OrganizerTools: React.FC<OrganizerToolsProps> = ({
         }
     };
 
+    const handleDeleteRoom = async () => {
+        if (!roomToDelete) return;
+
+        try {
+            const { error } = await supabase
+                .from('chat_rooms')
+                .delete()
+                .eq('id', roomToDelete.id);
+
+            if (error) throw error;
+
+            showAlert({ message: 'Room deleted successfully', type: 'success' });
+            setRoomToDelete(null);
+
+            // To refresh room list, we rely on App.tsx realtime or re-fetch
+            // But since this is a local prop, host might need to re-open tools
+            // or we could add a refresh callback. For now, closing modal is fine.
+        } catch (err: any) {
+            console.error('[OrganizerTools] Delete room error:', err);
+            showAlert({ message: 'Failed to delete room', type: 'error' });
+        }
+    };
+
     // Filter my rooms (where host_id is currentUserId)
     const myRooms = chatRooms.filter(r => r.hostId === currentUserId);
 
@@ -176,10 +202,14 @@ const OrganizerTools: React.FC<OrganizerToolsProps> = ({
     const filteredMembers = dbMembers.filter(m =>
         (m.profiles?.username?.toLowerCase().includes(searchTerm.toLowerCase()) ||
             m.chat_rooms?.name?.toLowerCase().includes(searchTerm.toLowerCase())) &&
-        m.status === 'approved'
+        m.status === 'approved' &&
+        (!filterRoomId || m.room_id === filterRoomId)
     );
 
-    const pendingRequests = dbMembers.filter(m => m.status === 'pending');
+    const pendingRequests = dbMembers.filter(m =>
+        m.status === 'pending' &&
+        (!filterRoomId || m.room_id === filterRoomId)
+    );
 
     return (
         <div className="pb-24 animate-fade-in min-h-screen bg-black flex flex-col">
@@ -249,7 +279,7 @@ const OrganizerTools: React.FC<OrganizerToolsProps> = ({
                         </div>
 
                         {filteredRooms.map(room => (
-                            <div key={room.id} className="bg-gray-900 border border-gray-800 rounded-xl p-3 flex gap-3 items-center group">
+                            <div key={room.id} className="bg-gray-900 border border-gray-800 rounded-xl p-3 flex gap-3 items-center group relative">
                                 <img src={room.image} className="w-12 h-12 rounded-lg object-cover bg-gray-800" />
                                 <div className="flex-1 min-w-0">
                                     <div className="flex items-center justify-between gap-2">
@@ -270,14 +300,75 @@ const OrganizerTools: React.FC<OrganizerToolsProps> = ({
                                         </span>
                                     </div>
                                 </div>
-                                <button className="p-2 text-gray-500 hover:text-white rounded-full hover:bg-gray-800">
-                                    <MoreHorizontal size={18} />
-                                </button>
+                                <div className="relative">
+                                    <button
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            setMenuOpenRoomId(menuOpenRoomId === room.id ? null : room.id);
+                                        }}
+                                        className="p-2 text-gray-500 hover:text-white rounded-full hover:bg-gray-800 transition-colors"
+                                    >
+                                        <MoreHorizontal size={18} />
+                                    </button>
+
+                                    {/* Action Menu */}
+                                    {menuOpenRoomId === room.id && (
+                                        <>
+                                            <div
+                                                className="fixed inset-0 z-40"
+                                                onClick={() => setMenuOpenRoomId(null)}
+                                            ></div>
+                                            <div className="absolute right-0 top-full mt-1 w-48 bg-gray-900 border border-gray-800 rounded-xl shadow-2xl z-50 overflow-hidden animate-scale-up">
+                                                {room.type === 'private' && (
+                                                    <button
+                                                        onClick={() => {
+                                                            setFilterRoomId(room.id);
+                                                            setActiveTab('members');
+                                                            setMenuOpenRoomId(null);
+                                                        }}
+                                                        className="w-full px-4 py-3 text-left text-sm text-white hover:bg-gray-800 transition-colors flex items-center gap-2 border-b border-gray-800"
+                                                    >
+                                                        <Users size={16} className="text-yellow-500" />
+                                                        {t.approveRequests}
+                                                    </button>
+                                                )}
+                                                <button
+                                                    onClick={() => {
+                                                        setRoomToDelete(room);
+                                                        setMenuOpenRoomId(null);
+                                                    }}
+                                                    className="w-full px-4 py-3 text-left text-sm text-red-500 hover:bg-red-500/10 transition-colors flex items-center gap-2"
+                                                >
+                                                    <Ban size={16} />
+                                                    {t.deleteRoom}
+                                                </button>
+                                            </div>
+                                        </>
+                                    )}
+                                </div>
                             </div>
                         ))}
                     </div>
                 ) : (
                     <div className="space-y-6">
+                        {/* Member Filter Breadcrumb */}
+                        {filterRoomId && (
+                            <div className="flex items-center justify-between bg-yellow-500/10 border border-yellow-500/20 rounded-xl p-3 mb-2 animate-fade-in">
+                                <div className="flex items-center gap-2">
+                                    <Users size={16} className="text-yellow-500" />
+                                    <span className="text-yellow-500 text-sm font-bold">
+                                        Filtering: {myRooms.find(r => r.id === filterRoomId)?.name}
+                                    </span>
+                                </div>
+                                <button
+                                    onClick={() => setFilterRoomId(null)}
+                                    className="text-[10px] uppercase font-black text-yellow-500 hover:text-white"
+                                >
+                                    Show All
+                                </button>
+                            </div>
+                        )}
+
                         {/* Pending Requests Section */}
                         {pendingRequests.length > 0 && (
                             <div className="space-y-3">
@@ -351,6 +442,35 @@ const OrganizerTools: React.FC<OrganizerToolsProps> = ({
                     </div>
                 )}
             </div>
+
+            {/* Delete Confirmation Modal */}
+            {roomToDelete && (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center px-4">
+                    <div className="fixed inset-0 bg-black/80 backdrop-blur-sm" onClick={() => setRoomToDelete(null)}></div>
+                    <div className="bg-gray-900 border border-gray-800 rounded-3xl p-6 w-full max-w-sm relative z-10 animate-scale-up shadow-2xl">
+                        <div className="w-16 h-16 bg-red-500/10 rounded-full flex items-center justify-center mx-auto mb-4 border border-red-500/20">
+                            <Ban size={32} className="text-red-500" />
+                        </div>
+                        <h3 className="text-xl font-athletic text-white text-center mb-2">{t.deleteRoom}</h3>
+                        <p className="text-gray-400 text-center text-sm mb-6">{t.confirmDelete}</p>
+
+                        <div className="flex flex-col gap-3">
+                            <button
+                                onClick={handleDeleteRoom}
+                                className="w-full py-3 bg-red-600 text-white font-black rounded-xl hover:bg-red-700 transition-colors shadow-lg shadow-red-900/20"
+                            >
+                                {t.delete}
+                            </button>
+                            <button
+                                onClick={() => setRoomToDelete(null)}
+                                className="w-full py-3 bg-gray-800 text-gray-300 font-bold rounded-xl hover:bg-gray-700 transition-colors"
+                            >
+                                {t.cancel}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
 
         </div>
     );
