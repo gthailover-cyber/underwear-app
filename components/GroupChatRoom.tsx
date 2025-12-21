@@ -81,8 +81,8 @@ const GroupChatRoom: React.FC<GroupChatRoomProps> = ({
           .eq('user_id', user.id)
           .maybeSingle();
 
-        if (!existingMember && room.type === 'public') {
-          // Auto-join public room
+        if (!existingMember && room.type === 'public' && user.id !== room.hostId) {
+          // Auto-join public room (except for host who is host)
           const { error } = await supabase
             .from('room_members')
             .insert({
@@ -543,9 +543,9 @@ const GroupChatRoom: React.FC<GroupChatRoomProps> = ({
             </div>
 
             <div className="h-px bg-gray-800 my-2"></div>
-            <h3 className="text-xs text-gray-500 uppercase font-bold mb-2">All Members</h3>
+            <h3 className="text-xs text-gray-500 uppercase font-bold mb-2">All Members ({members.filter(m => m.id !== room.hostId).length})</h3>
 
-            {members.map(member => (
+            {members.filter(m => m.id !== room.hostId).map(member => (
               <div key={member.id} className="flex items-center justify-between p-2 rounded-lg hover:bg-gray-900 transition-colors">
                 <button
                   onClick={() => onUserClick(member.id)}
