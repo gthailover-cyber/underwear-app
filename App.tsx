@@ -104,6 +104,7 @@ const App: React.FC = () => {
   const [pendingJoinRoom, setPendingJoinRoom] = useState<ChatRoom | null>(null);
   const [roomApprovalStatus, setRoomApprovalStatus] = useState<'none' | 'pending' | 'rejected'>('none');
   const [pendingCounts, setPendingCounts] = useState<{ [roomId: string]: number }>({});
+  const [myApprovedRoomIds, setMyApprovedRoomIds] = useState<string[]>([]);
 
   // Gifts State
   const [receivedGifts, setReceivedGifts] = useState<ReceivedGift[]>([]);
@@ -637,6 +638,17 @@ const App: React.FC = () => {
               counts[row.room_id] = (counts[row.room_id] || 0) + 1;
             });
             setPendingCounts(counts);
+          }
+
+          // Fetch my approved memberships
+          const { data: myMemberships } = await supabase
+            .from('room_members')
+            .select('room_id')
+            .eq('user_id', userId)
+            .eq('status', 'approved');
+
+          if (myMemberships) {
+            setMyApprovedRoomIds(myMemberships.map(m => m.room_id));
           }
         }
       }
@@ -1422,6 +1434,7 @@ const App: React.FC = () => {
           onOpenChat={handleOpenChat}
           onOpenGroup={handleOpenGroup}
           chatRooms={chatRooms}
+          myApprovedRoomIds={myApprovedRoomIds}
           userProfile={userProfile}
           onCreateRoom={() => setIsCreateRoomOpen(true)}
           currentUserId={session?.user?.id}

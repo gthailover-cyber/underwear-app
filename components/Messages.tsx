@@ -12,6 +12,7 @@ interface MessagesProps {
   onOpenChat: (user: MessagePreview) => void;
   onOpenGroup: (room: ChatRoom) => void;
   chatRooms: ChatRoom[];
+  myApprovedRoomIds: string[];
   userProfile: UserProfile;
   onCreateRoom: () => void;
   currentUserId?: string;
@@ -23,6 +24,7 @@ const Messages: React.FC<MessagesProps> = ({
   onOpenChat,
   onOpenGroup,
   chatRooms,
+  myApprovedRoomIds,
   userProfile,
   onCreateRoom,
   currentUserId
@@ -103,6 +105,7 @@ const Messages: React.FC<MessagesProps> = ({
   );
 
   const filteredGroups = chatRooms.filter(room =>
+    (room.hostId === currentUserId || myApprovedRoomIds.includes(room.id)) &&
     room.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
