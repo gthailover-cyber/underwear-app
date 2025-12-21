@@ -142,8 +142,50 @@ const GroupChatRoom: React.FC<GroupChatRoomProps> = ({
       )
       .subscribe();
 
+    // Realtime listener for room members (for member count)
+    const membersChannel = supabase
+      .channel(`room_members:${room.id}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'room_members',
+          filter: `room_id=eq.${room.id}`
+        },
+        (payload) => {
+          console.log('[Room] Members changed:', payload);
+          // Refresh members list
+          fetchMembers();
+        }
+      )
+      .subscribe();
+
+    // Realtime listener for room updates (member count)
+    const roomChannel = supabase
+      .channel(`chat_room:${room.id}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'chat_rooms',
+          filter: `id=eq.${room.id}`
+        },
+        (payload) => {
+          console.log('[Room] Room updated:', payload);
+          if (payload.new.members !== undefined) {
+            // Update local room state if needed
+            room.members = payload.new.members;
+          }
+        }
+      )
+      .subscribe();
+
     return () => {
       supabase.removeChannel(messagesChannel);
+      supabase.removeChannel(membersChannel);
+      supabase.removeChannel(roomChannel);
     };
   }, [room.id]);
 
