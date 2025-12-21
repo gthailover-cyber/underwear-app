@@ -2,13 +2,16 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { ArrowLeft, MoreVertical, Send, Plus, Smile, Users, Lock, Globe, Gift, Coins, X, Check, Crown, BicepsFlexed } from 'lucide-react';
 import { ChatRoom, ChatMessage, Language } from '../types';
-import { TRANSLATIONS, MOCK_PEOPLE } from '../constants';
+import { TRANSLATIONS } from '../constants';
+import { supabase } from '../lib/supabaseClient';
+import { useAlert } from '../context/AlertContext';
 
 interface GroupChatRoomProps {
   room: ChatRoom;
   language: Language;
   onBack: () => void;
   currentUser: string;
+  currentUserId?: string;
   walletBalance: number;
   onUseCoins: (amount: number) => void;
   onOpenWallet: () => void;
@@ -22,31 +25,26 @@ const GIFTS = [
   { id: 4, name: 'Trophy', price: 100, icon: '🏆' },
 ];
 
-const GroupChatRoom: React.FC<GroupChatRoomProps> = ({ room, language, onBack, currentUser, walletBalance, onUseCoins, onOpenWallet }) => {
+const GroupChatRoom: React.FC<GroupChatRoomProps> = ({
+  room,
+  language,
+  onBack,
+  currentUser,
+  currentUserId,
+  walletBalance,
+  onUseCoins,
+  onOpenWallet
+}) => {
   const t = TRANSLATIONS[language];
+  const { showAlert } = useAlert();
   const [activeTab, setActiveTab] = useState<'chat' | 'members'>('chat');
   const [showGifts, setShowGifts] = useState(false);
-
-  // Animation State
   const [giftAnimation, setGiftAnimation] = useState<{ id: number; icon: string; name: string; sender: string } | null>(null);
-
-  const [messages, setMessages] = useState<ChatMessage[]>([
-    {
-      id: 'g1',
-      senderId: 'host',
-      senderName: room.hostName,
-      senderAvatar: `https://picsum.photos/seed/${room.hostName}/200`,
-      text: `Welcome to ${room.name}!`,
-      type: 'text',
-      timestamp: '10:00',
-      read: true
-    }
-  ]);
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [members, setMembers] = useState<any[]>([]);
   const [inputText, setInputText] = useState('');
+  const [isMember, setIsMember] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-
-  // Filter out the current user from the members list
-  const members = MOCK_PEOPLE.filter(p => p.username !== currentUser).slice(0, 15); // Take first 15 for demo
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -58,21 +56,188 @@ const GroupChatRoom: React.FC<GroupChatRoomProps> = ({ room, language, onBack, c
     }
   }, [messages, activeTab]);
 
-  const handleSend = (e: React.FormEvent) => {
+  // Auto-join room and fetch data
+  useEffect(() => {
+    const initRoom = async () => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return;
+
+        // Check if already a member
+        const { data: existingMember } = await supabase
+          .from('room_members')
+          .select('*')
+          .eq('room_id', room.id)
+          .eq('user_id', user.id)
+          .maybeSingle();
+
+        if (!existingMember && room.type === 'public') {
+          // Auto-join public room
+          const { error } = await supabase
+            .from('room_members')
+            .insert({
+              room_id: room.id,
+              user_id: user.id
+            });
+
+          if (!error) {
+            setIsMember(true);
+            console.log('[Room] Auto-joined public room');
+          }
+        } else if (existingMember) {
+          setIsMember(true);
+        }
+
+        // Fetch messages
+        await fetchMessages();
+
+        // Fetch members
+        await fetchMembers();
+
+      } catch (error) {
+        console.error('[Room] Init error:', error);
+      }
+    };
+
+    initRoom();
+
+    // Realtime listener for new messages
+    const messagesChannel = supabase
+      .channel(`room_messages:${room.id}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'room_messages',
+          filter: `room_id=eq.${room.id}`
+        },
+        async (payload) => {
+          console.log('[Room] New message:', payload);
+
+          // Fetch full message with sender profile
+          const { data } = await supabase
+            .from('room_messages')
+            .select(`
+              *,
+              sender:sender_id (username, avatar)
+            `)
+            .eq('id', payload.new.id)
+            .single();
+
+          if (data) {
+            const newMsg: ChatMessage = {
+              id: data.id,
+              senderId: data.sender_id,
+              senderName: data.sender?.username || 'User',
+              senderAvatar: data.sender?.avatar || 'https://picsum.photos/200',
+              text: data.content,
+              type: 'text',
+              timestamp: new Date(data.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+              read: true
+            };
+            setMessages(prev => [...prev, newMsg]);
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(messagesChannel);
+    };
+  }, [room.id]);
+
+  const fetchMessages = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('room_messages')
+        .select(`
+          *,
+          sender:sender_id (username, avatar)
+        `)
+        .eq('room_id', room.id)
+        .order('created_at', { ascending: true })
+        .limit(50);
+
+      if (data && !error) {
+        const formattedMessages: ChatMessage[] = data.map((msg: any) => ({
+          id: msg.id,
+          senderId: msg.sender_id,
+          senderName: msg.sender?.username || 'User',
+          senderAvatar: msg.sender?.avatar || 'https://picsum.photos/200',
+          text: msg.content,
+          type: 'text',
+          timestamp: new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          read: true
+        }));
+        setMessages(formattedMessages);
+      }
+    } catch (error) {
+      console.error('[Room] Fetch messages error:', error);
+    }
+  };
+
+  const fetchMembers = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('room_members')
+        .select(`
+          *,
+          user:user_id (id, username, avatar, role, last_seen_at)
+        `)
+        .eq('room_id', room.id);
+
+      if (data && !error) {
+        setMembers(data.map((m: any) => ({
+          id: m.user?.id,
+          username: m.user?.username || 'User',
+          avatar: m.user?.avatar || 'https://picsum.photos/200',
+          role: m.user?.role,
+          isOnline: m.user?.last_seen_at ?
+            (new Date().getTime() - new Date(m.user.last_seen_at).getTime()) < 600000 : false
+        })));
+      }
+    } catch (error) {
+      console.error('[Room] Fetch members error:', error);
+    }
+  };
+
+  const handleSend = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!inputText.trim()) return;
 
-    const newMessage: ChatMessage = {
-      id: Date.now().toString(),
-      senderId: 'me',
-      text: inputText,
-      type: 'text',
-      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-      read: false
-    };
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        showAlert({ message: 'Please login to send messages', type: 'warning' });
+        return;
+      }
 
-    setMessages([...messages, newMessage]);
-    setInputText('');
+      // Insert message
+      const { error } = await supabase
+        .from('room_messages')
+        .insert({
+          room_id: room.id,
+          sender_id: user.id,
+          content: inputText.trim()
+        });
+
+      if (error) throw error;
+
+      // Update room's last message
+      await supabase
+        .from('chat_rooms')
+        .update({
+          last_message: inputText.trim().substring(0, 50),
+          last_message_time: new Date().toISOString()
+        })
+        .eq('id', room.id);
+
+      setInputText('');
+    } catch (error: any) {
+      console.error('[Room] Send error:', error);
+      showAlert({ message: 'Failed to send message', type: 'error' });
+    }
   };
 
   const handleSendGift = (gift: typeof GIFTS[0]) => {
@@ -96,7 +261,7 @@ const GroupChatRoom: React.FC<GroupChatRoomProps> = ({ room, language, onBack, c
       setGiftAnimation({ id, icon: gift.icon, name: gift.name, sender: 'Me' });
       setTimeout(() => setGiftAnimation(null), 3000);
     } else {
-      alert('Insufficient coins!');
+      showAlert({ message: 'Insufficient coins!', type: 'error' });
       onOpenWallet();
     }
   };
@@ -215,8 +380,8 @@ const GroupChatRoom: React.FC<GroupChatRoomProps> = ({ room, language, onBack, c
 
                     {/* Message Bubble */}
                     <div className={`rounded-2xl px-4 py-3 shadow-sm relative ${isMe
-                        ? 'bg-red-600 text-white rounded-br-sm'
-                        : 'bg-gray-800 text-gray-100 rounded-bl-sm border border-gray-700'
+                      ? 'bg-red-600 text-white rounded-br-sm'
+                      : 'bg-gray-800 text-gray-100 rounded-bl-sm border border-gray-700'
                       }`}>
                       <p className="text-sm leading-relaxed">{msg.text}</p>
                     </div>
@@ -325,8 +490,8 @@ const GroupChatRoom: React.FC<GroupChatRoomProps> = ({ room, language, onBack, c
             onClick={handleSend}
             disabled={!inputText.trim()}
             className={`p-3 rounded-full flex-shrink-0 transition-all ${inputText.trim()
-                ? 'bg-red-600 text-white shadow-lg shadow-red-900/50 hover:bg-red-500 transform active:scale-95'
-                : 'bg-gray-800 text-gray-600'
+              ? 'bg-red-600 text-white shadow-lg shadow-red-900/50 hover:bg-red-500 transform active:scale-95'
+              : 'bg-gray-800 text-gray-600'
               }`}
           >
             <Send size={20} className={inputText.trim() ? "translate-x-0.5" : ""} />
@@ -358,8 +523,8 @@ const GroupChatRoom: React.FC<GroupChatRoomProps> = ({ room, language, onBack, c
                   key={gift.id}
                   onClick={() => handleSendGift(gift)}
                   className={`relative flex flex-col items-center justify-center p-2 rounded-xl border transition-all active:scale-95 group ${walletBalance >= gift.price
-                      ? 'bg-gray-800 border-gray-700 hover:border-yellow-500 hover:bg-gray-750'
-                      : 'bg-gray-800/50 border-gray-800 opacity-60 cursor-not-allowed'
+                    ? 'bg-gray-800 border-gray-700 hover:border-yellow-500 hover:bg-gray-750'
+                    : 'bg-gray-800/50 border-gray-800 opacity-60 cursor-not-allowed'
                     }`}
                 >
                   <div className="text-2xl mb-1 group-hover:scale-110 transition-transform">{gift.icon}</div>
