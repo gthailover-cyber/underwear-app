@@ -558,7 +558,15 @@ const GroupChatRoom: React.FC<GroupChatRoomProps> = ({
       {activeTab === 'chat' && (
         <div className="p-3 bg-gray-900/90 backdrop-blur border-t border-gray-800 flex items-end gap-2 sticky bottom-0 z-30 pb-safe">
           <button
-            onClick={() => setShowGifts(true)}
+            onClick={() => {
+              if (isHost) {
+                // Placeholder for future host function
+                console.log('Host clicked add action');
+                showAlert({ message: 'Host tools coming soon!', type: 'info' });
+              } else {
+                setShowGifts(true);
+              }
+            }}
             className="p-2.5 text-yellow-500 hover:text-yellow-400 bg-gray-800 border border-yellow-500/30 rounded-full transition-colors flex-shrink-0"
           >
             {isHost ? <Plus size={22} /> : <Gift size={22} />}
