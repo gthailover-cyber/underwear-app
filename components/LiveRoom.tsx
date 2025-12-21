@@ -9,6 +9,7 @@ import {
 import { Streamer, Comment, Product } from '../types';
 import { TRANSLATIONS } from '../constants';
 import { GIFTS } from '../constants';
+import { useAlert } from '../context/AlertContext';
 import { socketService } from '../services/socket';
 import { supabase } from '../lib/supabaseClient';
 import { liveKitService } from '../services/livekit';
@@ -67,6 +68,7 @@ const LiveRoom: React.FC<LiveRoomProps> = ({
     followingIds = []
 }) => {
     const t = TRANSLATIONS[language];
+    const { showAlert } = useAlert();
 
     // Initialize local wallet balance from prop if available, else usage internal mock (which was 5000)
     // For consistency with App.tsx which holds the truth, we should prefer prop.
@@ -518,7 +520,7 @@ const LiveRoom: React.FC<LiveRoomProps> = ({
         if (myBidAmount > currentHighestBid) {
             socketService.emit('place_bid', { amount: myBidAmount });
         } else {
-            alert(t.bidTooLow);
+            showAlert({ message: t.bidTooLow, type: 'warning' });
         }
     };
 
@@ -613,7 +615,10 @@ const LiveRoom: React.FC<LiveRoomProps> = ({
         const total = items.reduce((acc, item) => acc + (item.price * item.quantity), 0);
 
         if (!userAddress || !userPhone) {
-            alert(language === 'th' ? "กรุณาป้อนที่อยู่และเบอร์โทรศัพท์ก่อนดำเนินการต่อ" : "Please add a shipping address and phone number before proceeding.");
+            showAlert({
+                message: language === 'th' ? "กรุณาป้อนที่อยู่และเบอร์โทรศัพท์ก่อนดำเนินการต่อ" : "Please add a shipping address and phone number before proceeding.",
+                type: 'warning'
+            });
             setCart(items); // Pre-fill cart with the items being bought
             setIsEditingAddress(true);
             setShowCheckoutModal(true);
@@ -621,7 +626,7 @@ const LiveRoom: React.FC<LiveRoomProps> = ({
         }
 
         if (walletBalance < total) {
-            alert('Insufficient coins. Please top up.');
+            showAlert({ message: 'Insufficient coins. Please top up.', type: 'error' });
             onOpenWallet();
             return false;
         }
@@ -667,13 +672,19 @@ const LiveRoom: React.FC<LiveRoomProps> = ({
                 }
             }
 
-            alert(`Payment successful! Items will be shipped to: ${userAddress}`);
+            showAlert({
+                message: `Payment successful! Items will be shipped to: ${userAddress}`,
+                type: 'success'
+            });
             onNewOrder?.();
             return true;
 
         } catch (err: any) {
             console.error("Exception creating order:", err);
-            alert(`Failed to create order: ${err.message || err}`);
+            showAlert({
+                message: `Failed to create order: ${err.message || err}`,
+                type: 'error'
+            });
             return false;
         }
     };
@@ -688,11 +699,17 @@ const LiveRoom: React.FC<LiveRoomProps> = ({
 
     const handleSaveAddress = async () => {
         if (!tempAddress.trim()) {
-            alert(language === 'th' ? "กรุณาป้อนที่อยู่" : "Please enter address");
+            showAlert({
+                message: language === 'th' ? "กรุณาป้อนที่อยู่" : "Please enter address",
+                type: 'warning'
+            });
             return;
         }
         if (!tempPhone.trim()) {
-            alert(language === 'th' ? "กรุณาป้อนเบอร์โทรศัพท์" : "Please enter phone number");
+            showAlert({
+                message: language === 'th' ? "กรุณาป้อนเบอร์โทรศัพท์" : "Please enter phone number",
+                type: 'warning'
+            });
             return;
         }
 
@@ -744,7 +761,10 @@ const LiveRoom: React.FC<LiveRoomProps> = ({
             }
         } catch (err: any) {
             console.error('[Address] Error saving:', err);
-            alert("Failed to save address: " + (err.message || err));
+            showAlert({
+                message: "Failed to save address: " + (err.message || err),
+                type: 'error'
+            });
         }
     };
 
@@ -788,7 +808,7 @@ const LiveRoom: React.FC<LiveRoomProps> = ({
                 size: purchaseConfig.size
             };
             onAddToCartLocal(cartItem);
-            alert('Added to Cart!');
+            showAlert({ message: 'Added to Cart!', type: 'success' });
             setSelectedProductForPurchase(null);
         }
     };
