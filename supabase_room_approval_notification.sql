@@ -1,17 +1,20 @@
--- Trigger to automatically create a notification when a room membership is approved
+-- Fixed: Trigger with unique variable names to avoid ambiguity
 CREATE OR REPLACE FUNCTION public.handle_room_approval_notification()
 RETURNS TRIGGER AS $$
 DECLARE
-    room_name TEXT;
-    room_image TEXT;
-    host_id UUID;
+    v_room_name TEXT;
+    v_room_image TEXT;
+    v_host_id UUID;
 BEGIN
     -- Check if status changed from 'pending' to 'approved'
     IF (OLD.status = 'pending' AND NEW.status = 'approved') THEN
         -- Get room info
-        SELECT name, image, host_id INTO room_name, room_image, host_id FROM public.chat_rooms WHERE id = NEW.room_id;
+        SELECT name, image, host_id 
+        INTO v_room_name, v_room_image, v_host_id 
+        FROM public.chat_rooms 
+        WHERE id = NEW.room_id;
         
-        -- Insert notification for the user who was approved
+        -- Insert notification
         INSERT INTO public.notifications (
             user_id, 
             actor_id, 
@@ -23,10 +26,10 @@ BEGIN
         )
         VALUES (
             NEW.user_id, 
-            host_id, 
+            v_host_id, 
             'room_approval', 
-            'อนุมัติการเข้าห้อง "' || COALESCE(room_name, 'ห้องส่วนตัว') || '" แล้ว',
-            room_image,
+            'อนุมัติการเข้าห้อง "' || COALESCE(v_room_name, 'ห้องส่วนตัว') || '" แล้ว',
+            v_room_image,
             false,
             now()
         );
