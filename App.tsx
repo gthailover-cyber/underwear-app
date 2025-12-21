@@ -351,6 +351,17 @@ const App: React.FC = () => {
       })
       .subscribe();
 
+    // Realtime listener for chat rooms
+    const chatRoomsChannel = supabase
+      .channel('public:chat_rooms')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'chat_rooms' }, (payload) => {
+        console.log('Realtime Chat Room Update:', payload);
+        if (session?.user?.id) {
+          fetchGlobalData(session.user.id);
+        }
+      })
+      .subscribe();
+
     let notificationsChannel: any = null;
     let messagesChannel: any = null;
     let profilesChannel: any = null;
@@ -449,6 +460,7 @@ const App: React.FC = () => {
 
     return () => {
       supabase.removeChannel(channel);
+      supabase.removeChannel(chatRoomsChannel);
       if (notificationsChannel) {
         supabase.removeChannel(notificationsChannel);
       }
@@ -572,13 +584,40 @@ const App: React.FC = () => {
       console.error('Error fetching people:', err);
     }
 
-    // 4. Following
+    // 4. Fetch Chat Rooms
+    try {
+      const { data: roomsData, error } = await supabase
+        .from('chat_rooms')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (roomsData && !error) {
+        const formattedRooms: ChatRoom[] = roomsData.map((room: any) => ({
+          id: room.id,
+          name: room.name,
+          image: room.image || DEFAULT_IMAGES.COVER,
+          type: room.type,
+          hostId: room.host_id,
+          hostName: room.host_name,
+          members: room.members || 1,
+          lastMessage: room.last_message || 'No messages yet',
+          lastMessageTime: room.last_message_time
+            ? new Date(room.last_message_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+            : 'Just now'
+        }));
+        setChatRooms(formattedRooms);
+      }
+    } catch (err) {
+      console.error('Error fetching chat rooms:', err);
+    }
+
+    // 5. Following
     fetchFollowing(userId);
 
-    // 5. Notifications
+    // 6. Notifications
     fetchNotifications(userId);
 
-    // 6. Unread Chat Messages
+    // 7. Unread Chat Messages
     fetchUnreadMessagesCount(userId);
   };
 
