@@ -14,6 +14,7 @@ interface OrganizerToolsProps {
     initialTab?: 'rooms' | 'members';
     currentUser: string;
     currentUserId?: string;
+    pendingCounts?: { [roomId: string]: number };
 }
 
 const OrganizerTools: React.FC<OrganizerToolsProps> = ({
@@ -23,7 +24,8 @@ const OrganizerTools: React.FC<OrganizerToolsProps> = ({
     chatRooms,
     initialTab = 'rooms',
     currentUser,
-    currentUserId
+    currentUserId,
+    pendingCounts = {}
 }) => {
     const t = TRANSLATIONS[language];
     const { showAlert } = useAlert();
@@ -250,7 +252,14 @@ const OrganizerTools: React.FC<OrganizerToolsProps> = ({
                             <div key={room.id} className="bg-gray-900 border border-gray-800 rounded-xl p-3 flex gap-3 items-center group">
                                 <img src={room.image} className="w-12 h-12 rounded-lg object-cover bg-gray-800" />
                                 <div className="flex-1 min-w-0">
-                                    <h3 className="text-white font-bold text-sm truncate">{room.name}</h3>
+                                    <div className="flex items-center justify-between gap-2">
+                                        <h3 className="text-white font-bold text-sm truncate">{room.name}</h3>
+                                        {pendingCounts[room.id] > 0 && (
+                                            <div className="bg-red-600 text-white text-[10px] font-black h-5 min-w-[20px] px-1.5 rounded-full flex items-center justify-center animate-bounce shadow-lg shadow-red-900/50">
+                                                {pendingCounts[room.id]}
+                                            </div>
+                                        )}
+                                    </div>
                                     <div className="flex items-center gap-3 mt-1">
                                         <span className="text-xs text-gray-500 flex items-center gap-1">
                                             <Users size={12} /> {room.members}

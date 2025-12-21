@@ -1694,6 +1694,7 @@ const App: React.FC = () => {
             initialTab={organizerToolTab}
             currentUser={userProfile.username}
             currentUserId={session?.user?.id}
+            pendingCounts={pendingCounts}
           />
         );
       case 'all_live':
@@ -1790,11 +1791,6 @@ const App: React.FC = () => {
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center justify-between gap-2">
                           <h3 className="font-bold text-white text-base truncate">{room.name}</h3>
-                          {room.hostId === session?.user?.id && pendingCounts[room.id] > 0 && (
-                            <div className="bg-red-600 text-white text-[10px] font-black h-5 min-w-[20px] px-1.5 rounded-full flex items-center justify-center animate-bounce shadow-lg shadow-red-900/50">
-                              {pendingCounts[room.id]}
-                            </div>
-                          )}
                         </div>
                         <p className="text-sm text-gray-500 truncate mt-0.5">{room.lastMessage}</p>
                         <div className="flex items-center gap-1 mt-2 text-xs text-gray-400">
