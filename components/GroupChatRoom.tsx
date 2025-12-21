@@ -253,14 +253,16 @@ const GroupChatRoom: React.FC<GroupChatRoomProps> = ({
         .eq('room_id', room.id);
 
       if (data && !error) {
-        setMembers(data.map((m: any) => ({
-          id: m.user?.id,
-          username: m.user?.username || 'User',
-          avatar: m.user?.avatar || 'https://picsum.photos/200',
-          role: m.user?.role,
-          isOnline: m.user?.last_seen_at ?
-            (new Date().getTime() - new Date(m.user.last_seen_at).getTime()) < 600000 : false
-        })));
+        setMembers(data
+          .filter((m: any) => m.status === 'approved')
+          .map((m: any) => ({
+            id: m.user?.id,
+            username: m.user?.username || 'User',
+            avatar: m.user?.avatar || 'https://picsum.photos/200',
+            role: m.user?.role,
+            isOnline: m.user?.last_seen_at ?
+              (new Date().getTime() - new Date(m.user.last_seen_at).getTime()) < 600000 : false
+          })));
       }
     } catch (error) {
       console.error('[Room] Fetch members error:', error);
