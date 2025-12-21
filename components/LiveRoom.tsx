@@ -462,7 +462,7 @@ const LiveRoom: React.FC<LiveRoomProps> = ({
 
     const triggerGiftAnimation = (gift: typeof GIFTS[0], sender: string) => {
         const id = Date.now();
-        setGiftAnimation({ id, icon: gift.icon, name: gift.name, sender, color: gift.color });
+        setGiftAnimation({ id, icon: gift.icon, name: gift.name, sender, color: gift.color || 'yellow' });
         setTimeout(() => setGiftAnimation(null), 3000);
     };
 
@@ -856,6 +856,33 @@ const LiveRoom: React.FC<LiveRoomProps> = ({
 
     return (
         <div className="fixed inset-0 z-50 bg-black text-white flex justify-center h-[100dvh] w-full overflow-hidden">
+            <style>{`
+                @keyframes giftEntrance {
+                    0% { transform: scale(0) rotate(-45deg); opacity: 0; }
+                    50% { transform: scale(1.5) rotate(10deg); opacity: 1; }
+                    70% { transform: scale(1.2) rotate(-5deg); opacity: 1; }
+                    100% { transform: scale(3) rotate(0deg); opacity: 0; }
+                }
+                .animate-gift-entrance {
+                    animation: giftEntrance 3s ease-in-out forwards;
+                }
+                @keyframes spinSlow {
+                    from { transform: rotate(0deg); }
+                    to { transform: rotate(360deg); }
+                }
+                .animate-spin-slow {
+                    animation: spinSlow 10s linear infinite;
+                }
+                @keyframes textSlideUp {
+                    0% { transform: translateY(20px); opacity: 0; }
+                    20% { transform: translateY(0); opacity: 1; }
+                    80% { transform: translateY(0); opacity: 1; }
+                    100% { transform: translateY(-20px); opacity: 0; }
+                }
+                .animate-text-slide-up {
+                    animation: textSlideUp 3s ease-in-out forwards;
+                }
+            `}</style>
 
             {/* --- VIDEO AREA (Centered, Mobile Width on Desktop) --- */}
             <div className="relative w-full max-w-lg h-full bg-gray-900 border-x border-gray-800 overflow-hidden flex items-center justify-center">
@@ -989,18 +1016,19 @@ const LiveRoom: React.FC<LiveRoomProps> = ({
 
                 {/* Gift Animation Layer */}
                 {giftAnimation && (
-                    <div className="absolute inset-0 z-40 pointer-events-none flex items-center justify-center animate-fade-in">
-                        <div className="text-center animate-bounce-custom">
-                            <div className="relative inline-block">
-                                <div className={`absolute inset-0 bg-${giftAnimation.color}-500 blur-3xl opacity-40 animate-pulse`}></div>
-                                <div className="relative z-10 text-8xl drop-shadow-2xl filter brightness-110 transform scale-150">
-                                    {giftAnimation.icon}
-                                </div>
+                    <div className="absolute inset-0 z-[100] flex flex-col items-center justify-center pointer-events-none overflow-hidden">
+                        <div className="absolute w-[150%] h-[150%] bg-gradient-to-r from-yellow-500/10 to-red-500/10 animate-spin-slow"
+                            style={{ maskImage: 'radial-gradient(circle, black 30%, transparent 70%)', WebkitMaskImage: 'radial-gradient(circle, black 30%, transparent 70%)' }}>
+                        </div>
+                        <div className="relative z-10 text-[120px] drop-shadow-[0_0_25px_rgba(255,255,255,0.6)] animate-gift-entrance filter contrast-125">
+                            {giftAnimation.icon}
+                        </div>
+                        <div className="relative z-10 mt-4 text-center animate-text-slide-up">
+                            <div className="text-yellow-400 font-black font-athletic text-3xl uppercase tracking-widest drop-shadow-md stroke-black">
+                                {giftAnimation.sender}
                             </div>
-                            <div className="mt-8 bg-black/60 backdrop-blur-xl px-6 py-3 rounded-full border border-white/20 shadow-xl">
-                                <p className="text-xl font-bold text-white">
-                                    <span className="text-yellow-400">{giftAnimation.sender}</span> sent a {giftAnimation.name}!
-                                </p>
+                            <div className="text-white font-bold text-sm bg-black/60 px-4 py-1 rounded-full backdrop-blur-md border border-white/20 mt-2 inline-flex items-center gap-2 shadow-xl">
+                                Sent <span className="text-yellow-400 font-black uppercase">{giftAnimation.name}</span>
                             </div>
                         </div>
                     </div>
