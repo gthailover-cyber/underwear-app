@@ -44,6 +44,7 @@ const GroupChatRoom: React.FC<GroupChatRoomProps> = ({
   const [members, setMembers] = useState<any[]>([]);
   const [inputText, setInputText] = useState('');
   const [isMember, setIsMember] = useState(false);
+  const [currentUserIdState, setCurrentUserIdState] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
@@ -62,6 +63,9 @@ const GroupChatRoom: React.FC<GroupChatRoomProps> = ({
       try {
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) return;
+
+        // Set current user ID for message alignment
+        setCurrentUserIdState(user.id);
 
         // Check if already a member
         const { data: existingMember } = await supabase
@@ -288,7 +292,7 @@ const GroupChatRoom: React.FC<GroupChatRoomProps> = ({
 
       const giftMsg: ChatMessage = {
         id: Date.now().toString(),
-        senderId: 'me',
+        senderId: currentUserIdState || 'me',
         text: `Sent a ${gift.name} ${gift.icon} to Host`,
         type: 'text',
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
@@ -402,7 +406,7 @@ const GroupChatRoom: React.FC<GroupChatRoomProps> = ({
             </div>
 
             {messages.map((msg) => {
-              const isMe = msg.senderId === 'me';
+              const isMe = msg.senderId === currentUserIdState || msg.senderId === 'me';
               return (
                 <div key={msg.id} className={`flex ${isMe ? 'justify-end' : 'justify-start'}`}>
 

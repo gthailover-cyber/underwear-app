@@ -1279,6 +1279,7 @@ const App: React.FC = () => {
             language={language}
             onBack={handleCloseGroup}
             currentUser={userProfile.username}
+            currentUserId={session?.user?.id}
             walletBalance={walletBalance}
             onUseCoins={handleUseCoins}
             onOpenWallet={() => setIsWalletOpen(true)}
