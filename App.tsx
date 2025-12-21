@@ -1249,6 +1249,12 @@ const App: React.FC = () => {
 
   const handleOpenProfileById = async (userId: string) => {
     try {
+      if (userId === session?.user?.id) {
+        setReturnTab(activeTab);
+        setActiveTab('profile');
+        return;
+      }
+
       // 1. Fetch user data from profiles table
       const { data: profile, error } = await supabase
         .from('profiles')
@@ -1276,9 +1282,6 @@ const App: React.FC = () => {
       setReturnTab(activeTab);
       setSelectedPerson(person);
       setActiveTab('people');
-
-      // Close group chat overlay if it was open
-      setSelectedGroupRoom(null);
     } catch (err) {
       console.error('[OpenProfile] Error:', err);
       showAlert({ message: 'Failed to load profile', type: 'error' });
@@ -1411,6 +1414,7 @@ const App: React.FC = () => {
             onEdit={() => setIsEditingProfile(true)}
             onEditGallery={() => setIsEditingGallery(true)}
             onUpgrade={() => setIsUpgradeModalOpen(true)}
+            onBack={returnTab ? (() => { setActiveTab(returnTab as any); setReturnTab(null); }) : undefined}
           />
         );
       case 'my_products':

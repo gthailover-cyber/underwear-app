@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { MapPin, Pencil, Grid, Settings, Crown, Star, User, Camera, Share2, MessageCircle, Heart, CheckCircle, BicepsFlexed, ChevronRight, Video, Package } from 'lucide-react';
+import { MapPin, Pencil, Grid, Settings, Crown, Star, User, Camera, Share2, MessageCircle, Heart, CheckCircle, BicepsFlexed, ChevronRight, Video, Package, ArrowLeft } from 'lucide-react';
 import { UserProfile, Language, UserRole } from '../types';
 import { TRANSLATIONS } from '../constants';
 import UserBadge from './UserBadge';
@@ -11,9 +11,10 @@ interface ProfileProps {
    onEdit: () => void;
    onEditGallery: () => void;
    onUpgrade?: () => void;
+   onBack?: () => void;
 }
 
-const Profile: React.FC<ProfileProps> = ({ language, user, onEdit, onEditGallery, onUpgrade }) => {
+const Profile: React.FC<ProfileProps> = ({ language, user, onEdit, onEditGallery, onUpgrade, onBack }) => {
    const t = TRANSLATIONS[language];
 
    // Helper to render stats to ensure consistency
@@ -51,6 +52,14 @@ const Profile: React.FC<ProfileProps> = ({ language, user, onEdit, onEditGallery
                <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent"></div>
 
                {/* Top Controls */}
+               <div className="absolute top-4 left-4 z-40">
+                  {onBack && (
+                     <button onClick={onBack} className="bg-black/20 backdrop-blur-md border border-white/20 p-2.5 rounded-full text-white hover:bg-white/20 transition-all">
+                        <ArrowLeft size={20} />
+                     </button>
+                  )}
+               </div>
+
                <div className="absolute top-4 right-4 flex gap-3">
                   <button className="bg-black/20 backdrop-blur-md border border-white/20 p-2.5 rounded-full text-white hover:bg-white/20 transition-all">
                      <Share2 size={20} />
@@ -228,6 +237,13 @@ const Profile: React.FC<ProfileProps> = ({ language, user, onEdit, onEditGallery
             <div className="relative h-56 w-full overflow-hidden">
                <img src={user.coverImage} className="w-full h-full object-cover" alt="Cover" />
                <div className="absolute inset-0 bg-gradient-to-b from-yellow-900/20 via-transparent to-gray-900"></div>
+
+               {onBack && (
+                  <button onClick={onBack} className="absolute top-4 left-4 bg-black/40 backdrop-blur p-2 rounded-full text-white hover:bg-black/60 transition-colors border border-white/10">
+                     <ArrowLeft size={20} />
+                  </button>
+               )}
+
                <button onClick={onEdit} className="absolute top-4 right-4 bg-black/40 backdrop-blur p-2 rounded-full text-yellow-400 hover:bg-black/60 transition-colors border border-yellow-500/30">
                   <Settings size={20} />
                </button>
@@ -317,6 +333,13 @@ const Profile: React.FC<ProfileProps> = ({ language, user, onEdit, onEditGallery
          <div className="relative h-44 w-full overflow-hidden bg-gray-800">
             <img src={user.coverImage} className="w-full h-full object-cover opacity-70" alt="Cover" />
             <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent"></div>
+
+            {onBack && (
+               <button onClick={onBack} className="absolute top-4 left-4 bg-black/40 backdrop-blur p-2 rounded-full text-white hover:bg-white/20 transition-colors">
+                  <ArrowLeft size={16} />
+               </button>
+            )}
+
             <button onClick={onEdit} className="absolute top-4 right-4 bg-black/40 backdrop-blur p-2 rounded-full text-white hover:bg-white/20 transition-colors">
                <Settings size={16} />
             </button>
