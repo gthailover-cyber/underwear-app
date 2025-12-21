@@ -145,6 +145,8 @@ const LiveRoom: React.FC<LiveRoomProps> = ({
     const [isVideoEnabled, setIsVideoEnabled] = useState(true);
     const [isAudioEnabled, setIsAudioEnabled] = useState(true);
     const [videoError, setVideoError] = useState(false); // To handle video load failures
+    const [isAuctionOver, setIsAuctionOver] = useState(false);
+    const [hasSentWinnerOrder, setHasSentWinnerOrder] = useState(false);
 
     const commentsEndRef = useRef<HTMLDivElement>(null);
     const heartIdCounter = useRef(0);
@@ -344,7 +346,8 @@ const LiveRoom: React.FC<LiveRoomProps> = ({
                 const diff = end - now;
 
                 if (diff <= 0) {
-                    setAuctionTimeLeft('ENDED');
+                    setAuctionTimeLeft('0:00');
+                    if (!isAuctionOver) setIsAuctionOver(true);
                 } else {
                     const m = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
                     const s = Math.floor((diff % (1000 * 60)) / 1000);
@@ -356,7 +359,37 @@ const LiveRoom: React.FC<LiveRoomProps> = ({
             const timerInterval = setInterval(updateTimer, 1000);
             return () => clearInterval(timerInterval);
         }
-    }, [streamer.isAuction, streamer.auctionEndTime]);
+    }, [streamer.isAuction, streamer.auctionEndTime, isAuctionOver]);
+
+    // Automatic Order Creation for Auction Winner
+    useEffect(() => {
+        if (isAuctionOver && !isHost && !hasSentWinnerOrder && highestBidderName && currentUser?.username === highestBidderName) {
+            const winProduct = streamer.products[0];
+            if (winProduct) {
+                console.log('[AuctionWin] Creating automatic order for winner:', currentUser.username);
+                const winnerCartItem: CartItem = {
+                    ...winProduct,
+                    price: currentHighestBid, // Pay the bid price
+                    quantity: 1,
+                    color: winProduct.colors?.[0] || 'Default',
+                    size: winProduct.sizes?.[0] || 'Free Size'
+                };
+
+                // Set flag before calling to avoid duplicate calls during state transition
+                setHasSentWinnerOrder(true);
+
+                // Immediate order processing
+                processOrder([winnerCartItem]).then(success => {
+                    if (success) {
+                        console.log('[AuctionWin] Order successfully created for winner');
+                    } else {
+                        console.error('[AuctionWin] Failed to create automated order');
+                        setHasSentWinnerOrder(false); // Reset to allow retry or show user manual call
+                    }
+                });
+            }
+        }
+    }, [isAuctionOver, highestBidderName, currentUser, streamer.products, currentHighestBid, isHost, hasSentWinnerOrder]);
 
     // Video & Camera Handling (Legacy & YouTube)
     useEffect(() => {
@@ -872,6 +905,61 @@ const LiveRoom: React.FC<LiveRoomProps> = ({
                     </div>
                 )}
 
+                {/* Auction Winner Overlay (PROFESSIONAL WIN UI) */}
+                {isAuctionOver && highestBidderName && (
+                    <div className="absolute inset-0 z-[150] flex items-center justify-center p-6 bg-black/60 backdrop-blur-sm animate-fade-in">
+                        <div className="w-full max-w-sm bg-gradient-to-b from-gray-900 via-gray-900 to-black rounded-3xl border-2 border-yellow-500/50 p-8 text-center shadow-[0_0_50px_rgba(234,179,8,0.3)] animate-scale-in overflow-hidden relative">
+                            {/* Decorative Background effects */}
+                            <div className="absolute -top-20 -left-20 w-40 h-40 bg-yellow-500/10 rounded-full blur-3xl animate-pulse"></div>
+                            <div className="absolute -bottom-20 -right-20 w-40 h-40 bg-orange-500/10 rounded-full blur-3xl animate-pulse"></div>
+
+                            <div className="relative z-10">
+                                <div className="w-20 h-20 bg-gradient-to-tr from-yellow-400 to-orange-600 rounded-full flex items-center justify-center mx-auto mb-6 shadow-lg shadow-yellow-900/40 border-4 border-black/20 animate-bounce">
+                                    <Trophy size={40} className="text-black" />
+                                </div>
+
+                                <h1 className="text-3xl font-athletic text-white mb-2 tracking-widest uppercase">
+                                    Win Bid !
+                                </h1>
+
+                                <div className="h-px bg-gradient-to-r from-transparent via-gray-700 to-transparent my-6"></div>
+
+                                <div className="space-y-4">
+                                    <div>
+                                        <p className="text-gray-500 text-[10px] uppercase font-bold tracking-[0.2em] mb-1">Winning Username</p>
+                                        <div className="text-2xl font-black text-white bg-white/5 rounded-xl py-2 border border-white/10">
+                                            {highestBidderName}
+                                        </div>
+                                    </div>
+
+                                    <div>
+                                        <p className="text-gray-500 text-[10px] uppercase font-bold tracking-[0.2em] mb-1">Final Auction Price</p>
+                                        <div className="text-4xl font-black text-yellow-500 font-athletic tracking-tight">
+                                            ฿{currentHighestBid.toLocaleString()}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {currentUser?.username === highestBidderName && (
+                                    <div className="mt-8 bg-green-500/10 border border-green-500/30 rounded-2xl p-4 animate-pulse">
+                                        <p className="text-green-400 font-bold text-xs flex items-center justify-center gap-2">
+                                            <Check size={16} /> ORDER CREATED AUTOMATICALLY
+                                        </p>
+                                        <p className="text-gray-500 text-[9px] mt-1 italic">Check your Orders page for details</p>
+                                    </div>
+                                )}
+
+                                <button
+                                    onClick={() => setIsAuctionOver(false)}
+                                    className="mt-8 w-full py-3 bg-gray-800 hover:bg-gray-700 text-white rounded-xl font-bold text-sm transition-all"
+                                >
+                                    {t.close}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
 
                 <div className="absolute bottom-0 left-0 right-0 p-4 pb-safe-bottom z-30 bg-gradient-to-t from-black/90 via-black/40 to-transparent">
 
@@ -916,15 +1004,17 @@ const LiveRoom: React.FC<LiveRoomProps> = ({
                                         </div>
                                         <button
                                             onClick={placeBid}
-                                            disabled={isInsufficientFunds || myBidAmount <= currentHighestBid}
-                                            className={`w-full py-2 rounded-xl font-black text-[10px] uppercase tracking-wider transition-all shadow-lg ${isInsufficientFunds
-                                                ? 'bg-gray-700 text-gray-400'
-                                                : myBidAmount <= currentHighestBid
-                                                    ? 'bg-gray-800 text-gray-500 opacity-50'
-                                                    : 'bg-gradient-to-r from-orange-500 to-red-600 text-white hover:brightness-110 active:scale-95'
+                                            disabled={isInsufficientFunds || myBidAmount <= currentHighestBid || isAuctionOver}
+                                            className={`w-full py-2 rounded-xl font-black text-[10px] uppercase tracking-wider transition-all shadow-lg ${isAuctionOver
+                                                ? 'bg-gray-800 text-gray-400 cursor-not-allowed'
+                                                : isInsufficientFunds
+                                                    ? 'bg-gray-700 text-gray-400'
+                                                    : myBidAmount <= currentHighestBid
+                                                        ? 'bg-gray-800 text-gray-500 opacity-50'
+                                                        : 'bg-gradient-to-r from-orange-500 to-red-600 text-white hover:brightness-110 active:scale-95'
                                                 }`}
                                         >
-                                            {isInsufficientFunds ? 'No Money' : 'Bid Now'}
+                                            {isAuctionOver ? 'Auction Ended' : isInsufficientFunds ? 'No Money' : 'Bid Now'}
                                         </button>
                                         {isInsufficientFunds && (
                                             <button
