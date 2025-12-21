@@ -1247,6 +1247,44 @@ const App: React.FC = () => {
     // Don't clear selectedPerson here, so we can return to it
   };
 
+  const handleOpenProfileById = async (userId: string) => {
+    try {
+      // 1. Fetch user data from profiles table
+      const { data: profile, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', userId)
+        .single();
+
+      if (error || !profile) {
+        showAlert({ message: 'User profile not found', type: 'error' });
+        return;
+      }
+
+      // 2. Map profile to Person type
+      const person: Person = {
+        id: profile.id,
+        username: profile.username || 'User',
+        avatar: profile.avatar || DEFAULT_IMAGES.AVATAR,
+        isOnline: isOnline(profile.last_seen_at),
+        lastSeenAt: profile.last_seen_at,
+        followers: 0, // In real app, we might want to fetch followers count
+        role: profile.role
+      };
+
+      // 3. Update states to show profile
+      setReturnTab(activeTab);
+      setSelectedPerson(person);
+      setActiveTab('people');
+
+      // Close group chat overlay if it was open
+      setSelectedGroupRoom(null);
+    } catch (err) {
+      console.error('[OpenProfile] Error:', err);
+      showAlert({ message: 'Failed to load profile', type: 'error' });
+    }
+  };
+
   // --- Helpers for Layout ---
   const isFullScreenTab = activeTab === 'messages' || activeTab === 'all_live' || activeTab === 'my_products' || activeTab === 'address' || activeTab === 'payment' || activeTab === 'my_orders' || activeTab === 'organizer_tools' || activeTab === 'my_rate' || activeTab === 'my_schedule';
   const isPeopleTab = activeTab === 'people';
@@ -1283,6 +1321,7 @@ const App: React.FC = () => {
             walletBalance={walletBalance}
             onUseCoins={handleUseCoins}
             onOpenWallet={() => setIsWalletOpen(true)}
+            onUserClick={handleOpenProfileById}
           />
         );
       }

@@ -15,6 +15,7 @@ interface GroupChatRoomProps {
   walletBalance: number;
   onUseCoins: (amount: number) => void;
   onOpenWallet: () => void;
+  onUserClick: (userId: string) => void;
 }
 
 // Simple gift list for chat room
@@ -33,7 +34,8 @@ const GroupChatRoom: React.FC<GroupChatRoomProps> = ({
   currentUserId,
   walletBalance,
   onUseCoins,
-  onOpenWallet
+  onOpenWallet,
+  onUserClick
 }) => {
   const t = TRANSLATIONS[language];
   const { showAlert } = useAlert();
@@ -411,11 +413,14 @@ const GroupChatRoom: React.FC<GroupChatRoomProps> = ({
                 <div key={msg.id} className={`flex ${isMe ? 'justify-end' : 'justify-start'}`}>
 
                   {!isMe && (
-                    <div className="flex flex-col items-center mr-2 mt-auto">
-                      <div className="w-8 h-8 rounded-full bg-gray-800 overflow-hidden mb-1">
+                    <button
+                      onClick={() => onUserClick(msg.senderId)}
+                      className="flex flex-col items-center mr-2 mt-auto active:scale-95 transition-transform"
+                    >
+                      <div className="w-8 h-8 rounded-full bg-gray-800 overflow-hidden mb-1 border border-gray-700">
                         <img src={msg.senderAvatar} className="w-full h-full object-cover" />
                       </div>
-                    </div>
+                    </button>
                   )}
 
                   <div className={`max-w-[75%]`}>
@@ -449,12 +454,15 @@ const GroupChatRoom: React.FC<GroupChatRoomProps> = ({
           <div className="p-4 space-y-3 pb-20">
             {/* Host */}
             <div className="bg-gray-900/50 border border-yellow-500/30 rounded-xl p-3 flex items-center gap-3">
-              <div className="relative">
+              <button
+                onClick={() => onUserClick(room.hostId)}
+                className="relative active:scale-95 transition-transform"
+              >
                 <img src={`https://picsum.photos/seed/${room.hostName}/200`} className="w-12 h-12 rounded-full object-cover border-2 border-yellow-500" />
                 <div className="absolute -bottom-1 -right-1 bg-yellow-500 text-black p-0.5 rounded-full">
                   <Crown size={10} fill="black" />
                 </div>
-              </div>
+              </button>
               <div>
                 <h4 className="text-yellow-500 font-bold text-sm flex items-center gap-2">
                   {room.hostName}
@@ -469,19 +477,22 @@ const GroupChatRoom: React.FC<GroupChatRoomProps> = ({
 
             {members.map(member => (
               <div key={member.id} className="flex items-center justify-between p-2 rounded-lg hover:bg-gray-900 transition-colors">
-                <div className="flex items-center gap-3">
+                <button
+                  onClick={() => onUserClick(member.id)}
+                  className="flex items-center gap-3 text-left w-full group"
+                >
                   <div className="relative">
-                    <img src={member.avatar} className="w-10 h-10 rounded-full object-cover bg-gray-800" />
+                    <img src={member.avatar} className="w-10 h-10 rounded-full object-cover bg-gray-800 border border-gray-700 group-hover:border-gray-500 transition-colors" />
                     {member.isOnline && <div className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-green-500 border-2 border-black rounded-full"></div>}
                   </div>
                   <div>
-                    <h4 className="text-white font-medium text-sm flex items-center gap-1">
+                    <h4 className="text-white font-medium text-sm flex items-center gap-1 group-hover:text-red-500 transition-colors">
                       {member.username}
                       {member.role === 'model' && <BicepsFlexed size={12} className="text-blue-400" />}
                     </h4>
                     <span className="text-[10px] text-gray-500 capitalize">{member.role || 'Member'}</span>
                   </div>
-                </div>
+                </button>
               </div>
             ))}
           </div>
