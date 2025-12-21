@@ -737,32 +737,20 @@ const LiveRoom: React.FC<LiveRoomProps> = ({
                             onLeave={onClose}
                         />
                     ) : (isVideoEnabled || !isHost) && (streamer.videoUrl && !videoError) ? (
-                        // YouTube or Direct Video
+                        // Direct Video (Legacy/External)
                         <div className="w-full h-full relative">
-                            {streamer.youtubeId ? (
-                                <iframe
-                                    width="100%"
-                                    height="100%"
-                                    src={`https://www.youtube.com/embed/${streamer.youtubeId}?autoplay=1&mute=0&controls=0&modestbranding=1&rel=0&iv_load_policy=3&playsinline=1`}
-                                    title="YouTube video player"
-                                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                                    allowFullScreen
-                                    className="w-full h-full object-cover pointer-events-none"
-                                ></iframe>
-                            ) : (
-                                <video
-                                    ref={videoRef}
-                                    src={streamer.videoUrl}
-                                    className="w-full h-full object-cover"
-                                    muted={isHost} // Host mutes own preview to avoid feedback (if using video element directly)
-                                    playsInline
-                                    loop
-                                    autoPlay
-                                    onError={() => setVideoError(true)}
-                                />
-                            )}
+                            <video
+                                ref={videoRef}
+                                src={streamer.videoUrl}
+                                className="w-full h-full object-cover"
+                                muted={isHost} // Host mutes own preview to avoid feedback
+                                playsInline
+                                loop
+                                autoPlay
+                                onError={() => setVideoError(true)}
+                            />
 
-                            {/* Interaction Overlay (Invisible layer to capture double taps) */}
+                            {/* Interaction Overlay */}
                             <div
                                 className="absolute inset-0 z-10"
                                 onDoubleClick={handleLike}

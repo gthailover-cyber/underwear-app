@@ -14,18 +14,11 @@ type StreamMethod = 'livekit' | 'youtube';
 
 const StartLiveModal: React.FC<StartLiveModalProps> = ({ language, onClose, onStart }) => {
   const [title, setTitle] = useState('');
-  const [youtubeUrl, setYoutubeUrl] = useState('');
   const [coverImage, setCoverImage] = useState<string>('https://picsum.photos/400/700?random=' + Date.now());
   const [isLoading, setIsLoading] = useState(false);
-  const [streamMethod, setStreamMethod] = useState<StreamMethod>('livekit');
+  const [agreedToTerms, setAgreedToTerms] = useState(false);
 
   const t = TRANSLATIONS[language];
-
-  const extractYoutubeId = (url: string) => {
-    const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
-    const match = url.match(regExp);
-    return (match && match[2].length === 11) ? match[2] : null;
-  };
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -40,20 +33,18 @@ const StartLiveModal: React.FC<StartLiveModalProps> = ({ language, onClose, onSt
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (!agreedToTerms) return;
     setIsLoading(true);
 
     // Simulate API delay
     setTimeout(() => {
-      const youtubeId = streamMethod === 'youtube' ? extractYoutubeId(youtubeUrl) : undefined;
-
       const newStreamer: Streamer = {
         id: `live-${Date.now()}`,
         name: 'Me (Host)', // In real app, get from user profile
         title: title || 'Live Sale! 🔥',
         viewerCount: 0,
         coverImage: coverImage,
-        youtubeId: youtubeId || undefined, // Use extracted ID
-        useLiveKit: streamMethod === 'livekit', // NEW: Flag to use LiveKit
+        useLiveKit: true, // Always use LiveKit now
         itemCount: 0, // Will be populated in App.tsx logic if products selected
         products: [] // Will be populated in App.tsx logic if products selected
       };
@@ -118,83 +109,35 @@ const StartLiveModal: React.FC<StartLiveModalProps> = ({ language, onClose, onSt
             />
           </div>
 
-          {/* Streaming Method Selection */}
-          <div className="space-y-2">
-            <label className="text-sm font-medium text-gray-400">Streaming Method</label>
-            <div className="grid grid-cols-2 gap-3">
-              <button
-                type="button"
-                onClick={() => setStreamMethod('livekit')}
-                className={`p-3 rounded-xl border flex flex-col items-center justify-center gap-2 transition-all ${streamMethod === 'livekit'
-                    ? 'bg-red-500/10 border-red-500 text-red-500'
-                    : 'bg-gray-800 border-gray-700 text-gray-400 hover:bg-gray-700'
-                  }`}
-              >
-                <div className="relative">
-                  <Video size={24} />
-                  {streamMethod === 'livekit' && (
-                    <div className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-red-500 rounded-full animate-pulse" />
-                  )}
-                </div>
-                <div className="flex flex-col items-center">
-                  <span className="font-medium text-sm">LiveKit (WebRTC)</span>
-                  <span className="text-[10px] opacity-70">Recommended • Low Latency</span>
-                </div>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setStreamMethod('youtube')}
-                className={`p-3 rounded-xl border flex flex-col items-center justify-center gap-2 transition-all ${streamMethod === 'youtube'
-                    ? 'bg-red-500/10 border-red-500 text-red-500'
-                    : 'bg-gray-800 border-gray-700 text-gray-400 hover:bg-gray-700'
-                  }`}
-              >
-                <Youtube size={24} />
-                <div className="flex flex-col items-center">
-                  <span className="font-medium text-sm">YouTube Live</span>
-                  <span className="text-[10px] opacity-70">Legacy • High Viewer Count</span>
-                </div>
-              </button>
-            </div>
+          {/* LiveKit Reminder */}
+          <div className="p-3 bg-blue-500/10 border border-blue-500/20 rounded-xl text-xs text-blue-200 animate-fade-in">
+            <p className="font-semibold mb-1">Ready to go live directly?</p>
+            <p className="opacity-80">This will use your device's camera and microphone for a real-time interactive stream.</p>
           </div>
 
-          {/* YouTube URL Input (Conditional) */}
-          {streamMethod === 'youtube' && (
-            <div className="space-y-2 animate-fade-in">
-              <label className="text-sm font-medium text-gray-400 flex items-center gap-2">
-                <LinkIcon size={14} />
-                YouTube Live URL
-              </label>
-              <div className="relative">
-                <input
-                  type="url"
-                  value={youtubeUrl}
-                  onChange={(e) => setYoutubeUrl(e.target.value)}
-                  placeholder="https://youtube.com/live/..."
-                  className="w-full bg-gray-800 border border-gray-700 rounded-xl p-3 pl-10 text-white focus:border-red-600 focus:outline-none placeholder-gray-600"
-                  required={streamMethod === 'youtube'}
-                />
-                <Youtube className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" size={18} />
-              </div>
-              <p className="text-xs text-gray-500">
-                Paste the URL of your scheduled or active YouTube live stream.
-              </p>
-            </div>
-          )}
-
-          {streamMethod === 'livekit' && (
-            <div className="p-3 bg-blue-500/10 border border-blue-500/20 rounded-xl text-xs text-blue-200 animate-fade-in">
-              <p className="font-semibold mb-1">Ready to go live directly?</p>
-              <p className="opacity-80">This will use your device's camera and microphone for a real-time interactive stream.</p>
-            </div>
-          )}
+          {/* Terms and Conditions */}
+          <div className="p-4 bg-gray-800/50 border border-gray-700 rounded-xl space-y-3">
+            <p className="text-xs text-gray-400 leading-relaxed italic">
+              "{t.liveTerms}"
+            </p>
+            <label className="flex items-start gap-3 cursor-pointer group">
+              <input
+                type="checkbox"
+                checked={agreedToTerms}
+                onChange={(e) => setAgreedToTerms(e.target.checked)}
+                className="mt-1 w-4 h-4 rounded border-gray-700 bg-gray-900 text-red-600 focus:ring-red-600 focus:ring-offset-gray-900"
+              />
+              <span className="text-sm text-gray-300 group-hover:text-white transition-colors">
+                {t.iAgreeToLiveTerms}
+              </span>
+            </label>
+          </div>
 
           {/* Action Button */}
           <button
             type="submit"
-            disabled={isLoading || (streamMethod === 'youtube' && !youtubeUrl)}
-            className="w-full bg-gradient-to-r from-red-600 to-red-800 hover:from-red-500 hover:to-red-700 text-white font-bold py-4 rounded-xl shadow-lg shadow-red-900/20 active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+            disabled={isLoading || !agreedToTerms}
+            className="w-full bg-gradient-to-r from-red-600 to-red-800 hover:from-red-500 hover:to-red-700 text-white font-bold py-4 rounded-xl shadow-lg shadow-red-900/20 active:scale-[0.98] transition-all disabled:opacity-50 disabled:grayscale disabled:cursor-not-allowed flex items-center justify-center gap-2"
           >
             {isLoading ? (
               <>

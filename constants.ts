@@ -219,6 +219,8 @@ export const TRANSLATIONS = {
     endLiveTitle: 'End Live Stream?',
     endLiveDesc: 'Are you sure you want to stop streaming?',
     confirmEnd: 'End Now',
+    liveTerms: 'Your live stream: The streamer must be 18+. No obscenity, genital exposure, gambling solicitation, or investment advice. Payments must be received via coins on this platform only.',
+    iAgreeToLiveTerms: 'I agree to the terms and conditions.',
     // Live Selection
     liveSelectionTitle: 'Select Live Type',
     liveSelling: 'Live Selling',
@@ -495,6 +497,8 @@ export const TRANSLATIONS = {
     endLiveTitle: 'จบการไลฟ์?',
     endLiveDesc: 'คุณแน่ใจหรือไม่ว่าต้องการหยุดการถ่ายทอดสด?',
     confirmEnd: 'จบตอนนี้',
+    liveTerms: 'การไลฟ์ของคุณ ผู้ไลฟ์จะต้องมีอายุ 18+ จะไม่มีการอนาจาร โชว์อวัยวะเพศ จะไม่ชวนเล่นการพนัน หรือลงทุนใดๆ และจะต้องรับเงินผ่านเหรียญใน platform นี้เท่านั้น',
+    iAgreeToLiveTerms: 'ฉันยอมรับเงื่อนไขการใช้งาน',
     // Live Selection
     liveSelectionTitle: 'เลือกประเภทการไลฟ์',
     liveSelling: 'ไลฟ์ขายของ',
