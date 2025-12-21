@@ -137,6 +137,7 @@ const LiveRoom: React.FC<LiveRoomProps> = ({
     // Checkout State
     const [showCheckoutModal, setShowCheckoutModal] = useState(false);
     const [userAddress, setUserAddress] = useState<string | null>(null);
+    const [selectedAddressId, setSelectedAddressId] = useState<string | null>(null);
     const [isEditingAddress, setIsEditingAddress] = useState(false);
     const [tempAddress, setTempAddress] = useState('');
 
@@ -214,6 +215,8 @@ const LiveRoom: React.FC<LiveRoomProps> = ({
                 if (data) {
                     const formatted = `${data.name} ${data.phone}\n${data.address} ${data.province} ${data.postal_code}`;
                     setUserAddress(formatted);
+                    setSelectedAddressId(data.id);
+                    setTempAddress(formatted); // Sync temp address initially
                 }
             }
         };
@@ -679,10 +682,62 @@ const LiveRoom: React.FC<LiveRoomProps> = ({
         }
     };
 
-    const handleSaveAddress = () => {
-        if (tempAddress.trim()) {
-            setUserAddress(tempAddress);
-            setIsEditingAddress(false);
+    const handleSaveAddress = async () => {
+        if (!tempAddress.trim()) return;
+
+        try {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (!user) throw new Error("User not authenticated");
+
+            // 1. Set all other addresses to NOT default
+            await supabase
+                .from('addresses')
+                .update({ is_default: false })
+                .eq('user_id', user.id);
+
+            // 2. Save current address as default
+            // Since we only have a single textarea, we'll store the whole block in 'address'
+            // and use placeholders for others if we don't have separate fields.
+            // To be more robust, we try to split by newline if possible icon/phone?
+            // For now, let's keep it simple as a consolidated record.
+
+            const addressData = {
+                user_id: user.id,
+                name: currentUser?.username || 'User',
+                phone: '', // Extracted or fallback
+                address: tempAddress,
+                province: '',
+                postal_code: '',
+                is_default: true
+            };
+
+            let res;
+            if (selectedAddressId) {
+                res = await supabase
+                    .from('addresses')
+                    .update(addressData)
+                    .eq('id', selectedAddressId)
+                    .select()
+                    .single();
+            } else {
+                res = await supabase
+                    .from('addresses')
+                    .insert(addressData)
+                    .select()
+                    .single();
+            }
+
+            if (res.error) throw res.error;
+
+            if (res.data) {
+                setSelectedAddressId(res.data.id);
+                setUserAddress(tempAddress);
+                setIsEditingAddress(false);
+                console.log('[Address] Saved successfully as default');
+            }
+        } catch (err: any) {
+            console.error('[Address] Error saving:', err);
+            alert("Failed to save address: " + (err.message || err));
         }
     };
 
