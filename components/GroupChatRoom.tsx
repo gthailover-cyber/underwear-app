@@ -13,7 +13,7 @@ interface GroupChatRoomProps {
   currentUser: string;
   currentUserId?: string;
   walletBalance: number;
-  onUseCoins: (amount: number) => void;
+  onUseCoins: (amount: number) => Promise<void>;
   onOpenWallet: () => void;
   onUserClick: (userId: string) => void;
 }
@@ -288,26 +288,59 @@ const GroupChatRoom: React.FC<GroupChatRoomProps> = ({
     }
   };
 
-  const handleSendGift = (gift: typeof GIFTS[0]) => {
+  const handleSendGift = async (gift: typeof GIFTS[0]) => {
     if (walletBalance >= gift.price) {
-      onUseCoins(gift.price);
+      try {
+        // 1. Get current user
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) {
+          showAlert({ message: 'Please login to send gifts', type: 'warning' });
+          return;
+        }
 
-      const giftMsg: ChatMessage = {
-        id: Date.now().toString(),
-        senderId: currentUserIdState || 'me',
-        text: `Sent a ${gift.name} ${gift.icon} to Host`,
-        type: 'text',
-        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        read: false
-      };
+        // 2. Deduct coins from sender (calls RPC internally)
+        await onUseCoins(gift.price);
 
-      setMessages(prev => [...prev, giftMsg]);
-      setShowGifts(false);
+        // 3. Add coins to Host
+        const { error: addError } = await supabase.rpc('add_coins', {
+          user_id: room.hostId,
+          amount: gift.price
+        });
+        if (addError) throw addError;
 
-      // Trigger Animation
-      const id = Date.now();
-      setGiftAnimation({ id, icon: gift.icon, name: gift.name, sender: 'Me' });
-      setTimeout(() => setGiftAnimation(null), 3000);
+        // 4. Record in received_gifts table
+        const { error: giftError } = await supabase
+          .from('received_gifts')
+          .insert({
+            sender_id: user.id,
+            receiver_id: room.hostId,
+            gift_id: gift.id.toString(),
+            gift_name: gift.name,
+            gift_icon: gift.icon,
+            price: gift.price
+          });
+        if (giftError) throw giftError;
+
+        // 5. Post message to room_messages
+        const { error: msgError } = await supabase
+          .from('room_messages')
+          .insert({
+            room_id: room.id,
+            sender_id: user.id,
+            content: `🎁 ส่งของขวัญ ${gift.name} ${gift.icon} ให้ผู้จัด`
+          });
+        if (msgError) throw msgError;
+
+        // 6. Trigger UI Feedback
+        setShowGifts(false);
+        const id = Date.now();
+        setGiftAnimation({ id, icon: gift.icon, name: gift.name, sender: currentUser || 'Me' });
+        setTimeout(() => setGiftAnimation(null), 3000);
+
+      } catch (error: any) {
+        console.error('[Room] Gift error:', error);
+        showAlert({ message: 'Failed to send gift. Please try again.', type: 'error' });
+      }
     } else {
       showAlert({ message: 'Insufficient coins!', type: 'error' });
       onOpenWallet();

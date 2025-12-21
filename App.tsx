@@ -698,7 +698,10 @@ const App: React.FC = () => {
   const handleTopUp = async (amount: number) => {
     setWalletBalance(prev => prev + amount);
     if (session?.user) {
-      const { error } = await supabase.rpc('add_coins', { amount });
+      const { error } = await supabase.rpc('add_coins', {
+        user_id: session.user.id,
+        amount
+      });
       if (error) {
         console.error("Error adding coins:", error);
       }
@@ -708,7 +711,10 @@ const App: React.FC = () => {
   const handleUseCoins = React.useCallback(async (amount: number) => {
     setWalletBalance(prev => Math.max(0, prev - amount));
     if (session?.user) {
-      const { error } = await supabase.rpc('deduct_coins', { amount });
+      const { error } = await supabase.rpc('deduct_coins', {
+        user_id: session.user.id,
+        amount
+      });
       if (error) {
         console.error("Error deducting coins:", error);
       }
@@ -1369,7 +1375,13 @@ const App: React.FC = () => {
             <UserProfileDetail
               language={language}
               person={selectedPerson}
-              onBack={() => setSelectedPerson(null)}
+              onBack={() => {
+                setSelectedPerson(null);
+                if (returnTab) {
+                  setActiveTab(returnTab as any);
+                  setReturnTab(null);
+                }
+              }}
               onChat={() => handleStartChatFromProfile(selectedPerson)}
               onFollow={toggleFollow}
               isFollowing={followingIds.includes(selectedPerson.id)}
