@@ -2059,6 +2059,14 @@ const App: React.FC = () => {
                     <span className="font-medium text-base text-gray-200 group-hover:text-white">{t.manageMembers}</span>
                   </div>
                 </button>
+                <button onClick={() => { setActiveTab('my_gifts'); setIsMenuOpen(false); }} className="w-full flex items-center justify-between px-6 py-3 hover:bg-white/5 transition-colors group">
+                  <div className="flex items-center gap-4">
+                    <div className="w-9 h-9 rounded-lg bg-yellow-900/30 border border-yellow-500/50 flex items-center justify-center group-hover:bg-yellow-600 transition-colors">
+                      <Gift size={18} className="text-yellow-500 group-hover:text-white" />
+                    </div>
+                    <span className="font-medium text-base text-gray-200 group-hover:text-white">{t.myGifts}</span>
+                  </div>
+                </button>
                 <div className="h-px bg-gray-800 mx-6 my-2"></div>
               </div>
             )}
