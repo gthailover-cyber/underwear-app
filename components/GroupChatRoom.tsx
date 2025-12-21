@@ -40,6 +40,7 @@ const GroupChatRoom: React.FC<GroupChatRoomProps> = ({
   const t = TRANSLATIONS[language];
   const { showAlert } = useAlert();
   const [activeTab, setActiveTab] = useState<'chat' | 'members'>('chat');
+  const isHost = currentUserId === room.hostId;
   const [showGifts, setShowGifts] = useState(false);
   const [giftAnimation, setGiftAnimation] = useState<{ id: number; icon: string; name: string; sender: string } | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -560,7 +561,7 @@ const GroupChatRoom: React.FC<GroupChatRoomProps> = ({
             onClick={() => setShowGifts(true)}
             className="p-2.5 text-yellow-500 hover:text-yellow-400 bg-gray-800 border border-yellow-500/30 rounded-full transition-colors flex-shrink-0"
           >
-            <Gift size={22} />
+            {isHost ? <Plus size={22} /> : <Gift size={22} />}
           </button>
 
           <form onSubmit={handleSend} className="flex-1 bg-gray-800 rounded-2xl flex items-center border border-gray-700 focus-within:border-gray-500 transition-colors">
