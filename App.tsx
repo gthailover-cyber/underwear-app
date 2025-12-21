@@ -865,15 +865,47 @@ const App: React.FC = () => {
   };
 
   // Upgrade to Organizer Logic
-  const handleConfirmUpgrade = () => {
+  const handleConfirmUpgrade = async () => {
     const PRICE = 5000;
-    if (walletBalance >= PRICE) {
+    if (walletBalance < PRICE) {
+      return;
+    }
+
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        throw new Error('User not authenticated');
+      }
+
+      // 1. Deduct coins using RPC
+      const { error: deductError } = await supabase.rpc('deduct_coins', {
+        user_id: user.id,
+        amount: PRICE
+      });
+
+      if (deductError) throw deductError;
+
+      // 2. Update role to 'organizer' in profiles table
+      const { error: updateError } = await supabase
+        .from('profiles')
+        .update({ role: 'organizer' })
+        .eq('id', user.id);
+
+      if (updateError) throw updateError;
+
+      // 3. Update local state
       setWalletBalance(prev => prev - PRICE);
       setUserProfile(prev => ({
         ...prev,
         role: 'organizer'
       }));
+
+      // 4. Success feedback
       alert(t.upgradeSuccess);
+
+    } catch (error: any) {
+      console.error('[Upgrade] Error:', error);
+      alert('Failed to upgrade: ' + (error.message || 'Unknown error'));
     }
   };
 
