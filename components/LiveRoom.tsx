@@ -408,7 +408,7 @@ const LiveRoom: React.FC<LiveRoomProps> = ({
         setFloatingHearts(prev => [...prev, { id, left }]);
         setTimeout(() => {
             setFloatingHearts(prev => prev.filter(h => h.id !== id));
-        }, 1500);
+        }, 5000);
     };
 
     const triggerGiftAnimation = (gift: typeof GIFTS[0], sender: string) => {
@@ -846,9 +846,9 @@ const LiveRoom: React.FC<LiveRoomProps> = ({
                         <div
                             key={heart.id}
                             className="absolute bottom-20 animate-float"
-                            style={{ left: `${heart.left}%`, animationDuration: `${1.5 + Math.random()}s` }}
+                            style={{ left: `${heart.left}%`, animationDuration: `${3 + Math.random() * 2}s` }}
                         >
-                            <Heart size={Math.random() * 20 + 20} className="text-pink-500 fill-pink-500 drop-shadow-lg" />
+                            <Heart size={20 + Math.random() * 10} className="text-pink-500 fill-pink-500 drop-shadow-lg" />
                         </div>
                     ))}
                 </div>
