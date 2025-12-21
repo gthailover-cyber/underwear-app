@@ -152,6 +152,7 @@ const LiveRoom: React.FC<LiveRoomProps> = ({
     const heartIdCounter = useRef(0);
     const videoRef = useRef<HTMLVideoElement>(null);
     const streamRef = useRef<MediaStream | null>(null);
+    const notifiedAuctionEndRef = useRef<number | null>(null);
 
     // Auto-scroll comments
     useEffect(() => {
@@ -347,7 +348,11 @@ const LiveRoom: React.FC<LiveRoomProps> = ({
 
                 if (diff <= 0) {
                     setAuctionTimeLeft('0:00');
-                    if (!isAuctionOver) setIsAuctionOver(true);
+                    // Only trigger completion once per unique auction end time
+                    if (notifiedAuctionEndRef.current !== streamer.auctionEndTime) {
+                        setIsAuctionOver(true);
+                        notifiedAuctionEndRef.current = streamer.auctionEndTime;
+                    }
                 } else {
                     const m = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
                     const s = Math.floor((diff % (1000 * 60)) / 1000);
@@ -358,8 +363,11 @@ const LiveRoom: React.FC<LiveRoomProps> = ({
             updateTimer();
             const timerInterval = setInterval(updateTimer, 1000);
             return () => clearInterval(timerInterval);
+        } else {
+            // Reset notified ref if transition out of auction mode
+            notifiedAuctionEndRef.current = null;
         }
-    }, [streamer.isAuction, streamer.auctionEndTime, isAuctionOver]);
+    }, [streamer.isAuction, streamer.auctionEndTime]);
 
     // Automatic Order Creation for Auction Winner
     useEffect(() => {
