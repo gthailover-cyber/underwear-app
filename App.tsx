@@ -947,8 +947,61 @@ const App: React.FC = () => {
   };
 
   // Room Creation Logic
-  const handleCreateRoom = (newRoom: ChatRoom) => {
-    setChatRooms(prev => [newRoom, ...prev]);
+  const handleCreateRoom = async (newRoom: ChatRoom) => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        showAlert({ message: 'Please login to create a room', type: 'warning' });
+        return;
+      }
+
+      // Insert room into Supabase
+      const { data, error } = await supabase
+        .from('chat_rooms')
+        .insert({
+          name: newRoom.name,
+          image: newRoom.image,
+          type: newRoom.type,
+          host_id: user.id,
+          host_name: userProfile.username || user.email?.split('@')[0] || 'User',
+          members: 1,
+          last_message: 'Room created',
+          last_message_time: new Date().toISOString()
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      if (data) {
+        // Format the data to match ChatRoom interface
+        const formattedRoom: ChatRoom = {
+          id: data.id,
+          name: data.name,
+          image: data.image,
+          type: data.type,
+          hostId: data.host_id,
+          hostName: data.host_name,
+          members: data.members,
+          lastMessage: data.last_message,
+          lastMessageTime: 'Just now'
+        };
+
+        // Add to local state
+        setChatRooms(prev => [formattedRoom, ...prev]);
+
+        showAlert({
+          message: language === 'th' ? 'สร้างห้องสำเร็จ!' : 'Room created successfully!',
+          type: 'success'
+        });
+      }
+    } catch (error: any) {
+      console.error('[CreateRoom] Error:', error);
+      showAlert({
+        message: 'Failed to create room: ' + (error.message || 'Unknown error'),
+        type: 'error'
+      });
+    }
   };
 
   // Cart Logic
