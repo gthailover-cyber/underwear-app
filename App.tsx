@@ -1618,6 +1618,7 @@ const App: React.FC = () => {
             chatRooms={chatRooms}
             initialTab={organizerToolTab}
             currentUser={userProfile.username}
+            currentUserId={session?.user?.id}
           />
         );
       case 'all_live':

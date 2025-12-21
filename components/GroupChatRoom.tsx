@@ -1,6 +1,6 @@
 
 import React, { useState, useRef, useEffect } from 'react';
-import { ArrowLeft, MoreVertical, Send, Plus, Smile, Users, Lock, Globe, Gift, Coins, X, Check, Crown, BicepsFlexed } from 'lucide-react';
+import { ArrowLeft, MoreVertical, Send, Plus, Smile, Users, Lock, Globe, Gift, Coins, X, Check, Crown, BicepsFlexed, Ban } from 'lucide-react';
 import { ChatRoom, ChatMessage, Language } from '../types';
 import { TRANSLATIONS } from '../constants';
 import { supabase } from '../lib/supabaseClient';
@@ -47,6 +47,8 @@ const GroupChatRoom: React.FC<GroupChatRoomProps> = ({
   const [members, setMembers] = useState<any[]>([]);
   const [inputText, setInputText] = useState('');
   const [isMember, setIsMember] = useState(false);
+  const [isMuted, setIsMuted] = useState(false);
+  const [isBanned, setIsBanned] = useState(false);
   const [currentUserIdState, setCurrentUserIdState] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -89,10 +91,14 @@ const GroupChatRoom: React.FC<GroupChatRoomProps> = ({
 
           if (!error) {
             setIsMember(true);
+            setIsMuted(false);
+            setIsBanned(false);
             console.log('[Room] Auto-joined public room');
           }
         } else if (existingMember) {
           setIsMember(true);
+          setIsMuted(existingMember.is_muted);
+          setIsBanned(existingMember.is_banned);
         }
 
         // Fetch messages
@@ -149,20 +155,30 @@ const GroupChatRoom: React.FC<GroupChatRoomProps> = ({
       )
       .subscribe();
 
-    // Realtime listener for room members (for member count)
-    const membersChannel = supabase
-      .channel(`room_members:${room.id}`)
+    // Realtime listener for moderation updates
+    const moderationChannel = supabase
+      .channel(`room_moderation:${room.id}`)
       .on(
         'postgres_changes',
         {
-          event: '*',
+          event: 'UPDATE',
           schema: 'public',
           table: 'room_members',
           filter: `room_id=eq.${room.id}`
         },
-        (payload) => {
-          console.log('[Room] Members changed:', payload);
-          // Refresh members list
+        async (payload) => {
+          console.log('[Room] Moderation update:', payload);
+          const { data: { user } } = await supabase.auth.getUser();
+          if (user && payload.new.user_id === user.id) {
+            setIsMuted(payload.new.is_muted);
+            setIsBanned(payload.new.is_banned);
+
+            if (payload.new.is_banned) {
+              showAlert({ message: 'You have been banned from this room.', type: 'error' });
+            } else if (payload.new.is_muted) {
+              showAlert({ message: 'You have been muted by the host.', type: 'warning' });
+            }
+          }
           fetchMembers();
         }
       )
@@ -191,7 +207,7 @@ const GroupChatRoom: React.FC<GroupChatRoomProps> = ({
 
     return () => {
       supabase.removeChannel(messagesChannel);
-      supabase.removeChannel(membersChannel);
+      supabase.removeChannel(moderationChannel);
       supabase.removeChannel(roomChannel);
     };
   }, [room.id]);
@@ -350,6 +366,23 @@ const GroupChatRoom: React.FC<GroupChatRoomProps> = ({
 
   return (
     <div className="flex flex-col h-screen bg-black animate-slide-in relative overflow-hidden">
+      {/* Animation Overlay */}
+      {isBanned && (
+        <div className="absolute inset-0 z-[200] bg-black/95 flex flex-col items-center justify-center p-8 text-center animate-fade-in backdrop-blur-xl">
+          <div className="w-24 h-24 bg-red-600/20 rounded-full flex items-center justify-center mb-6 border border-red-500/30">
+            <Ban size={48} className="text-red-500" />
+          </div>
+          <h2 className="text-2xl font-black text-white mb-2 uppercase tracking-tighter">Access Denied</h2>
+          <p className="text-gray-400 text-sm max-w-xs leading-relaxed mb-8">You have been banned from this room by the host and can no longer view or participate in the conversation.</p>
+          <button
+            onClick={onBack}
+            className="px-8 py-3 bg-white text-black font-black rounded-full uppercase text-xs tracking-widest hover:scale-105 active:scale-95 transition-transform"
+          >
+            Leave Room
+          </button>
+        </div>
+      )}
+
       {/* Styles for animation */}
       <style>{`
         @keyframes giftEntrance {
@@ -572,28 +605,32 @@ const GroupChatRoom: React.FC<GroupChatRoomProps> = ({
             {isHost ? <Plus size={22} /> : <Gift size={22} />}
           </button>
 
-          <form onSubmit={handleSend} className="flex-1 bg-gray-800 rounded-2xl flex items-center border border-gray-700 focus-within:border-gray-500 transition-colors">
+          <form
+            onSubmit={handleSend}
+            className={`flex-1 bg-gray-800 rounded-2xl flex items-center border border-gray-700 focus-within:border-gray-500 transition-colors ${isMuted ? 'opacity-50 grayscale' : ''}`}
+          >
             <input
               type="text"
               value={inputText}
               onChange={(e) => setInputText(e.target.value)}
-              placeholder={t.typeMessage}
-              className="flex-1 bg-transparent text-white px-4 py-3 focus:outline-none placeholder-gray-500 text-sm max-h-32"
+              placeholder={isMuted ? 'You are muted' : t.typeMessage}
+              disabled={isMuted}
+              className="flex-1 bg-transparent text-white px-4 py-3 focus:outline-none placeholder-gray-500 text-sm max-h-32 disabled:cursor-not-allowed"
             />
-            <button type="button" className="p-2 text-gray-400 hover:text-white mr-1">
+            <button type="button" className="p-2 text-gray-400 hover:text-white mr-1" disabled={isMuted}>
               <Smile size={20} />
             </button>
           </form>
 
           <button
             onClick={handleSend}
-            disabled={!inputText.trim()}
-            className={`p-3 rounded-full flex-shrink-0 transition-all ${inputText.trim()
+            disabled={!inputText.trim() || isMuted}
+            className={`p-3 rounded-full flex-shrink-0 transition-all ${inputText.trim() && !isMuted
               ? 'bg-red-600 text-white shadow-lg shadow-red-900/50 hover:bg-red-500 transform active:scale-95'
               : 'bg-gray-800 text-gray-600'
               }`}
           >
-            <Send size={20} className={inputText.trim() ? "translate-x-0.5" : ""} />
+            <Send size={20} className={inputText.trim() && !isMuted ? "translate-x-0.5" : ""} />
           </button>
         </div>
       )}

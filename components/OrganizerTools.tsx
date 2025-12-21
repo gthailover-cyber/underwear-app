@@ -1,8 +1,10 @@
 
-import React, { useState } from 'react';
-import { ArrowLeft, Plus, MessageSquare, Users, Trash2, Ban, MicOff, MoreHorizontal, ShieldCheck, Search } from 'lucide-react';
-import { Language, ChatRoom, Person } from '../types';
-import { TRANSLATIONS, MOCK_PEOPLE } from '../constants';
+import React, { useState, useEffect } from 'react';
+import { ArrowLeft, Plus, Users, Ban, MicOff, MoreHorizontal, ShieldCheck, Search } from 'lucide-react';
+import { Language, ChatRoom } from '../types';
+import { TRANSLATIONS } from '../constants';
+import { supabase } from '../lib/supabaseClient';
+import { useAlert } from '../context/AlertContext';
 
 interface OrganizerToolsProps {
     language: Language;
@@ -11,6 +13,7 @@ interface OrganizerToolsProps {
     chatRooms: ChatRoom[];
     initialTab?: 'rooms' | 'members';
     currentUser: string;
+    currentUserId?: string;
 }
 
 const OrganizerTools: React.FC<OrganizerToolsProps> = ({
@@ -19,22 +22,119 @@ const OrganizerTools: React.FC<OrganizerToolsProps> = ({
     onCreateRoom,
     chatRooms,
     initialTab = 'rooms',
-    currentUser
+    currentUser,
+    currentUserId
 }) => {
     const t = TRANSLATIONS[language];
+    const { showAlert } = useAlert();
     const [activeTab, setActiveTab] = useState<'rooms' | 'members'>(initialTab);
     const [searchTerm, setSearchTerm] = useState('');
+    const [dbMembers, setDbMembers] = useState<any[]>([]);
+    const [loading, setLoading] = useState(false);
 
-    // Filter mocked data for display
-    const myRooms = chatRooms; // In real app, filter by hostId
-    const members = MOCK_PEOPLE.filter(p => p.username !== currentUser); // Mock member list excluding me
+    const isOnline = (lastSeenAt?: string) => {
+        if (!lastSeenAt) return false;
+        const lastSeen = new Date(lastSeenAt).getTime();
+        const now = new Date().getTime();
+        return (now - lastSeen) < 5 * 60 * 1000; // Online if seen in last 5 minutes
+    };
+
+    // Fetch real members from database
+    const fetchMembers = async () => {
+        if (!currentUserId) return;
+        setLoading(true);
+        try {
+            // Updated query structure to correctly join and filter
+            const { data, error } = await supabase
+                .from('room_members')
+                .select(`
+                    id,
+                    room_id,
+                    user_id,
+                    is_muted,
+                    is_banned,
+                    profiles:user_id (id, username, avatar, last_seen_at),
+                    chat_rooms:room_id (id, name, host_id)
+                `);
+
+            if (error) throw error;
+            if (data) {
+                // Filter where currentUserId is the host of the room
+                const myMembers = data.filter((m: any) => m.chat_rooms?.host_id === currentUserId);
+                setDbMembers(myMembers);
+            }
+        } catch (err: any) {
+            console.error('[OrganizerTools] Error fetching members:', err);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        if (activeTab === 'members') {
+            fetchMembers();
+        }
+    }, [activeTab, currentUserId]);
+
+    // Handlers
+    const handleMute = async (member: any) => {
+        const newMuteStatus = !member.is_muted;
+        try {
+            const { error } = await supabase
+                .from('room_members')
+                .update({ is_muted: newMuteStatus })
+                .eq('id', member.id);
+
+            if (error) throw error;
+
+            setDbMembers(prev => prev.map(m =>
+                m.id === member.id ? { ...m, is_muted: newMuteStatus } : m
+            ));
+
+            showAlert({
+                message: newMuteStatus ? 'User muted in this room' : 'User unmuted',
+                type: 'success'
+            });
+        } catch (err: any) {
+            console.error('[OrganizerTools] Mute error:', err);
+            showAlert({ message: 'Failed to update mute status', type: 'error' });
+        }
+    };
+
+    const handleBan = async (member: any) => {
+        const newBanStatus = !member.is_banned;
+        try {
+            const { error } = await supabase
+                .from('room_members')
+                .update({ is_banned: newBanStatus })
+                .eq('id', member.id);
+
+            if (error) throw error;
+
+            setDbMembers(prev => prev.map(m =>
+                m.id === member.id ? { ...m, is_banned: newBanStatus } : m
+            ));
+
+            showAlert({
+                message: newBanStatus ? 'User banned from this room' : 'User unbanned',
+                type: 'success'
+            });
+        } catch (err: any) {
+            console.error('[OrganizerTools] Ban error:', err);
+            showAlert({ message: 'Failed to update ban status', type: 'error' });
+        }
+    };
+
+    // Filter my rooms (where host_id is currentUserId)
+    const myRooms = chatRooms.filter(r => r.hostId === currentUserId);
 
     const filteredRooms = myRooms.filter(room =>
         room.name.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
-    const filteredMembers = members.filter(m =>
-        m.username.toLowerCase().includes(searchTerm.toLowerCase())
+    const filteredMembers = dbMembers.filter(m =>
+        m.profiles?.username?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        m.chat_rooms?.name?.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
     return (
@@ -128,29 +228,40 @@ const OrganizerTools: React.FC<OrganizerToolsProps> = ({
                 ) : (
                     <div className="space-y-3">
                         <div className="flex justify-between items-center mb-2">
-                            <span className="text-gray-400 text-sm">{t.totalMembers} ({members.length})</span>
+                            <span className="text-gray-400 text-sm">{t.totalMembers} ({dbMembers.length})</span>
+                            {loading && <div className="animate-spin rounded-full h-4 w-4 border-2 border-yellow-500 border-t-transparent"></div>}
                         </div>
 
-                        {filteredMembers.map(member => (
-                            <div key={member.id} className="bg-gray-900 border border-gray-800 rounded-xl p-3 flex gap-3 items-center">
+                        {filteredMembers.length > 0 ? filteredMembers.map((member: any) => (
+                            <div key={member.id} className="bg-gray-900 border border-gray-800 rounded-xl p-3 flex gap-3 items-center animate-fade-in">
                                 <div className="relative">
-                                    <img src={member.avatar} className="w-10 h-10 rounded-full object-cover border border-gray-700" />
-                                    {member.isOnline && <div className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-green-500 border-2 border-gray-900 rounded-full"></div>}
+                                    <img src={member.profiles?.avatar} className="w-10 h-10 rounded-full object-cover border border-gray-700" alt="" />
+                                    {isOnline(member.profiles?.last_seen_at) && <div className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-green-500 border-2 border-gray-900 rounded-full"></div>}
                                 </div>
                                 <div className="flex-1 min-w-0">
-                                    <h3 className="text-white font-bold text-sm truncate">{member.username}</h3>
-                                    <span className="text-xs text-gray-500 block">Followers: {member.followers}</span>
+                                    <h3 className="text-white font-bold text-sm truncate">{member.profiles?.username}</h3>
+                                    <span className="text-[10px] text-gray-500 block truncate">Room: {member.chat_rooms?.name}</span>
                                 </div>
                                 <div className="flex gap-2">
-                                    <button className="p-2 text-gray-500 hover:text-yellow-500 bg-gray-800 rounded-lg" title={t.muteUser}>
+                                    <button
+                                        onClick={() => handleMute(member)}
+                                        className={`p-2 rounded-lg transition-colors ${member.is_muted ? 'bg-yellow-500/20 text-yellow-500 border border-yellow-500/50' : 'text-gray-500 hover:text-yellow-500 bg-gray-800'}`}
+                                        title={member.is_muted ? 'Unmute' : t.muteUser}
+                                    >
                                         <MicOff size={16} />
                                     </button>
-                                    <button className="p-2 text-gray-500 hover:text-red-500 bg-gray-800 rounded-lg" title={t.banUser}>
+                                    <button
+                                        onClick={() => handleBan(member)}
+                                        className={`p-2 rounded-lg transition-colors ${member.is_banned ? 'bg-red-500/20 text-red-500 border border-red-500/50' : 'text-gray-500 hover:text-red-500 bg-gray-800'}`}
+                                        title={member.is_banned ? 'Unban' : t.banUser}
+                                    >
                                         <Ban size={16} />
                                     </button>
                                 </div>
                             </div>
-                        ))}
+                        )) : !loading && (
+                            <div className="text-center py-10 text-gray-600 italic">No members found.</div>
+                        )}
                     </div>
                 )}
             </div>
