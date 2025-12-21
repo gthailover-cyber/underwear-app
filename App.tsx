@@ -16,6 +16,7 @@ import GroupChatRoom from './components/GroupChatRoom';
 import OrganizerTools from './components/OrganizerTools';
 import JoinRequestModal from './components/JoinRequestModal';
 import CountdownOverlay from './components/CountdownOverlay';
+import MyEarnings from './components/MyEarnings';
 import Discover from './components/Discover';
 import Cart from './components/Cart';
 import Profile from './components/Profile';
@@ -1214,7 +1215,9 @@ const App: React.FC = () => {
           quantity: item.quantity,
           price: item.price,
           color: item.color,
-          size: item.size
+          size: item.size,
+          seller_id: item.seller_id,
+          item_type: item.type || 'normal'
         }));
 
         const { error: itemsError } = await supabase
@@ -1577,6 +1580,14 @@ const App: React.FC = () => {
             onBack={() => setActiveTab('home')}
             products={myProducts}
             setProducts={setMyProducts}
+          />
+        );
+      case 'my_earnings':
+        return (
+          <MyEarnings
+            language={language}
+            onBack={() => setActiveTab('home')}
+            currentUserId={session?.user?.id}
           />
         );
       case 'my_gifts':
@@ -2101,6 +2112,15 @@ const App: React.FC = () => {
                       <Gift size={18} className="text-blue-500 group-hover:text-white" />
                     </div>
                     <span className="font-medium text-base text-gray-200 group-hover:text-white">{t.myGifts}</span>
+                  </div>
+                  <ChevronRight size={18} className="text-gray-600 group-hover:text-white" />
+                </button>
+                <button onClick={() => { setActiveTab('my_earnings'); setIsMenuOpen(false); }} className="w-full flex items-center justify-between px-6 py-3 hover:bg-white/5 transition-colors group">
+                  <div className="flex items-center gap-4">
+                    <div className="w-9 h-9 rounded-lg bg-blue-900/30 border border-blue-500/50 flex items-center justify-center group-hover:bg-blue-600 transition-colors">
+                      <Banknote size={18} className="text-blue-500 group-hover:text-white" />
+                    </div>
+                    <span className="font-medium text-base text-gray-200 group-hover:text-white">{t.myEarnings}</span>
                   </div>
                   <ChevronRight size={18} className="text-gray-600 group-hover:text-white" />
                 </button>

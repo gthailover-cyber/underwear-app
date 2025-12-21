@@ -17,6 +17,7 @@ export interface Product {
   sizes?: string[];  // Array of size codes (S, M, L, XL)
   description?: string;
   type?: 'normal' | 'auction'; // Added: normal or auction product
+  seller_id?: string;        // Added: ID of the seller
 }
 
 export interface CartItem extends Product {

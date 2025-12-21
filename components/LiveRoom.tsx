@@ -661,7 +661,9 @@ const LiveRoom: React.FC<LiveRoomProps> = ({
                         quantity: item.quantity,
                         price: item.price,
                         color: item.color,
-                        size: item.size
+                        size: item.size,
+                        seller_id: item.seller_id,
+                        item_type: item.type || 'normal'
                     }));
 
                     const { error: itemsError } = await supabase
