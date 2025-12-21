@@ -391,8 +391,7 @@ const LiveRoom: React.FC<LiveRoomProps> = ({
                     if (success) {
                         console.log('[AuctionWin] Order successfully created for winner');
                     } else {
-                        console.error('[AuctionWin] Failed to create automated order');
-                        setHasSentWinnerOrder(false); // Reset to allow retry or show user manual call
+                        console.error('[AuctionWin] Automatic order attempt finished. User may need to complete manually if funds or address were missing.');
                     }
                 });
             }
@@ -594,6 +593,11 @@ const LiveRoom: React.FC<LiveRoomProps> = ({
     };
 
     const handleCheckoutCart = () => {
+        if (!userAddress) {
+            setIsEditingAddress(true);
+            // Pre-fill tempAddress with current userAddress if any (though it's null here)
+            // or just leave as is. Since userAddress is null, we might want to guide them.
+        }
         setShowCheckoutModal(true);
         setShowCart(false);
     };
@@ -602,7 +606,10 @@ const LiveRoom: React.FC<LiveRoomProps> = ({
         const total = items.reduce((acc, item) => acc + (item.price * item.quantity), 0);
 
         if (!userAddress) {
-            alert("Please add a shipping address in your profile or use Checkout to enter one.");
+            alert(language === 'th' ? "กรุณาป้อนที่อยู่จัดส่งก่อนดำเนินการต่อ" : "Please add a shipping address before proceeding.");
+            setCart(items); // Pre-fill cart with the items being bought
+            setIsEditingAddress(true);
+            setShowCheckoutModal(true);
             return false;
         }
 
@@ -702,9 +709,13 @@ const LiveRoom: React.FC<LiveRoomProps> = ({
                 size: purchaseConfig.size
             };
 
+            // Close purchase sheet first to avoid UI overlap if we redirect to address/checkout
+            setSelectedProductForPurchase(null);
+
             const success = await processOrder([tempItem]);
-            if (success) {
-                setSelectedProductForPurchase(null); // Close sheet
+            if (!success && !userAddress) {
+                // If failed due to no address, the modal is already open by processOrder
+                console.log('Redirecting to address input...');
             }
         } else {
             // Add to Cart
