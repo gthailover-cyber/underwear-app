@@ -228,6 +228,12 @@ const App: React.FC = () => {
       } catch (err) {
         console.error('Error handling notification click:', err);
       }
+    } else if (notif.type === 'room_approval') {
+      setActiveTab('home');
+      setHomeTab('rooms');
+    } else if (notif.type === 'system') {
+      // Typically related to orders
+      setActiveTab('profile'); // Let user go to profile to see status or wherever appropriate
     }
   };
 
