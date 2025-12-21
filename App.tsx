@@ -1747,6 +1747,7 @@ const App: React.FC = () => {
             currentUser={userProfile.username}
             currentUserId={session?.user?.id}
             pendingCounts={pendingCounts}
+            onUserClick={handleOpenProfileById}
           />
         );
       case 'all_live':

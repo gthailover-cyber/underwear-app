@@ -15,6 +15,7 @@ interface OrganizerToolsProps {
     currentUser: string;
     currentUserId?: string;
     pendingCounts?: { [roomId: string]: number };
+    onUserClick?: (userId: string) => void;
 }
 
 const OrganizerTools: React.FC<OrganizerToolsProps> = ({
@@ -25,7 +26,8 @@ const OrganizerTools: React.FC<OrganizerToolsProps> = ({
     initialTab = 'rooms',
     currentUser,
     currentUserId,
-    pendingCounts = {}
+    pendingCounts = {},
+    onUserClick
 }) => {
     const t = TRANSLATIONS[language];
     const { showAlert } = useAlert();
@@ -378,7 +380,12 @@ const OrganizerTools: React.FC<OrganizerToolsProps> = ({
                                 </div>
                                 {pendingRequests.map(member => (
                                     <div key={member.id} className="bg-gray-900 border-2 border-yellow-500/20 rounded-2xl p-4 flex gap-4 items-center animate-fade-in">
-                                        <img src={member.profiles?.avatar} className="w-12 h-12 rounded-full object-cover border border-gray-700" alt="" />
+                                        <button
+                                            onClick={() => onUserClick?.(member.profiles?.id)}
+                                            className="active:scale-95 transition-transform"
+                                        >
+                                            <img src={member.profiles?.avatar} className="w-12 h-12 rounded-full object-cover border border-gray-700" alt="" />
+                                        </button>
                                         <div className="flex-1 min-w-0">
                                             <h3 className="text-white font-bold text-sm truncate">{member.profiles?.username}</h3>
                                             <span className="text-[10px] text-yellow-500 font-bold block uppercase tracking-wider">Wants to join: {member.chat_rooms?.name}</span>
@@ -410,10 +417,13 @@ const OrganizerTools: React.FC<OrganizerToolsProps> = ({
 
                             {filteredMembers.length > 0 ? filteredMembers.map((member: any) => (
                                 <div key={member.id} className="bg-gray-900 border border-gray-800 rounded-xl p-3 flex gap-3 items-center animate-fade-in">
-                                    <div className="relative">
+                                    <button
+                                        onClick={() => onUserClick?.(member.profiles?.id)}
+                                        className="relative active:scale-95 transition-transform"
+                                    >
                                         <img src={member.profiles?.avatar} className="w-10 h-10 rounded-full object-cover border border-gray-700" alt="" />
                                         {isOnline(member.profiles?.last_seen_at) && <div className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-green-500 border-2 border-gray-900 rounded-full"></div>}
-                                    </div>
+                                    </button>
                                     <div className="flex-1 min-w-0">
                                         <h3 className="text-white font-bold text-sm truncate">{member.profiles?.username}</h3>
                                         <span className="text-[10px] text-gray-500 block truncate">Room: {member.chat_rooms?.name}</span>
