@@ -945,7 +945,7 @@ const LiveRoom: React.FC<LiveRoomProps> = ({
                                 />
                             </div>
                             <div>
-                                <h3 className="text-xs font-bold text-red-500 max-w-[100px] truncate">{streamer.name}</h3>
+                                <h3 className="text-xs font-bold text-white max-w-[100px] truncate">{streamer.name}</h3>
                                 <p className="text-[10px] text-gray-300 flex items-center gap-1">
                                     <User size={8} /> {(viewerCount || 0).toLocaleString()}
                                 </p>
