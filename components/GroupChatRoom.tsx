@@ -519,9 +519,15 @@ const GroupChatRoom: React.FC<GroupChatRoomProps> = ({
                       className="flex flex-col items-center mr-2 mt-auto active:scale-95 transition-transform"
                     >
                       <div className="relative">
-                        <div className="w-8 h-8 rounded-full bg-gray-800 overflow-hidden border border-gray-700">
+                        <div className={`w-8 h-8 rounded-full bg-gray-800 overflow-hidden border border-gray-700 ${members.find(m => m.id === msg.senderId)?.isMuted ? 'opacity-50' : ''}`}>
                           <img src={msg.senderAvatar} className="w-full h-full object-cover" />
                         </div>
+                        {/* Muted Overlay */}
+                        {members.find(m => m.id === msg.senderId)?.isMuted && (
+                          <div className="absolute inset-0 flex items-center justify-center bg-black/50 rounded-full">
+                            <VolumeX size={12} className="text-red-500" />
+                          </div>
+                        )}
                         {/* Role Badge */}
                         <UserBadge
                           role={members.find(m => m.id === msg.senderId)?.role}
@@ -529,7 +535,7 @@ const GroupChatRoom: React.FC<GroupChatRoomProps> = ({
                           className="absolute -top-1 -right-1"
                         />
                         {/* Online Status */}
-                        {members.find(m => m.id === msg.senderId)?.isOnline && (
+                        {members.find(m => m.id === msg.senderId)?.isOnline && !members.find(m => m.id === msg.senderId)?.isMuted && (
                           <div className="absolute -bottom-0.5 -left-0.5 w-2.5 h-2.5 bg-green-500 border-2 border-black rounded-full"></div>
                         )}
                       </div>
@@ -631,8 +637,8 @@ const GroupChatRoom: React.FC<GroupChatRoomProps> = ({
                   <button
                     onClick={() => handleToggleMute(member.id, member.isMuted)}
                     className={`p-2 rounded-lg transition-all active:scale-95 ${member.isMuted
-                        ? 'bg-green-600/20 text-green-400 hover:bg-green-600/30'
-                        : 'bg-red-600/20 text-red-400 hover:bg-red-600/30'
+                      ? 'bg-green-600/20 text-green-400 hover:bg-green-600/30'
+                      : 'bg-red-600/20 text-red-400 hover:bg-red-600/30'
                       }`}
                     title={member.isMuted ? 'Unmute' : 'Mute'}
                   >
