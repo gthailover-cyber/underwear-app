@@ -137,56 +137,74 @@ const Discover: React.FC<DiscoverProps> = ({ language, onOpenStream, streamers, 
         </div>
 
         {trendingRooms.length > 0 ? (
-          <div
-            ref={roomSliderRef}
-            className="overflow-x-auto no-scrollbar flex gap-4 px-4 scroll-smooth"
-          >
-            {trendingRooms.map((room) => (
-              <div
-                key={room.id}
-                onClick={() => onOpenRoom?.(room)}
-                className="flex-shrink-0 w-28 aspect-square relative rounded-xl overflow-hidden cursor-pointer group border border-gray-800 shadow-lg active:scale-95 transition-all"
-              >
-                {/* Background Image */}
-                <img
-                  src={room.image}
-                  className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
-                  alt={room.name}
-                />
-                <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-transparent to-black/80"></div>
+          <div className="relative group/slider">
+            {/* Left Arrow (Desktop) */}
+            <button
+              onClick={scrollLeft}
+              className="hidden md:flex absolute left-0 top-1/2 -translate-y-1/2 z-10 w-10 h-10 items-center justify-center bg-black/80 hover:bg-black text-white rounded-full shadow-lg transition-all opacity-0 group-hover/slider:opacity-100"
+            >
+              <ChevronLeft size={24} />
+            </button>
 
-                {/* Room Type Badge (Top Left) */}
-                <div className={`absolute top-2 left-2 p-1 rounded-md ${room.type === 'private'
-                  ? 'bg-purple-600/80'
-                  : 'bg-green-600/80'
-                  }`}>
-                  {room.type === 'private' ? <Lock size={10} className="text-white" /> : <Globe size={10} className="text-white" />}
-                </div>
+            {/* Right Arrow (Desktop) */}
+            <button
+              onClick={scrollRight}
+              className="hidden md:flex absolute right-0 top-1/2 -translate-y-1/2 z-10 w-10 h-10 items-center justify-center bg-black/80 hover:bg-black text-white rounded-full shadow-lg transition-all opacity-0 group-hover/slider:opacity-100"
+            >
+              <ChevronRight size={24} />
+            </button>
 
-                {/* Member Count (Top Right) */}
-                <div className="absolute top-2 right-2 bg-black/60 backdrop-blur-sm rounded-full px-1.5 py-0.5 flex items-center gap-0.5">
-                  <Users size={8} className="text-white" />
-                  <span className="text-[10px] text-white font-bold">{room.members}</span>
-                </div>
+            <div
+              ref={roomSliderRef}
+              className="overflow-x-auto no-scrollbar flex gap-4 px-4 scroll-smooth"
+            >
+              {trendingRooms.map((room) => (
+                <div
+                  key={room.id}
+                  onClick={() => onOpenRoom?.(room)}
+                  className="flex-shrink-0 w-28 aspect-square relative rounded-xl overflow-hidden cursor-pointer group border border-gray-800 shadow-lg active:scale-95 transition-all"
+                >
+                  {/* Background Image */}
+                  <img
+                    src={room.image}
+                    className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                    alt={room.name}
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-transparent to-black/80"></div>
 
-                {/* Bottom Info */}
-                <div className="absolute bottom-0 left-0 right-0 p-2">
-                  {/* Host Avatar */}
-                  <div className="flex items-center gap-1 mb-1">
-                    <img
-                      src={room.hostAvatar}
-                      className="w-5 h-5 rounded-full border border-white object-cover"
-                      alt={room.hostName}
-                    />
-                    <span className="text-[9px] text-white font-bold truncate flex-1">{room.hostName}</span>
+                  {/* Room Type Badge (Top Left) */}
+                  <div className={`absolute top-2 left-2 p-1 rounded-md ${room.type === 'private'
+                    ? 'bg-purple-600/80'
+                    : 'bg-green-600/80'
+                    }`}>
+                    {room.type === 'private' ? <Lock size={10} className="text-white" /> : <Globe size={10} className="text-white" />}
                   </div>
-                  {/* Room Name */}
-                  <h4 className="text-[10px] text-white font-bold truncate leading-tight">
-                    {room.name}
-                  </h4>
+
+                  {/* Member Count (Top Right) */}
+                  <div className="absolute top-2 right-2 bg-black/60 backdrop-blur-sm rounded-full px-1.5 py-0.5 flex items-center gap-0.5">
+                    <Users size={8} className="text-white" />
+                    <span className="text-[10px] text-white font-bold">{room.members}</span>
+                  </div>
+
+                  {/* Bottom Info */}
+                  <div className="absolute bottom-0 left-0 right-0 p-2">
+                    {/* Host Avatar */}
+                    <div className="flex items-center gap-1 mb-1">
+                      <img
+                        src={room.hostAvatar}
+                        className="w-5 h-5 rounded-full border border-white object-cover"
+                        alt={room.hostName}
+                      />
+                      <span className="text-[9px] text-white font-bold truncate flex-1">{room.hostName}</span>
+                    </div>
+                    {/* Room Name */}
+                    <h4 className="text-[10px] text-white font-bold truncate leading-tight">
+                      {room.name}
+                    </h4>
+                  </div>
                 </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
         ) : (
           <div className="px-4 text-gray-500 text-sm">
