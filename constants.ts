@@ -11,6 +11,10 @@ export const DEFAULT_IMAGES = {
   COVER: 'https://images.unsplash.com/photo-1614850523060-8da1d56ae167?w=1200&q=80'
 };
 
+export const OMISE_CONFIG = {
+  PUBLIC_KEY: 'pkey_test_664d7we2i3qen5fmcqk', // Replace with real Omise Public Key
+};
+
 export const GIFTS = [
   { id: '1', name: 'Heart', icon: '❤️', price: 10, color: 'red' },
   { id: '2', name: 'Rose', icon: '🌹', price: 50, color: 'pink' },

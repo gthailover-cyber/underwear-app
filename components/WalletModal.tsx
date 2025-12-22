@@ -1,7 +1,9 @@
-import React, { useState } from 'react';
-import { X, CreditCard, Smartphone, Check, Coins } from 'lucide-react';
-import { TRANSLATIONS } from '../constants';
+
+import React, { useState, useEffect } from 'react';
+import { X, Check, Coins, CreditCard, Smartphone, ShieldCheck, AlertCircle } from 'lucide-react';
+import { TRANSLATIONS, OMISE_CONFIG } from '../constants';
 import { Language } from '../types';
+import { supabase } from '../lib/supabaseClient';
 
 interface WalletModalProps {
   isOpen: boolean;
@@ -11,168 +13,248 @@ interface WalletModalProps {
   language: Language;
 }
 
+declare global {
+  interface Window {
+    OmiseCard: any;
+  }
+}
+
 const WalletModal: React.FC<WalletModalProps> = ({ isOpen, onClose, balance, onTopUp, language }) => {
   const [selectedAmount, setSelectedAmount] = useState<number>(100);
-  const [paymentMethod, setPaymentMethod] = useState<'card' | 'truemoney'>('truemoney');
   const [isProcessing, setIsProcessing] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const t = TRANSLATIONS[language];
-  
-  const amounts = [50, 100, 300, 500, 1000, 2000];
+  const amounts = [50, 100, 300, 500, 1000, 2000, 5000];
+
+  useEffect(() => {
+    if (isOpen && window.OmiseCard) {
+      window.OmiseCard.configure({
+        publicKey: OMISE_CONFIG.PUBLIC_KEY,
+        displayAmount: false,
+        frameLabel: 'GThaiLover Wallet',
+        frameColor: '#dc2626', // Red theme
+        submitLabel: 'PAY NOW',
+        currency: 'THB'
+      });
+    }
+  }, [isOpen]);
+
+  const handleOmisePayment = () => {
+    if (!window.OmiseCard) {
+      setError('Payment system is loading, please try again in a moment.');
+      return;
+    }
+
+    setError(null);
+    window.OmiseCard.open({
+      amount: selectedAmount * 100, // Omise uses subunits (Satangs)
+      currency: 'THB',
+      defaultPaymentMethod: 'promptpay',
+      otherPaymentMethods: ['credit_card', 'truemoney', 'internet_banking'],
+      onCreateTokenSuccess: (nonce: string) => {
+        if (nonce.startsWith('tokn_')) {
+          console.log('Created Card Token:', nonce);
+          processCharge(nonce, 'card');
+        } else if (nonce.startsWith('src_')) {
+          console.log('Created Source (E-Wallet/PromptPay):', nonce);
+          processCharge(nonce, 'source');
+        }
+      },
+      onFormClosed: () => {
+        // Handle if user closed without paying
+      }
+    });
+  };
+
+  const processCharge = async (tokenOrSource: string, type: 'card' | 'source') => {
+    setIsProcessing(true);
+    setError(null);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('User not found');
+
+      const { data, error: funcError } = await supabase.functions.invoke('omise-topup', {
+        body: {
+          token: tokenOrSource,
+          amount: selectedAmount,
+          userId: user.id
+        }
+      });
+
+      if (funcError) throw funcError;
+
+      if (data.status === 'pending' && data.authorize_uri) {
+        // Handle PromptPay or Redirect-based payments
+        window.location.href = data.authorize_uri;
+        return;
+      }
+
+      if (data.success) {
+        // On Instant Success (Credit Card)
+        onTopUp(selectedAmount);
+        setIsProcessing(false);
+        setIsSuccess(true);
+
+        setTimeout(() => {
+          setIsSuccess(false);
+          onClose();
+        }, 2000);
+      } else {
+        throw new Error(data.error || 'Payment failed');
+      }
+    } catch (err: any) {
+      console.error('Charge error:', err);
+      setError(err.message || 'Payment failed. Please try another method.');
+      setIsProcessing(false);
+    }
+  };
 
   if (!isOpen) return null;
 
-  const handlePayment = () => {
-    setIsProcessing(true);
-    // Simulate API Call
-    setTimeout(() => {
-      onTopUp(selectedAmount);
-      setIsProcessing(false);
-      setIsSuccess(true);
-      // Close modal after showing success
-      setTimeout(() => {
-        setIsSuccess(false);
-        onClose();
-      }, 1500);
-    }, 2000);
-  };
-
   return (
-    <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-[70] flex items-center justify-center p-4">
       {/* Backdrop */}
-      <div 
-        className="absolute inset-0 bg-black/90 backdrop-blur-sm"
+      <div
+        className="absolute inset-0 bg-black/95 backdrop-blur-md"
         onClick={!isProcessing ? onClose : undefined}
       />
 
       {/* Modal Content */}
-      <div className="relative w-full max-w-md bg-gray-900 rounded-3xl border border-gray-800 shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
-        
-        {/* Header */}
-        <div className="p-6 pb-2 border-b border-gray-800 flex items-center justify-between bg-gradient-to-r from-gray-900 to-gray-800">
-          <h2 className="text-xl font-athletic tracking-wide text-white flex items-center gap-2">
-            <Coins className="text-yellow-400" />
-            {t.wallet}
-          </h2>
-          <button 
+      <div className="relative w-full max-w-md bg-gray-900 rounded-[2.5rem] border border-gray-800 shadow-2xl overflow-hidden flex flex-col max-h-[90vh] animate-scale-up">
+
+        {/* Header - Premium Gradient */}
+        <div className="p-6 pb-4 border-b border-gray-800 flex items-center justify-between bg-gradient-to-br from-gray-900 via-gray-900 to-red-900/20">
+          <div className="flex flex-col">
+            <h2 className="text-xl font-black tracking-tight text-white flex items-center gap-2 uppercase">
+              <ShieldCheck className="text-red-500" size={24} />
+              {t.myWallet}
+            </h2>
+            <p className="text-[10px] text-gray-500 font-bold tracking-widest uppercase mt-1">Professional Secure Payment</p>
+          </div>
+          <button
             onClick={onClose}
             disabled={isProcessing}
-            className="p-2 bg-gray-800 rounded-full text-gray-400 hover:text-white disabled:opacity-50"
+            className="p-2.5 bg-gray-800/80 hover:bg-gray-700 rounded-full text-gray-400 hover:text-white transition-all disabled:opacity-50 border border-gray-700"
           >
             <X size={20} />
           </button>
         </div>
 
-        {/* Success Overlay */}
+        {/* Content */}
         {isSuccess ? (
-          <div className="flex-1 flex flex-col items-center justify-center p-8 text-center animate-fade-in">
-            <div className="w-20 h-20 bg-green-500 rounded-full flex items-center justify-center mb-6 shadow-lg shadow-green-500/30">
-              <Check size={40} className="text-white" />
+          <div className="flex-1 flex flex-col items-center justify-center p-12 text-center animate-fade-in">
+            <div className="w-24 h-24 bg-green-500 rounded-full flex items-center justify-center mb-6 shadow-2xl shadow-green-500/40 relative">
+              <div className="absolute inset-0 bg-green-400 rounded-full animate-ping opacity-20"></div>
+              <Check size={48} className="text-white relative z-10" />
             </div>
-            <h3 className="text-2xl font-bold text-white mb-2">{t.paymentSuccess}</h3>
-            <p className="text-gray-400">+{selectedAmount} {t.coins}</p>
+            <h3 className="text-3xl font-black text-white mb-2 uppercase tracking-tighter">SUCCESS!</h3>
+            <p className="text-gray-400 font-medium">Added <span className="text-white font-bold">฿{selectedAmount}</span> to your balance.</p>
           </div>
         ) : (
-          <div className="flex-1 overflow-y-auto p-6 space-y-6">
-            
-            {/* Current Balance Card */}
-            <div className="bg-gradient-to-br from-red-900 to-black border border-red-800/50 rounded-2xl p-6 text-center relative overflow-hidden">
-               <div className="absolute top-0 right-0 w-32 h-32 bg-red-600/20 rounded-full blur-3xl -mr-16 -mt-16"></div>
-               <span className="text-sm text-red-200 font-medium uppercase tracking-wider">{t.currentBalance}</span>
-               <div className="text-4xl font-black text-white mt-2 flex items-center justify-center gap-2 font-athletic">
-                 <Coins size={32} className="text-yellow-400" />
-                 {balance.toLocaleString()}
-               </div>
-               <div className="mt-4 inline-block bg-black/40 backdrop-blur rounded-full px-3 py-1 text-xs text-gray-300 border border-white/10">
-                 {t.exchangeRate}
-               </div>
+          <div className="flex-1 overflow-y-auto p-6 space-y-8 no-scrollbar">
+
+            {/* Professional Balance Card */}
+            <div className="relative overflow-hidden rounded-[2rem] p-8 bg-gradient-to-br from-red-600 to-red-900 shadow-2xl shadow-red-950/50">
+              <div className="absolute top-0 right-0 p-4 opacity-10">
+                <Coins size={120} />
+              </div>
+              <div className="relative z-10 flex flex-col">
+                <span className="text-xs text-red-100 font-bold uppercase tracking-[0.2em] opacity-80 mb-2">Available Balance</span>
+                <div className="flex items-baseline gap-2">
+                  <span className="text-4xl font-black text-white font-athletic tracking-wider">฿{balance.toLocaleString()}</span>
+                  <span className="text-red-200 text-sm font-bold opacity-60">THB</span>
+                </div>
+              </div>
+
+              {/* Decorative dots */}
+              <div className="absolute bottom-4 right-6 flex gap-1">
+                <div className="w-1.5 h-1.5 bg-white/20 rounded-full"></div>
+                <div className="w-1.5 h-1.5 bg-white/40 rounded-full"></div>
+                <div className="w-1.5 h-1.5 bg-white/60 rounded-full"></div>
+              </div>
             </div>
 
-            {/* Select Amount */}
+            {/* Select Amount Grid */}
             <div>
-              <h3 className="text-sm font-bold text-gray-400 mb-3 uppercase tracking-wide">{t.selectAmount}</h3>
-              <div className="grid grid-cols-3 gap-3">
+              <div className="flex items-center justify-between mb-4 px-1">
+                <h3 className="text-xs font-black text-gray-500 uppercase tracking-widest">Select Recharge Amount</h3>
+                <span className="text-[10px] text-red-500 font-bold bg-red-500/10 px-2 py-0.5 rounded-full uppercase tracking-tighter">Fast Coins</span>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
                 {amounts.map((amount) => (
                   <button
                     key={amount}
-                    onClick={() => setSelectedAmount(amount)}
-                    className={`py-4 rounded-xl border font-bold text-lg flex flex-col items-center justify-center transition-all ${
-                      selectedAmount === amount 
-                      ? 'bg-white text-black border-white shadow-lg shadow-white/10 scale-105' 
-                      : 'bg-gray-800 text-gray-400 border-gray-700 hover:border-gray-500 hover:bg-gray-750'
-                    }`}
+                    onClick={() => { setSelectedAmount(amount); setError(null); }}
+                    className={`group relative overflow-hidden py-5 rounded-2xl border-2 transition-all active:scale-95 ${selectedAmount === amount
+                      ? 'bg-red-600 border-red-500 text-white shadow-xl shadow-red-900/30'
+                      : 'bg-gray-800/50 border-gray-700 text-gray-400 hover:border-gray-500 hover:bg-gray-800'
+                      }`}
                   >
-                    <span>฿{amount}</span>
-                    <span className="text-[10px] font-normal opacity-70 mt-1">={amount} Coins</span>
+                    <div className="flex flex-col items-center relative z-10">
+                      <span className={`text-xl font-black tracking-tight ${selectedAmount === amount ? 'text-white' : 'text-gray-200'}`}>฿{amount.toLocaleString()}</span>
+                      <span className={`text-[10px] font-bold uppercase tracking-wider mt-1 opacity-60 ${selectedAmount === amount ? 'text-red-100' : 'text-gray-500'}`}>
+                        {amount} Coins
+                      </span>
+                    </div>
                   </button>
                 ))}
               </div>
             </div>
 
-            {/* Payment Method */}
-            <div>
-              <h3 className="text-sm font-bold text-gray-400 mb-3 uppercase tracking-wide">{t.paymentMethod}</h3>
-              <div className="space-y-3">
-                <button
-                  onClick={() => setPaymentMethod('truemoney')}
-                  className={`w-full flex items-center justify-between p-4 rounded-xl border transition-all ${
-                    paymentMethod === 'truemoney'
-                    ? 'bg-orange-500/10 border-orange-500 text-white'
-                    : 'bg-gray-800 border-gray-700 text-gray-400 hover:bg-gray-750'
-                  }`}
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-lg bg-orange-500 flex items-center justify-center text-white">
-                      <Smartphone size={20} />
-                    </div>
-                    <span className="font-medium">{t.truemoney}</span>
-                  </div>
-                  {paymentMethod === 'truemoney' && <div className="w-4 h-4 rounded-full bg-orange-500 border-2 border-black ring-2 ring-orange-500"></div>}
-                </button>
-
-                <button
-                  onClick={() => setPaymentMethod('card')}
-                  className={`w-full flex items-center justify-between p-4 rounded-xl border transition-all ${
-                    paymentMethod === 'card'
-                    ? 'bg-blue-500/10 border-blue-500 text-white'
-                    : 'bg-gray-800 border-gray-700 text-gray-400 hover:bg-gray-750'
-                  }`}
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-lg bg-blue-600 flex items-center justify-center text-white">
-                      <CreditCard size={20} />
-                    </div>
-                    <span className="font-medium">{t.creditDebit}</span>
-                  </div>
-                  {paymentMethod === 'card' && <div className="w-4 h-4 rounded-full bg-blue-500 border-2 border-black ring-2 ring-blue-500"></div>}
-                </button>
+            {/* Security Badge */}
+            <div className="bg-gray-800/30 border border-gray-800 rounded-2xl p-4 flex gap-4 items-center">
+              <div className="w-10 h-10 rounded-full bg-blue-500/10 flex items-center justify-center text-blue-500 shrink-0">
+                <Smartphone size={20} />
+              </div>
+              <div>
+                <p className="text-[11px] font-bold text-gray-300">Supported Payment Methods</p>
+                <p className="text-[9px] text-gray-500 uppercase tracking-tighter mt-0.5">PromptPay, Credit Card, TrueMoney, iBanking</p>
               </div>
             </div>
+
+            {error && (
+              <div className="flex items-center gap-2 text-xs text-red-400 bg-red-400/10 p-4 rounded-xl border border-red-400/20 animate-fade-in">
+                <AlertCircle size={14} />
+                <p className="font-bold">{error}</p>
+              </div>
+            )}
           </div>
         )}
 
-        {/* Footer Action */}
+        {/* Footer Action - Powered by Omise */}
         {!isSuccess && (
-          <div className="p-6 border-t border-gray-800 bg-gray-900">
-             <button
-               onClick={handlePayment}
-               disabled={isProcessing}
-               className={`w-full py-4 rounded-xl font-bold text-lg flex items-center justify-center gap-2 transition-all ${
-                 isProcessing 
-                 ? 'bg-gray-700 text-gray-400 cursor-not-allowed'
-                 : 'bg-red-600 hover:bg-red-700 text-white shadow-lg shadow-red-900/50 active:scale-95'
-               }`}
-             >
-               {isProcessing ? (
-                 <>
-                   <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                   {t.processing}
-                 </>
-               ) : (
-                 `${t.payNow} ฿${selectedAmount}`
-               )}
-             </button>
+          <div className="p-6 pt-2 border-t border-gray-800 bg-gray-900/50">
+            <button
+              onClick={handleOmisePayment}
+              disabled={isProcessing}
+              className={`w-full py-5 rounded-[1.5rem] font-black text-lg flex flex-col items-center justify-center gap-0.5 transition-all shadow-2xl ${isProcessing
+                ? 'bg-gray-800 text-gray-500 cursor-not-allowed'
+                : 'bg-white hover:bg-gray-100 text-black active:scale-[0.98] shadow-white/5'
+                }`}
+            >
+              {isProcessing ? (
+                <div className="w-6 h-6 border-3 border-gray-500 border-t-white rounded-full animate-spin"></div>
+              ) : (
+                <>
+                  <span className="uppercase tracking-tighter">SECURE TOP UP</span>
+                  <span className="text-[10px] opacity-60">Total: ฿{selectedAmount.toLocaleString()}</span>
+                </>
+              )}
+            </button>
+
+            <div className="mt-4 flex flex-col items-center gap-2">
+              <div className="flex items-center gap-1.5 opacity-30 grayscale hover:grayscale-0 hover:opacity-100 transition-all cursor-default">
+                <span className="text-[8px] font-black uppercase text-gray-400 tracking-[0.2em]">Securely Powered by</span>
+                <img src="https://www.omise.co/assets/logo-white-9333504fb4f7c184ed392576b971a8f946059d48b94548db55d5b76615f33385.png" className="h-4" alt="Omise" />
+              </div>
+              <div className="flex items-center gap-4 opacity-20">
+                <img src="https://omise-file.s3.amazonaws.com/assets/pms/visa.png" className="h-3" alt="Visa" />
+                <img src="https://omise-file.s3.amazonaws.com/assets/pms/mastercard.png" className="h-3" alt="Mastercard" />
+                <img src="https://omise-file.s3.amazonaws.com/assets/pms/jcb.png" className="h-3" alt="JCB" />
+              </div>
+            </div>
           </div>
         )}
 
