@@ -31,22 +31,23 @@ const Discover: React.FC<DiscoverProps> = ({ language, onOpenStream, streamers, 
             *,
             host:host_id (username, avatar)
           `)
-          .eq('is_active', true)
           .order('members', { ascending: false })
           .limit(10);
+
+        console.log('[Discover] Trending rooms:', data, error);
 
         if (data && !error) {
           setTrendingRooms(data.map((room: any) => ({
             id: room.id,
             name: room.name,
             hostId: room.host_id,
-            hostName: room.host?.username || 'Host',
+            hostName: room.host?.username || room.host_name || 'Host',
             hostAvatar: room.host?.avatar || DEFAULT_IMAGES.AVATAR,
-            coverImage: room.cover_image || DEFAULT_IMAGES.ROOM,
+            coverImage: room.image || DEFAULT_IMAGES.ROOM,
             members: room.members || 0,
             maxMembers: room.max_members || 50,
             type: room.type || 'public',
-            isLive: room.is_active,
+            isLive: true,
             description: room.description || '',
             tags: room.tags || []
           })));
@@ -157,8 +158,8 @@ const Discover: React.FC<DiscoverProps> = ({ language, onOpenStream, streamers, 
 
                   {/* Room Type Badge */}
                   <div className={`absolute top-3 left-3 px-2 py-1 rounded-lg text-[10px] font-bold uppercase flex items-center gap-1 ${room.type === 'private'
-                      ? 'bg-purple-600/80 text-white backdrop-blur-sm'
-                      : 'bg-green-600/80 text-white backdrop-blur-sm'
+                    ? 'bg-purple-600/80 text-white backdrop-blur-sm'
+                    : 'bg-green-600/80 text-white backdrop-blur-sm'
                     }`}>
                     {room.type === 'private' ? <Lock size={10} /> : <Globe size={10} />}
                     {room.type}
@@ -189,10 +190,10 @@ const Discover: React.FC<DiscoverProps> = ({ language, onOpenStream, streamers, 
                     </div>
                     {/* Member Count Badge */}
                     <div className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${room.members >= room.maxMembers * 0.8
-                        ? 'bg-red-600/20 text-red-400'
-                        : room.members >= room.maxMembers * 0.5
-                          ? 'bg-yellow-600/20 text-yellow-400'
-                          : 'bg-green-600/20 text-green-400'
+                      ? 'bg-red-600/20 text-red-400'
+                      : room.members >= room.maxMembers * 0.5
+                        ? 'bg-yellow-600/20 text-yellow-400'
+                        : 'bg-green-600/20 text-green-400'
                       }`}>
                       {room.members >= room.maxMembers * 0.8 ? '🔥 HOT' : room.members >= room.maxMembers * 0.5 ? '📈 Rising' : '✨ Active'}
                     </div>
