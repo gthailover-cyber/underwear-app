@@ -495,7 +495,7 @@ const GroupChatRoom: React.FC<GroupChatRoomProps> = ({
 
           <div className="relative">
             <div className="w-10 h-10 rounded-xl bg-gray-700 overflow-hidden border border-gray-600">
-              <img src={room.image} className="w-full h-full object-cover" alt={room.name} />
+              <img src={room.image || DEFAULT_IMAGES.ROOM} className="w-full h-full object-cover" alt={room.name} />
             </div>
             <div className="absolute -bottom-1 -right-1 bg-gray-900 rounded-full p-0.5 border border-gray-700">
               {room.type === 'private' ? <Lock size={10} className="text-yellow-500" /> : <Globe size={10} className="text-blue-500" />}
