@@ -545,7 +545,30 @@ const GroupChatRoom: React.FC<GroupChatRoomProps> = ({
                   <div className={`max-w-[75%]`}>
 
                     {!isMe && (
-                      <span className="text-[10px] text-gray-400 ml-1 mb-0.5 block">{msg.senderName}</span>
+                      <div className="flex items-center gap-1 ml-1 mb-0.5">
+                        <span className="text-[10px] text-gray-400">{msg.senderName}</span>
+                        {/* Mute indicator */}
+                        {members.find(m => m.id === msg.senderId)?.isMuted && (
+                          <VolumeX size={10} className="text-red-400" />
+                        )}
+                        {/* Host Mute Button */}
+                        {isHost && msg.senderId !== room.hostId && (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              const member = members.find(m => m.id === msg.senderId);
+                              if (member) handleToggleMute(msg.senderId, member.isMuted);
+                            }}
+                            className={`ml-1 p-0.5 rounded transition-all hover:scale-110 ${members.find(m => m.id === msg.senderId)?.isMuted
+                                ? 'text-green-400 hover:bg-green-600/20'
+                                : 'text-red-400 hover:bg-red-600/20'
+                              }`}
+                            title={members.find(m => m.id === msg.senderId)?.isMuted ? 'Unmute' : 'Mute'}
+                          >
+                            {members.find(m => m.id === msg.senderId)?.isMuted ? <Volume2 size={12} /> : <VolumeX size={12} />}
+                          </button>
+                        )}
+                      </div>
                     )}
 
                     {/* Message Bubble */}
