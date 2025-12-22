@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { X, Check, Coins, CreditCard, Smartphone, ShieldCheck, AlertCircle } from 'lucide-react';
+import { X, Check, Coins, CreditCard, Smartphone, ShieldCheck, AlertCircle, ChevronRight } from 'lucide-react';
 import { TRANSLATIONS, OMISE_CONFIG } from '../constants';
 import { Language } from '../types';
 import { supabase } from '../lib/supabaseClient';
@@ -24,6 +24,7 @@ const WalletModal: React.FC<WalletModalProps> = ({ isOpen, onClose, balance, onT
   const [isProcessing, setIsProcessing] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [redirectUrl, setRedirectUrl] = useState<string | null>(null);
 
   const t = TRANSLATIONS[language];
   const amounts = [50, 100, 300, 500, 1000, 2000, 5000];
@@ -90,19 +91,8 @@ const WalletModal: React.FC<WalletModalProps> = ({ isOpen, onClose, balance, onT
       // 1. Handle PromptPay / Redirect (Status: pending)
       if (data.status === 'pending') {
         if (data.authorize_uri) {
-          const authUri = data.authorize_uri;
-          setError(`REDIRECTING: Preparing QR Code... If it doesn't open, <a href="${authUri}" class="underline font-bold" target="_blank">click here</a>`);
-          console.log('Omise Redirect URL:', authUri);
-
-          // Force immediate redirect attempt
-          window.location.href = authUri;
-
-          // Backup redirect after small delay
-          setTimeout(() => {
-            if (window.location.href !== authUri) {
-              window.location.href = authUri;
-            }
-          }, 500);
+          setRedirectUrl(data.authorize_uri);
+          setIsProcessing(false);
           return;
         } else {
           throw new Error('Payment initiated but QR URL missing.');
@@ -169,6 +159,32 @@ const WalletModal: React.FC<WalletModalProps> = ({ isOpen, onClose, balance, onT
             </div>
             <h3 className="text-3xl font-black text-white mb-2 uppercase tracking-tighter">SUCCESS!</h3>
             <p className="text-gray-400 font-medium">Added <span className="text-white font-bold">฿{selectedAmount}</span> to your balance.</p>
+          </div>
+        ) : redirectUrl ? (
+          <div className="flex-1 flex flex-col items-center justify-center p-12 text-center animate-fade-in space-y-6">
+            <div className="w-24 h-24 bg-red-600 rounded-[2rem] flex items-center justify-center shadow-2xl shadow-red-900/50">
+              <Smartphone size={48} className="text-white" />
+            </div>
+            <div>
+              <h3 className="text-2xl font-black text-white mb-2 uppercase tracking-tight">SCAN QR CODE</h3>
+              <p className="text-gray-400 text-sm font-medium leading-relaxed px-4">
+                Click the button below to open your <span className="text-white font-bold">PromptPay QR Code</span> and complete the payment.
+              </p>
+            </div>
+
+            <a
+              href={redirectUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="w-full py-5 rounded-[1.5rem] bg-white text-black font-black text-xl hover:bg-gray-100 transition-all active:scale-95 shadow-2xl shadow-white/5 flex items-center justify-center gap-2 no-underline"
+            >
+              OPEN QR CODE <ChevronRight size={24} />
+            </a>
+
+            <div className="flex items-center gap-2 bg-gray-800/50 p-4 rounded-2xl border border-gray-700">
+              <div className="w-1.5 h-1.5 bg-yellow-500 rounded-full animate-pulse"></div>
+              <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Waiting for payment confirmation...</p>
+            </div>
           </div>
         ) : (
           <div className="flex-1 overflow-y-auto p-6 space-y-8 no-scrollbar">
@@ -242,7 +258,7 @@ const WalletModal: React.FC<WalletModalProps> = ({ isOpen, onClose, balance, onT
         )}
 
         {/* Footer Action - Powered by Omise */}
-        {!isSuccess && (
+        {!isSuccess && !redirectUrl && (
           <div className="p-6 pt-2 border-t border-gray-800 bg-gray-900/50">
             <button
               type="button"
