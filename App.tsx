@@ -405,6 +405,9 @@ const App: React.FC = () => {
           { event: 'INSERT', schema: 'public', table: 'notifications', filter: `user_id=eq.${session?.user?.id}` },
           async (payload) => {
             console.log('New Notification Received:', payload);
+            // ไม่แสดง message ในกระดิ่ง - ให้แสดงที่ chat icon แทน
+            if (payload.new.type === 'message') return;
+
             // Fetch full notification data including actor profile
             const { data } = await supabase
               .from('notifications')
