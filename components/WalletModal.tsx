@@ -25,6 +25,7 @@ const WalletModal: React.FC<WalletModalProps> = ({ isOpen, onClose, balance, onT
   const [isSuccess, setIsSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [redirectUrl, setRedirectUrl] = useState<string | null>(null);
+  const [qrCodeUrl, setQrCodeUrl] = useState<string | null>(null);
 
   const t = TRANSLATIONS[language];
   const amounts = [50, 100, 300, 500, 1000, 2000, 5000];
@@ -88,15 +89,11 @@ const WalletModal: React.FC<WalletModalProps> = ({ isOpen, onClose, balance, onT
 
       console.log('Omise API Response:', data);
 
-      // 1. Handle PromptPay / Redirect (Status: pending)
       if (data.status === 'pending') {
-        if (data.authorize_uri) {
-          setRedirectUrl(data.authorize_uri);
-          setIsProcessing(false);
-          return;
-        } else {
-          throw new Error('Payment initiated but QR URL missing.');
-        }
+        setRedirectUrl(data.authorize_uri);
+        setQrCodeUrl(data.qr_code_url); // เก็บ URL รูป QR Code
+        setIsProcessing(false);
+        return;
       }
 
       // 2. Handle Instant Success (Status: successful)
@@ -160,26 +157,39 @@ const WalletModal: React.FC<WalletModalProps> = ({ isOpen, onClose, balance, onT
             <h3 className="text-3xl font-black text-white mb-2 uppercase tracking-tighter">SUCCESS!</h3>
             <p className="text-gray-400 font-medium">Added <span className="text-white font-bold">฿{selectedAmount}</span> to your balance.</p>
           </div>
-        ) : redirectUrl ? (
-          <div className="flex-1 flex flex-col items-center justify-center p-12 text-center animate-fade-in space-y-6">
-            <div className="w-24 h-24 bg-red-600 rounded-[2rem] flex items-center justify-center shadow-2xl shadow-red-900/50">
-              <Smartphone size={48} className="text-white" />
-            </div>
+        ) : (redirectUrl || qrCodeUrl) ? (
+          <div className="flex-1 flex flex-col items-center justify-center p-8 text-center animate-fade-in space-y-6">
+            {qrCodeUrl ? (
+              <div className="bg-white p-4 rounded-[2rem] shadow-2xl">
+                <img src={qrCodeUrl} alt="PromptPay QR Code" className="w-48 h-48" />
+              </div>
+            ) : (
+              <div className="w-24 h-24 bg-red-600 rounded-[2rem] flex items-center justify-center shadow-2xl shadow-red-900/50">
+                <Smartphone size={48} className="text-white" />
+              </div>
+            )}
+
             <div>
-              <h3 className="text-2xl font-black text-white mb-2 uppercase tracking-tight">SCAN QR CODE</h3>
+              <h3 className="text-2xl font-black text-white mb-2 uppercase tracking-tight">
+                {qrCodeUrl ? 'SCAN TO PAY' : 'AUTHORIZE PAYMENT'}
+              </h3>
               <p className="text-gray-400 text-sm font-medium leading-relaxed px-4">
-                Click the button below to open your <span className="text-white font-bold">PromptPay QR Code</span> and complete the payment.
+                {qrCodeUrl
+                  ? 'Please scan the QR code above with your mobile banking app to complete the payment.'
+                  : 'Click the button below to complete your payment on the secure gateway.'}
               </p>
             </div>
 
-            <a
-              href={redirectUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="w-full py-5 rounded-[1.5rem] bg-white text-black font-black text-xl hover:bg-gray-100 transition-all active:scale-95 shadow-2xl shadow-white/5 flex items-center justify-center gap-2 no-underline"
-            >
-              OPEN QR CODE <ChevronRight size={24} />
-            </a>
+            {redirectUrl && (
+              <a
+                href={redirectUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-full py-5 rounded-[1.5rem] bg-white text-black font-black text-xl hover:bg-gray-100 transition-all active:scale-95 shadow-2xl shadow-white/5 flex items-center justify-center gap-2 no-underline"
+              >
+                OPEN PAYMENT PAGE <ChevronRight size={24} />
+              </a>
+            )}
 
             <div className="w-full space-y-2">
               <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">Or copy link to browser:</p>
