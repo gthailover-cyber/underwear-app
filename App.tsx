@@ -40,7 +40,7 @@ import Stories from './components/Stories';
 import { TRANSLATIONS, MOCK_USER_PROFILE, DEFAULT_IMAGES } from './constants';
 import { Streamer, Language, CartItem, UserProfile, MessagePreview, Product, Person, ChatRoom, ReceivedGift, AppNotification } from './types';
 import { useAlert } from './context/AlertContext';
-import { requestForToken, onMessageListener } from './lib/firebase';
+import { requestForToken } from './lib/firebase';
 const HEARTBEAT_INTERVAL = 60 * 1000; // 1 minute
 const UI_REFRESH_INTERVAL = 30 * 1000; // 30 seconds
 
@@ -351,21 +351,12 @@ const App: React.FC = () => {
   // --- FIREBASE FCM NOTIFICATIONS ---
   useEffect(() => {
     if (session?.user) {
-      // Request FCM Token
+      // Request FCM Token (เก็บ Token ไว้ส่ง Push)
       requestForToken(session.user.id);
-
-      // Listen for foreground messages
-      onMessageListener().then((payload: any) => {
-        console.log('FCM Foreground Notification:', payload);
-        if (payload.notification) {
-          showAlert({
-            message: `${payload.notification.title}: ${payload.notification.body}`,
-            type: 'info'
-          });
-        }
-      }).catch(err => console.log('FCM Listener Error:', err));
+      // หมายเหตุ: ไม่ต้องใช้ onMessageListener เพราะจะทำให้ Notification ซ้ำ
+      // Service Worker จะจัดการการแสดง Push แทนทั้งหมด
     }
-  }, [session, showAlert]);
+  }, [session]);
 
   // --- REFRESH DATA ON TAB CHANGE ---
   useEffect(() => {
