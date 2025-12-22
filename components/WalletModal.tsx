@@ -181,6 +181,18 @@ const WalletModal: React.FC<WalletModalProps> = ({ isOpen, onClose, balance, onT
               OPEN QR CODE <ChevronRight size={24} />
             </a>
 
+            <div className="w-full space-y-2">
+              <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">Or copy link to browser:</p>
+              <div className="flex gap-2">
+                <input
+                  readOnly
+                  value={redirectUrl}
+                  className="flex-1 bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-[9px] text-gray-400 font-mono focus:outline-none"
+                  onClick={(e) => (e.target as HTMLInputElement).select()}
+                />
+              </div>
+            </div>
+
             <div className="flex items-center gap-2 bg-gray-800/50 p-4 rounded-2xl border border-gray-700">
               <div className="w-1.5 h-1.5 bg-yellow-500 rounded-full animate-pulse"></div>
               <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Waiting for payment confirmation...</p>
