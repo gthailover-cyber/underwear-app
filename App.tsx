@@ -1243,29 +1243,6 @@ const App: React.FC = () => {
           .insert(itemsToInsert);
 
         if (itemsError) throw itemsError;
-
-        // 5. Update Product Stock & Sold (Direct Update)
-        for (const item of itemsToOrder) {
-          try {
-            const { data: currentProd } = await supabase
-              .from('products')
-              .select('stock, sold')
-              .eq('id', item.id)
-              .single();
-
-            if (currentProd) {
-              await supabase
-                .from('products')
-                .update({
-                  stock: Math.max(0, (currentProd.stock || 0) - item.quantity),
-                  sold: (currentProd.sold || 0) + item.quantity
-                })
-                .eq('id', item.id);
-            }
-          } catch (e) {
-            console.error('Stock update failed:', e);
-          }
-        }
       }
 
       showAlert({ message: language === 'th' ? 'ชำระเงินสำเร็จ!' : 'Payment successful!', type: 'success' });
