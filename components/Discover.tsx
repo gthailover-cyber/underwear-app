@@ -145,59 +145,45 @@ const Discover: React.FC<DiscoverProps> = ({ language, onOpenStream, streamers, 
               <div
                 key={room.id}
                 onClick={() => onOpenRoom?.(room)}
-                className="flex-shrink-0 w-64 md:w-72 rounded-2xl overflow-hidden bg-gray-900 border border-gray-800 hover:border-gray-600 cursor-pointer transition-all hover:scale-[1.02] group"
+                className="flex-shrink-0 w-28 aspect-square relative rounded-xl overflow-hidden cursor-pointer group border border-gray-800 shadow-lg active:scale-95 transition-all"
               >
-                {/* Cover Image */}
-                <div className="relative h-32 md:h-36">
-                  <img
-                    src={room.image}
-                    className="w-full h-full object-cover"
-                    alt={room.name}
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent"></div>
+                {/* Background Image */}
+                <img
+                  src={room.image}
+                  className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                  alt={room.name}
+                />
+                <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-transparent to-black/80"></div>
 
-                  {/* Room Type Badge */}
-                  <div className={`absolute top-3 left-3 px-2 py-1 rounded-lg text-[10px] font-bold uppercase flex items-center gap-1 ${room.type === 'private'
-                    ? 'bg-purple-600/80 text-white backdrop-blur-sm'
-                    : 'bg-green-600/80 text-white backdrop-blur-sm'
-                    }`}>
-                    {room.type === 'private' ? <Lock size={10} /> : <Globe size={10} />}
-                    {room.type}
-                  </div>
-
-
-
-                  {/* Host Avatar */}
-                  <div className="absolute bottom-3 left-3 flex items-center gap-2">
-                    <img
-                      src={room.hostAvatar}
-                      className="w-8 h-8 rounded-full border-2 border-white object-cover"
-                      alt={room.hostName}
-                    />
-                    <span className="text-white text-xs font-bold drop-shadow-lg">{room.hostName}</span>
-                  </div>
+                {/* Room Type Badge (Top Left) */}
+                <div className={`absolute top-2 left-2 p-1 rounded-md ${room.type === 'private'
+                  ? 'bg-purple-600/80'
+                  : 'bg-green-600/80'
+                  }`}>
+                  {room.type === 'private' ? <Lock size={10} className="text-white" /> : <Globe size={10} className="text-white" />}
                 </div>
 
-                {/* Room Info */}
-                <div className="p-4">
-                  <h4 className="text-white font-bold text-sm mb-1 truncate group-hover:text-red-400 transition-colors">
+                {/* Member Count (Top Right) */}
+                <div className="absolute top-2 right-2 bg-black/60 backdrop-blur-sm rounded-full px-1.5 py-0.5 flex items-center gap-0.5">
+                  <Users size={8} className="text-white" />
+                  <span className="text-[10px] text-white font-bold">{room.members}</span>
+                </div>
+
+                {/* Bottom Info */}
+                <div className="absolute bottom-0 left-0 right-0 p-2">
+                  {/* Host Avatar */}
+                  <div className="flex items-center gap-1 mb-1">
+                    <img
+                      src={room.hostAvatar}
+                      className="w-5 h-5 rounded-full border border-white object-cover"
+                      alt={room.hostName}
+                    />
+                    <span className="text-[9px] text-white font-bold truncate flex-1">{room.hostName}</span>
+                  </div>
+                  {/* Room Name */}
+                  <h4 className="text-[10px] text-white font-bold truncate leading-tight">
                     {room.name}
                   </h4>
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-1 text-gray-400 text-xs">
-                      <Users size={12} />
-                      <span>{room.members} / {room.maxMembers}</span>
-                    </div>
-                    {/* Member Count Badge */}
-                    <div className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${room.members >= room.maxMembers * 0.8
-                      ? 'bg-red-600/20 text-red-400'
-                      : room.members >= room.maxMembers * 0.5
-                        ? 'bg-yellow-600/20 text-yellow-400'
-                        : 'bg-green-600/20 text-green-400'
-                      }`}>
-                      {room.members >= room.maxMembers * 0.8 ? '🔥 HOT' : room.members >= room.maxMembers * 0.5 ? '📈 Rising' : '✨ Active'}
-                    </div>
-                  </div>
                 </div>
               </div>
             ))}
