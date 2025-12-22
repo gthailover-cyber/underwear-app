@@ -90,16 +90,22 @@ const WalletModal: React.FC<WalletModalProps> = ({ isOpen, onClose, balance, onT
       // 1. Handle PromptPay / Redirect (Status: pending)
       if (data.status === 'pending') {
         if (data.authorize_uri) {
-          setError('SECURE REDIRECT: Opening payment page...');
-          console.log('Redirecting in 1s:', data.authorize_uri);
+          const authUri = data.authorize_uri;
+          setError(`REDIRECTING: Preparing QR Code... If it doesn't open, <a href="${authUri}" class="underline font-bold" target="_blank">click here</a>`);
+          console.log('Omise Redirect URL:', authUri);
 
-          // Small delay to let user see status and prevent race conditions with modal state
+          // Force immediate redirect attempt
+          window.location.href = authUri;
+
+          // Backup redirect after small delay
           setTimeout(() => {
-            window.location.assign(data.authorize_uri);
-          }, 1000);
+            if (window.location.href !== authUri) {
+              window.location.href = authUri;
+            }
+          }, 500);
           return;
         } else {
-          throw new Error('Payment is pending but QR Code URL was not found.');
+          throw new Error('Payment initiated but QR URL missing.');
         }
       }
 
@@ -229,7 +235,7 @@ const WalletModal: React.FC<WalletModalProps> = ({ isOpen, onClose, balance, onT
             {error && (
               <div className="flex items-center gap-2 text-xs text-red-400 bg-red-400/10 p-4 rounded-xl border border-red-400/20 animate-fade-in">
                 <AlertCircle size={14} />
-                <p className="font-bold">{error}</p>
+                <p className="font-bold flex-1" dangerouslySetInnerHTML={{ __html: error }}></p>
               </div>
             )}
           </div>
