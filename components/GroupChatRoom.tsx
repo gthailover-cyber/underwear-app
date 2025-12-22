@@ -1,6 +1,6 @@
 
 import React, { useState, useRef, useEffect } from 'react';
-import { ArrowLeft, MoreVertical, Send, Plus, Smile, Users, Lock, Globe, Gift, Coins, X, Check, Crown, BicepsFlexed, Ban } from 'lucide-react';
+import { ArrowLeft, MoreVertical, Send, Plus, Smile, Users, Lock, Globe, Gift, Coins, X, Check, Crown, BicepsFlexed, Ban, VolumeX, Volume2 } from 'lucide-react';
 import { ChatRoom, ChatMessage, Language } from '../types';
 import { TRANSLATIONS } from '../constants';
 import { supabase } from '../lib/supabaseClient';
@@ -264,7 +264,8 @@ const GroupChatRoom: React.FC<GroupChatRoomProps> = ({
             role: m.user?.role,
             lastSeenAt: m.user?.last_seen_at,
             isOnline: m.user?.last_seen_at ?
-              (new Date().getTime() - new Date(m.user.last_seen_at).getTime()) < 600000 : false
+              (new Date().getTime() - new Date(m.user.last_seen_at).getTime()) < 600000 : false,
+            isMuted: m.is_muted || false
           })));
       }
     } catch (error) {
@@ -366,6 +367,34 @@ const GroupChatRoom: React.FC<GroupChatRoomProps> = ({
     } else {
       showAlert({ message: 'Insufficient coins!', type: 'error' });
       onOpenWallet();
+    }
+  };
+
+  // Host can mute/unmute members
+  const handleToggleMute = async (memberId: string, currentlyMuted: boolean) => {
+    if (!isHost) return;
+
+    try {
+      const { error } = await supabase
+        .from('room_members')
+        .update({ is_muted: !currentlyMuted })
+        .eq('room_id', room.id)
+        .eq('user_id', memberId);
+
+      if (error) throw error;
+
+      // Optimistic update
+      setMembers(prev => prev.map(m =>
+        m.id === memberId ? { ...m, isMuted: !currentlyMuted } : m
+      ));
+
+      showAlert({
+        message: !currentlyMuted ? 'Member has been muted' : 'Member has been unmuted',
+        type: 'info'
+      });
+    } catch (error) {
+      console.error('[Room] Mute error:', error);
+      showAlert({ message: 'Failed to update mute status', type: 'error' });
     }
   };
 
@@ -570,24 +599,46 @@ const GroupChatRoom: React.FC<GroupChatRoomProps> = ({
                   className="flex items-center gap-3 text-left w-full group"
                 >
                   <div className="relative">
-                    <img src={member.avatar} className="w-10 h-10 rounded-full object-cover bg-gray-800 border border-gray-700 group-hover:border-gray-500 transition-colors" />
+                    <img src={member.avatar} className={`w-10 h-10 rounded-full object-cover bg-gray-800 border border-gray-700 group-hover:border-gray-500 transition-colors ${member.isMuted ? 'opacity-50' : ''}`} />
                     {/* Role Badge */}
                     <UserBadge
                       role={member.role}
                       size="xs"
                       className="absolute -top-1 -right-1"
                     />
+                    {/* Muted Overlay */}
+                    {member.isMuted && (
+                      <div className="absolute inset-0 flex items-center justify-center bg-black/50 rounded-full">
+                        <VolumeX size={16} className="text-red-500" />
+                      </div>
+                    )}
                     {/* Online Status */}
-                    {member.isOnline && <div className="absolute bottom-0 left-0 w-2.5 h-2.5 bg-green-500 border-2 border-black rounded-full"></div>}
+                    {member.isOnline && !member.isMuted && <div className="absolute bottom-0 left-0 w-2.5 h-2.5 bg-green-500 border-2 border-black rounded-full"></div>}
                   </div>
-                  <div>
+                  <div className="flex-1">
                     <h4 className="text-white font-medium text-sm flex items-center gap-1 group-hover:text-red-500 transition-colors">
                       {member.username}
-                      {member.role === 'model' && <BicepsFlexed size={12} className="text-blue-400" />}
+                      {member.isMuted && <VolumeX size={12} className="text-red-400" />}
                     </h4>
-                    <span className="text-[10px] text-gray-500 capitalize">{member.role || 'Member'}</span>
+                    <span className={`text-[10px] capitalize ${member.isMuted ? 'text-red-400' : 'text-gray-500'}`}>
+                      {member.isMuted ? 'Muted' : (member.role || 'Member')}
+                    </span>
                   </div>
                 </button>
+
+                {/* Host Mute/Unmute Button */}
+                {isHost && member.id !== room.hostId && (
+                  <button
+                    onClick={() => handleToggleMute(member.id, member.isMuted)}
+                    className={`p-2 rounded-lg transition-all active:scale-95 ${member.isMuted
+                        ? 'bg-green-600/20 text-green-400 hover:bg-green-600/30'
+                        : 'bg-red-600/20 text-red-400 hover:bg-red-600/30'
+                      }`}
+                    title={member.isMuted ? 'Unmute' : 'Mute'}
+                  >
+                    {member.isMuted ? <Volume2 size={16} /> : <VolumeX size={16} />}
+                  </button>
+                )}
               </div>
             ))}
           </div>
