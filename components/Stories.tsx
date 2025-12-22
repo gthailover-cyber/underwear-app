@@ -188,18 +188,7 @@ const Stories: React.FC<StoriesProps> = ({ userProfile, language }) => {
                     .insert({ story_id: storyId, user_id: userProfile.id });
 
                 if (likeError) throw likeError;
-
-                // Send Notification
-                if (ownerId !== userProfile.id) {
-                    await supabase.from('notifications').insert({
-                        user_id: ownerId,
-                        actor_id: userProfile.id,
-                        type: 'like',
-                        content: `${userProfile.username} ${t.likedYourStory}`,
-                        image_url: story.media_url,
-                        is_read: false
-                    });
-                }
+                // หมายเหตุ: ไม่ต้อง INSERT notifications ที่นี่ เพราะ SQL Trigger จะจัดการให้แล้ว
             }
             // 2. Sync with background data (updates the main stories list too)
             fetchStories();
