@@ -157,6 +157,7 @@ const App: React.FC = () => {
           actor:actor_id (username, avatar, role)
         `)
         .eq('user_id', userId)
+        .neq('type', 'message') // ไม่แสดง message ในกระดิ่ง - ให้แสดงที่ chat icon แทน
         .order('created_at', { ascending: false })
         .limit(20);
 
