@@ -8,7 +8,9 @@ export const DEFAULT_IMAGES = {
   // Dark grey background with Red text, matching the app theme
   AVATAR: 'https://ui-avatars.com/api/?name=New+User&background=111827&color=dc2626&size=256&bold=true&length=1',
   // Abstract dark geometric/sporty background
-  COVER: 'https://images.unsplash.com/photo-1614850523060-8da1d56ae167?w=1200&q=80'
+  COVER: 'https://images.unsplash.com/photo-1614850523060-8da1d56ae167?w=1200&q=80',
+  // Default room cover image
+  ROOM: 'https://images.unsplash.com/photo-1557682250-33bd709cbe85?w=800&q=80'
 };
 
 export const OMISE_CONFIG = {

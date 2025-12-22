@@ -1504,6 +1504,11 @@ const App: React.FC = () => {
             onOpenStream={handleOpenStream}
             streamers={streamers}
             userProfile={userProfile}
+            onOpenRoom={(room) => {
+              setReturnTab('discover');
+              setSelectedGroupRoom(room);
+              setActiveTab('messages');
+            }}
           />
         );
       case 'cart':
