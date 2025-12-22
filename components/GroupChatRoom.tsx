@@ -261,6 +261,7 @@ const GroupChatRoom: React.FC<GroupChatRoomProps> = ({
             username: m.user?.username || 'User',
             avatar: m.user?.avatar || DEFAULT_IMAGES.AVATAR,
             role: m.user?.role,
+            lastSeenAt: m.user?.last_seen_at,
             isOnline: m.user?.last_seen_at ?
               (new Date().getTime() - new Date(m.user.last_seen_at).getTime()) < 600000 : false
           })));
@@ -487,8 +488,13 @@ const GroupChatRoom: React.FC<GroupChatRoomProps> = ({
                       onClick={() => onUserClick(msg.senderId)}
                       className="flex flex-col items-center mr-2 mt-auto active:scale-95 transition-transform"
                     >
-                      <div className="w-8 h-8 rounded-full bg-gray-800 overflow-hidden mb-1 border border-gray-700">
-                        <img src={msg.senderAvatar} className="w-full h-full object-cover" />
+                      <div className="relative">
+                        <div className="w-8 h-8 rounded-full bg-gray-800 overflow-hidden border border-gray-700">
+                          <img src={msg.senderAvatar} className="w-full h-full object-cover" />
+                        </div>
+                        {members.find(m => m.id === msg.senderId)?.isOnline && (
+                          <div className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-green-500 border-2 border-black rounded-full"></div>
+                        )}
                       </div>
                     </button>
                   )}
@@ -529,6 +535,10 @@ const GroupChatRoom: React.FC<GroupChatRoomProps> = ({
                 className="relative active:scale-95 transition-transform"
               >
                 <img src={room.hostAvatar || DEFAULT_IMAGES.AVATAR} className="w-12 h-12 rounded-full object-cover border-2 border-yellow-500" />
+                {/* Online status for host */}
+                {members.find(m => m.id === room.hostId)?.isOnline && (
+                  <div className="absolute top-0 right-0 w-3 h-3 bg-green-500 border-2 border-black rounded-full"></div>
+                )}
                 <div className="absolute -bottom-1 -right-1 bg-yellow-500 text-black p-0.5 rounded-full">
                   <Crown size={10} fill="black" />
                 </div>
