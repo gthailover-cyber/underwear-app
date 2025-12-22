@@ -1,22 +1,37 @@
 
 // This is a template for a Supabase Edge Function to handle Omise Charges
-// You can deploy this using 'supabase functions deploy process-omise-payment'
+// You can deploy this using 'supabase functions deploy omise-topup'
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.7.1'
-
-// Omise SDK for Deno/Node
-// Note: You might need to use fetch directly or a compatible library
 
 const OMISE_SECRET_KEY = Deno.env.get('OMISE_SECRET_KEY')
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
 
+export const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
+}
+
 serve(async (req) => {
+  // 1. Handle CORS Preflight (VERY IMPORTANT)
+  if (req.method === 'OPTIONS') {
+    return new Response('ok', { 
+      status: 200,
+      headers: corsHeaders 
+    })
+  }
+
   try {
     const { token, amount, userId, currency = 'thb' } = await req.json()
 
-    // 1. Create Charge with Omise
+    if (!userId || !amount || !token) {
+        throw new Error('Missing required fields: userId, amount, or token')
+    }
+
+    // 2. Create Charge with Omise
     const chargeResponse = await fetch('https://api.omise.co/charges', {
       method: 'POST',
       headers: {
@@ -28,17 +43,17 @@ serve(async (req) => {
         currency: currency,
         card: token.startsWith('tokn_') ? token : undefined,
         source: token.startsWith('src_') ? token : undefined,
-        return_uri: 'https://your-app.com/wallet-callback'
+        return_uri: 'https://underwear-app-nine.vercel.app' 
       })
     })
 
     const charge = await chargeResponse.json()
 
     if (charge.status === 'failed') {
-      throw new Error(charge.failure_message)
+      throw new Error(charge.failure_message || 'Charge failed with status failed')
     }
 
-    // 2. If Success, update user balance in Supabase
+    // 3. If Success, update user balance in Supabase
     if (charge.status === 'successful') {
       const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
       
@@ -50,24 +65,25 @@ serve(async (req) => {
       if (rpcError) throw rpcError
       
       return new Response(JSON.stringify({ success: true, charge_id: charge.id }), {
-        headers: { 'Content-Type': 'application/json' },
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 200
       })
     }
 
-    // 3. Handle Pending (for PromptPay/Redirect)
+    // 4. Handle Pending (for PromptPay/Redirect)
     return new Response(JSON.stringify({ 
       success: true, 
       status: 'pending', 
       authorize_uri: charge.authorize_uri 
     }), {
-      headers: { 'Content-Type': 'application/json' },
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 200
     })
 
   } catch (error) {
+    console.error('Error processing payment:', error.message)
     return new Response(JSON.stringify({ error: error.message }), {
-      headers: { 'Content-Type': 'application/json' },
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 400
     })
   }

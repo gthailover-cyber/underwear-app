@@ -85,14 +85,17 @@ const WalletModal: React.FC<WalletModalProps> = ({ isOpen, onClose, balance, onT
 
       if (funcError) throw funcError;
 
+      console.log('[Charge Response]:', data);
+
+      // Handle PromptPay or Redirect-based payments (Highest Priority)
       if (data.status === 'pending' && data.authorize_uri) {
-        // Handle PromptPay or Redirect-based payments
+        console.log('[Redirecting to]:', data.authorize_uri);
         window.location.href = data.authorize_uri;
         return;
       }
 
-      if (data.success) {
-        // On Instant Success (Credit Card)
+      // Handle Instant Success (Credit Card/Immediate Payment)
+      if (data.success && data.status === 'successful') {
         onTopUp(selectedAmount);
         setIsProcessing(false);
         setIsSuccess(true);
@@ -102,7 +105,7 @@ const WalletModal: React.FC<WalletModalProps> = ({ isOpen, onClose, balance, onT
           onClose();
         }, 2000);
       } else {
-        throw new Error(data.error || 'Payment failed');
+        throw new Error(data.error || 'Payment processing failed or incomplete');
       }
     } catch (err: any) {
       console.error('Charge error:', err);
