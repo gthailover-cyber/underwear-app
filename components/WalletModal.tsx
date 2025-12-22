@@ -90,8 +90,13 @@ const WalletModal: React.FC<WalletModalProps> = ({ isOpen, onClose, balance, onT
       // 1. Handle PromptPay / Redirect (Status: pending)
       if (data.status === 'pending') {
         if (data.authorize_uri) {
-          console.log('Redirecting to QR Code page:', data.authorize_uri);
-          window.location.href = data.authorize_uri;
+          setError('SECURE REDIRECT: Opening payment page...');
+          console.log('Redirecting in 1s:', data.authorize_uri);
+
+          // Small delay to let user see status and prevent race conditions with modal state
+          setTimeout(() => {
+            window.location.assign(data.authorize_uri);
+          }, 1000);
           return;
         } else {
           throw new Error('Payment is pending but QR Code URL was not found.');
@@ -234,6 +239,7 @@ const WalletModal: React.FC<WalletModalProps> = ({ isOpen, onClose, balance, onT
         {!isSuccess && (
           <div className="p-6 pt-2 border-t border-gray-800 bg-gray-900/50">
             <button
+              type="button"
               onClick={handleOmisePayment}
               disabled={isProcessing}
               className={`w-full py-5 rounded-[1.5rem] font-black text-lg flex flex-col items-center justify-center gap-0.5 transition-all shadow-2xl ${isProcessing
@@ -242,7 +248,10 @@ const WalletModal: React.FC<WalletModalProps> = ({ isOpen, onClose, balance, onT
                 }`}
             >
               {isProcessing ? (
-                <div className="w-6 h-6 border-3 border-gray-500 border-t-white rounded-full animate-spin"></div>
+                <div className="flex flex-col items-center gap-1">
+                  <div className="w-6 h-6 border-3 border-gray-500 border-t-white rounded-full animate-spin mb-1"></div>
+                  <span className="text-[10px] uppercase font-bold text-gray-400">Processing...</span>
+                </div>
               ) : (
                 <>
                   <span className="uppercase tracking-tighter">SECURE TOP UP</span>
