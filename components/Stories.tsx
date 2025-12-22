@@ -215,9 +215,39 @@ const Stories: React.FC<StoriesProps> = ({ userProfile, language }) => {
         };
     }, [isViewing, currentStoryIndex, viewingStories]);
 
+    const storySliderRef = useRef<HTMLDivElement>(null);
+
+    const scrollStoriesLeft = () => {
+        if (storySliderRef.current) {
+            storySliderRef.current.scrollBy({ left: -300, behavior: 'smooth' });
+        }
+    };
+
+    const scrollStoriesRight = () => {
+        if (storySliderRef.current) {
+            storySliderRef.current.scrollBy({ left: 300, behavior: 'smooth' });
+        }
+    };
+
     return (
-        <div className="w-full bg-black/40 backdrop-blur-md py-4 border-b border-gray-800/50 mb-2 overflow-hidden">
-            <div className="flex gap-3 px-4 overflow-x-auto no-scrollbar">
+        <div className="w-full bg-black/40 backdrop-blur-md py-4 border-b border-gray-800/50 mb-2 overflow-hidden relative group/stories">
+            {/* Left Arrow (Desktop) */}
+            <button
+                onClick={scrollStoriesLeft}
+                className="hidden md:flex absolute left-0 top-1/2 -translate-y-1/2 z-10 w-10 h-10 items-center justify-center bg-black/80 hover:bg-black text-white rounded-full shadow-lg transition-all opacity-0 group-hover/stories:opacity-100"
+            >
+                <ChevronLeft size={24} />
+            </button>
+
+            {/* Right Arrow (Desktop) */}
+            <button
+                onClick={scrollStoriesRight}
+                className="hidden md:flex absolute right-0 top-1/2 -translate-y-1/2 z-10 w-10 h-10 items-center justify-center bg-black/80 hover:bg-black text-white rounded-full shadow-lg transition-all opacity-0 group-hover/stories:opacity-100"
+            >
+                <ChevronRight size={24} />
+            </button>
+
+            <div ref={storySliderRef} className="flex gap-3 px-4 overflow-x-auto no-scrollbar scroll-smooth">
                 {/* Create Story Button */}
                 <div className="flex flex-col items-center gap-1 shrink-0">
                     <div
