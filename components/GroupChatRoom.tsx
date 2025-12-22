@@ -398,6 +398,34 @@ const GroupChatRoom: React.FC<GroupChatRoomProps> = ({
     }
   };
 
+  // Host can ban/unban members
+  const handleToggleBan = async (memberId: string, currentlyBanned: boolean) => {
+    if (!isHost) return;
+
+    try {
+      const { error } = await supabase
+        .from('room_members')
+        .update({ is_banned: !currentlyBanned })
+        .eq('room_id', room.id)
+        .eq('user_id', memberId);
+
+      if (error) throw error;
+
+      // Remove from members list if banned
+      if (!currentlyBanned) {
+        setMembers(prev => prev.filter(m => m.id !== memberId));
+      }
+
+      showAlert({
+        message: !currentlyBanned ? 'Member has been banned' : 'Member has been unbanned',
+        type: !currentlyBanned ? 'error' : 'info'
+      });
+    } catch (error) {
+      console.error('[Room] Ban error:', error);
+      showAlert({ message: 'Failed to update ban status', type: 'error' });
+    }
+  };
+
   return (
     <div className="flex flex-col h-screen bg-black animate-slide-in relative overflow-hidden">
       {/* Animation Overlay */}
@@ -560,8 +588,8 @@ const GroupChatRoom: React.FC<GroupChatRoomProps> = ({
                               if (member) handleToggleMute(msg.senderId, member.isMuted);
                             }}
                             className={`ml-1 p-0.5 rounded transition-all hover:scale-110 ${members.find(m => m.id === msg.senderId)?.isMuted
-                                ? 'text-green-400 hover:bg-green-600/20'
-                                : 'text-red-400 hover:bg-red-600/20'
+                              ? 'text-green-400 hover:bg-green-600/20'
+                              : 'text-red-400 hover:bg-red-600/20'
                               }`}
                             title={members.find(m => m.id === msg.senderId)?.isMuted ? 'Unmute' : 'Mute'}
                           >
@@ -657,16 +685,25 @@ const GroupChatRoom: React.FC<GroupChatRoomProps> = ({
 
                 {/* Host Mute/Unmute Button */}
                 {isHost && member.id !== room.hostId && (
-                  <button
-                    onClick={() => handleToggleMute(member.id, member.isMuted)}
-                    className={`p-2 rounded-lg transition-all active:scale-95 ${member.isMuted
-                      ? 'bg-green-600/20 text-green-400 hover:bg-green-600/30'
-                      : 'bg-red-600/20 text-red-400 hover:bg-red-600/30'
-                      }`}
-                    title={member.isMuted ? 'Unmute' : 'Mute'}
-                  >
-                    {member.isMuted ? <Volume2 size={16} /> : <VolumeX size={16} />}
-                  </button>
+                  <div className="flex items-center gap-1">
+                    <button
+                      onClick={() => handleToggleMute(member.id, member.isMuted)}
+                      className={`p-2 rounded-lg transition-all active:scale-95 ${member.isMuted
+                        ? 'bg-green-600/20 text-green-400 hover:bg-green-600/30'
+                        : 'bg-yellow-600/20 text-yellow-400 hover:bg-yellow-600/30'
+                        }`}
+                      title={member.isMuted ? 'Unmute' : 'Mute'}
+                    >
+                      {member.isMuted ? <Volume2 size={16} /> : <VolumeX size={16} />}
+                    </button>
+                    <button
+                      onClick={() => handleToggleBan(member.id, false)}
+                      className="p-2 rounded-lg transition-all active:scale-95 bg-red-600/20 text-red-400 hover:bg-red-600/30"
+                      title="Ban from room"
+                    >
+                      <Ban size={16} />
+                    </button>
+                  </div>
                 )}
               </div>
             ))}
