@@ -6,6 +6,7 @@ import { TRANSLATIONS } from '../constants';
 import { supabase } from '../lib/supabaseClient';
 import { useAlert } from '../context/AlertContext';
 import { DEFAULT_IMAGES } from '../constants';
+import UserBadge from './UserBadge';
 
 interface GroupChatRoomProps {
   room: ChatRoom;
@@ -492,8 +493,15 @@ const GroupChatRoom: React.FC<GroupChatRoomProps> = ({
                         <div className="w-8 h-8 rounded-full bg-gray-800 overflow-hidden border border-gray-700">
                           <img src={msg.senderAvatar} className="w-full h-full object-cover" />
                         </div>
+                        {/* Role Badge */}
+                        <UserBadge
+                          role={members.find(m => m.id === msg.senderId)?.role}
+                          size="xs"
+                          className="absolute -top-1 -right-1"
+                        />
+                        {/* Online Status */}
                         {members.find(m => m.id === msg.senderId)?.isOnline && (
-                          <div className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-green-500 border-2 border-black rounded-full"></div>
+                          <div className="absolute -bottom-0.5 -left-0.5 w-2.5 h-2.5 bg-green-500 border-2 border-black rounded-full"></div>
                         )}
                       </div>
                     </button>
@@ -563,7 +571,14 @@ const GroupChatRoom: React.FC<GroupChatRoomProps> = ({
                 >
                   <div className="relative">
                     <img src={member.avatar} className="w-10 h-10 rounded-full object-cover bg-gray-800 border border-gray-700 group-hover:border-gray-500 transition-colors" />
-                    {member.isOnline && <div className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-green-500 border-2 border-black rounded-full"></div>}
+                    {/* Role Badge */}
+                    <UserBadge
+                      role={member.role}
+                      size="xs"
+                      className="absolute -top-1 -right-1"
+                    />
+                    {/* Online Status */}
+                    {member.isOnline && <div className="absolute bottom-0 left-0 w-2.5 h-2.5 bg-green-500 border-2 border-black rounded-full"></div>}
                   </div>
                   <div>
                     <h4 className="text-white font-medium text-sm flex items-center gap-1 group-hover:text-red-500 transition-colors">

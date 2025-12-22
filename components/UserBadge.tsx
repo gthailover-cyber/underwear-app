@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { BicepsFlexed, Crown } from 'lucide-react';
+import { BicepsFlexed, Crown, Gem } from 'lucide-react';
 import { UserRole } from '../types';
 
 interface UserBadgeProps {
@@ -10,7 +10,7 @@ interface UserBadgeProps {
 }
 
 const UserBadge: React.FC<UserBadgeProps> = ({ role, size = 'sm', className = '' }) => {
-    if (!role || role === 'supporter') return null;
+    if (!role) return null;
 
     const getIcon = () => {
         switch (role) {
@@ -18,6 +18,8 @@ const UserBadge: React.FC<UserBadgeProps> = ({ role, size = 'sm', className = ''
                 return <BicepsFlexed className="text-white" size={size === 'xs' ? 8 : size === 'sm' ? 10 : size === 'md' ? 14 : 18} />;
             case 'organizer':
                 return <Crown className="text-white fill-white" size={size === 'xs' ? 8 : size === 'sm' ? 10 : size === 'md' ? 14 : 18} />;
+            case 'supporter':
+                return <Gem className="text-white" size={size === 'xs' ? 8 : size === 'sm' ? 10 : size === 'md' ? 14 : 18} />;
             default:
                 return null;
         }
@@ -29,6 +31,8 @@ const UserBadge: React.FC<UserBadgeProps> = ({ role, size = 'sm', className = ''
                 return 'bg-gradient-to-br from-red-600 to-orange-500 shadow-red-900/40';
             case 'organizer':
                 return 'bg-gradient-to-br from-yellow-400 to-yellow-600 shadow-yellow-900/40';
+            case 'supporter':
+                return 'bg-gradient-to-br from-purple-500 to-pink-500 shadow-purple-900/40';
             default:
                 return 'bg-gray-500';
         }
