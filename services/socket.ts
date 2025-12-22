@@ -101,8 +101,12 @@ class SupabaseService {
           this.triggerEvent('new_heart', payload.payload);
         }
       })
-      /* Gift broadcast is disabled in favor of more reliable DB path */
-      /* .on('broadcast', { event: 'gift' }, (payload) => { ... }) */
+      .on('broadcast', { event: 'gift' }, (payload) => {
+        console.log('[Supabase] Gift broadcast received:', payload.payload);
+        if (payload.payload.senderId !== this.userId) {
+          this.triggerEvent('new_gift', payload.payload);
+        }
+      })
       .on('broadcast', { event: 'bid' }, (payload) => {
         this.triggerEvent('bid_update', payload.payload);
       })
@@ -177,13 +181,7 @@ class SupabaseService {
   private handleNewMessage(newRecord: any) {
     console.log('[SupabaseService] DB Realtime message received:', newRecord);
 
-    // IMPORTANT: For text messages, we only process them if they are 'system' or 'gift' messages
-    // Ordinary chat messages are handled via 'broadcast' for speed.
-    if (newRecord.type !== 'system' && newRecord.type !== 'gift') {
-      return;
-    }
-
-    // If it's a gift message, we trigger the special gift event
+    // For gift messages, we check if we've already triggered it via broadcast
     if (newRecord.type === 'gift') {
       try {
         const giftMetadata = JSON.parse(newRecord.content);
@@ -192,7 +190,8 @@ class SupabaseService {
           sender: newRecord.username,
           senderId: newRecord.sender_id,
           avatar: newRecord.avatar,
-          messageId: newRecord.id // Use DB ID for de-duplication if needed
+          messageId: newRecord.id,
+          isFromDb: true // Flag to help de-duplicate if needed
         });
       } catch (e) {
         console.error('[Socket] Failed to parse gift metadata:', e);
@@ -200,7 +199,7 @@ class SupabaseService {
       return;
     }
 
-    // If it's a system message, we always show it
+    // For system messages, show them
     const comment = {
       id: newRecord.id,
       username: newRecord.username || 'User',
@@ -310,15 +309,30 @@ class SupabaseService {
       // Ensure we have user ID
       if (!this.userId) await this.initUser();
 
-      // Insert to Messages table (Sync & History)
+      const giftData = {
+        giftId: data.giftId,
+        sender: this.userProfile?.username || 'Guest',
+        senderId: this.userId,
+        avatar: this.userProfile?.avatar || '',
+        timestamp: new Date().toISOString()
+      };
+
+      // 1. Broadcast immediately for speed
+      this.channel?.send({
+        type: 'broadcast',
+        event: 'gift',
+        payload: giftData
+      });
+
+      // 2. Insert to Messages table (Sync & History)
       if (this.currentRoomId) {
         supabase.from('messages').insert({
           room_id: this.currentRoomId,
           sender_id: this.userId,
           content: JSON.stringify({ giftId: data.giftId }),
           type: 'gift',
-          username: this.userProfile?.username || 'Guest',
-          avatar: this.userProfile?.avatar || ''
+          username: giftData.sender,
+          avatar: giftData.avatar
         }).then(({ error }) => {
           if (error) console.error("[Socket] Error saving gift to messages table:", error);
           else console.log("[Socket] Gift saved to messages table successfully");

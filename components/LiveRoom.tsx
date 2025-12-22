@@ -161,6 +161,7 @@ const LiveRoom: React.FC<LiveRoomProps> = ({
     const videoRef = useRef<HTMLVideoElement>(null);
     const streamRef = useRef<MediaStream | null>(null);
     const notifiedAuctionEndRef = useRef<number | null>(null);
+    const processedGiftsRef = useRef<Set<string>>(new Set());
 
     // Auto-scroll comments
     useEffect(() => {
@@ -290,6 +291,8 @@ const LiveRoom: React.FC<LiveRoomProps> = ({
     }, [isHost, streamer.id]);
 
     useEffect(() => {
+        if (!streamer.id) return;
+
         console.log(`[Socket] Connecting to room: ${streamer.id} as ${isHost ? 'Host' : 'Viewer'}`);
 
         if (currentUser) {
@@ -310,11 +313,29 @@ const LiveRoom: React.FC<LiveRoomProps> = ({
         });
 
         const cleanupGifts = socketService.on('new_gift', (data: any) => {
-            console.log('[LiveRoom] Gift broadcast received locally:', data);
-            const gift = GIFTS.find(g => g.id == data.giftId); // Loose eq for ID
+            console.log('[LiveRoom] Gift event received:', data);
+
+            // De-duplicate (Broadcast vs DB)
+            // If it's from DB, we have a messageId. If it's broadcast, we use a combo.
+            // We use a broader key for the broadcast to catch the subsequent DB update.
+            const broadcastKey = `${data.senderId}-${data.giftId}`;
+            const dbKey = data.messageId;
+
+            // Check if we already processed this exact DB message
+            if (dbKey && processedGiftsRef.current.has(dbKey)) return;
+
+            // If it's a broadcast, check if we've seen a broadcast from this user for this gift recently (within 5s)
+            // (A bit simplified, but effective for preventing double animation)
+            if (!dbKey) {
+                if (processedGiftsRef.current.has(broadcastKey)) return;
+                processedGiftsRef.current.add(broadcastKey);
+                setTimeout(() => processedGiftsRef.current.delete(broadcastKey), 5000);
+            } else {
+                processedGiftsRef.current.add(dbKey);
+            }
+
+            const gift = GIFTS.find(g => g.id == data.giftId);
             if (gift) {
-                console.log('[LiveRoom] Gift found in constants:', gift.name);
-                console.log('[LiveRoom] Sender check - Sender:', data.senderId, 'Me:', currentUser?.id);
                 // Only animate if it's NOT from me (since I already animated it locally on click)
                 if (data.senderId != currentUser?.id) {
                     console.log('[LiveRoom] Triggering animation for external gift');
@@ -326,7 +347,7 @@ const LiveRoom: React.FC<LiveRoomProps> = ({
                         username: data.sender || 'User',
                         message: `a ${gift.name}!`,
                         timestamp: new Date().toLocaleTimeString(),
-                        isGift: true, // Custom flag for styling
+                        isGift: true,
                         isSystem: false
                     };
                     setComments(prev => [...prev, giftComment]);
@@ -348,9 +369,11 @@ const LiveRoom: React.FC<LiveRoomProps> = ({
             }
         });
 
-        const cleanupBids = socketService.onBidUpdate((data) => {
+        const cleanupBids = socketService.onBidUpdate((data: any) => {
+            console.log('[LiveRoom] Bid update received:', data);
             setCurrentHighestBid(data.amount);
             setHighestBidderName(data.user);
+            // If I'm the host, I might want to trigger a local sound/effect
             setMyBidAmount(data.amount + 1); // Auto-update bid amount to be ready for next bid
         });
 
