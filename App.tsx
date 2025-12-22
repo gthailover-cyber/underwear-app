@@ -604,6 +604,7 @@ const App: React.FC = () => {
                 ? room.product_ids.includes(p.id)
                 : true
             ),
+            product_ids: room.product_ids,
             isAuction: room.is_auction,
             auctionEndTime: room.auction_end_time ? Number(room.auction_end_time) : undefined,
             auctionStartingPrice: room.auction_starting_price,
@@ -946,6 +947,7 @@ const App: React.FC = () => {
           name: userProfile.username,
           coverImage: streamConfig.coverImage || userProfile.coverImage,
           products: liveSelectedProducts.length > 0 ? liveSelectedProducts : myProducts, // Use selected products if available
+          product_ids: liveSelectedProducts.map(p => p.id),
           isAuction: isAuction,
           auctionEndTime: auctionEndTime,
           auctionStartingPrice: isAuction ? auctionStartingPrice : undefined,

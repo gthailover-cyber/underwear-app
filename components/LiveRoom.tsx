@@ -752,7 +752,15 @@ const LiveRoom: React.FC<LiveRoomProps> = ({
                     .select('*')
                     .eq('seller_id', streamer.hostId)
                     .then(({ data }) => {
-                        if (data) setLiveProducts(data);
+                        if (data) {
+                            // Filter only products belonging to this room
+                            const filtered = data.filter(p =>
+                                Array.isArray(streamer.product_ids) && streamer.product_ids.length > 0
+                                    ? streamer.product_ids.includes(p.id)
+                                    : streamer.products.some(original => original.id === p.id)
+                            );
+                            setLiveProducts(filtered);
+                        }
                     });
             }
 

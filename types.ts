@@ -48,6 +48,7 @@ export interface Streamer {
   useLiveKit?: boolean; // NEW: Flag to use LiveKit for WebRTC streaming
   itemCount: number;
   products: Product[];
+  product_ids?: string[]; // Added: IDs of products selected for this room
   isAuction?: boolean; // New flag for Auction mode
   auctionEndTime?: number; // Timestamp for auction end
   auctionStartingPrice?: number; // Starting price for auction
