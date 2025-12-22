@@ -47,6 +47,7 @@ const GroupChatRoom: React.FC<GroupChatRoomProps> = ({
   const [giftAnimation, setGiftAnimation] = useState<{ id: number; icon: string; name: string; sender: string } | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [members, setMembers] = useState<any[]>([]);
+  const [bannedMembers, setBannedMembers] = useState<any[]>([]);
   const [inputText, setInputText] = useState('');
   const [isMember, setIsMember] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
@@ -255,8 +256,9 @@ const GroupChatRoom: React.FC<GroupChatRoomProps> = ({
         .eq('room_id', room.id);
 
       if (data && !error) {
+        // Approved members
         setMembers(data
-          .filter((m: any) => m.status === 'approved')
+          .filter((m: any) => m.status === 'approved' && !m.is_banned)
           .map((m: any) => ({
             id: m.user?.id,
             username: m.user?.username || 'User',
@@ -266,6 +268,15 @@ const GroupChatRoom: React.FC<GroupChatRoomProps> = ({
             isOnline: m.user?.last_seen_at ?
               (new Date().getTime() - new Date(m.user.last_seen_at).getTime()) < 600000 : false,
             isMuted: m.is_muted || false
+          })));
+
+        // Banned members (for host to see and unban)
+        setBannedMembers(data
+          .filter((m: any) => m.is_banned)
+          .map((m: any) => ({
+            id: m.user?.id,
+            username: m.user?.username || 'User',
+            avatar: m.user?.avatar || DEFAULT_IMAGES.AVATAR
           })));
       }
     } catch (error) {
@@ -411,14 +422,12 @@ const GroupChatRoom: React.FC<GroupChatRoomProps> = ({
 
       if (error) throw error;
 
-      // Remove from members list if banned
-      if (!currentlyBanned) {
-        setMembers(prev => prev.filter(m => m.id !== memberId));
-      }
+      // Refresh members list to update both approved and banned lists
+      await fetchMembers();
 
       showAlert({
         message: !currentlyBanned ? 'Member has been banned' : 'Member has been unbanned',
-        type: !currentlyBanned ? 'error' : 'info'
+        type: !currentlyBanned ? 'error' : 'success'
       });
     } catch (error) {
       console.error('[Room] Ban error:', error);
@@ -707,6 +716,39 @@ const GroupChatRoom: React.FC<GroupChatRoomProps> = ({
                 )}
               </div>
             ))}
+
+            {/* Banned Members Section (Host Only) */}
+            {isHost && bannedMembers.length > 0 && (
+              <>
+                <div className="h-px bg-red-800/50 my-4"></div>
+                <h3 className="text-xs text-red-400 uppercase font-bold mb-2 flex items-center gap-1">
+                  <Ban size={12} /> Banned ({bannedMembers.length})
+                </h3>
+                {bannedMembers.map(member => (
+                  <div key={member.id} className="flex items-center justify-between p-2 rounded-lg bg-red-900/10 border border-red-900/30 mb-2">
+                    <div className="flex items-center gap-3">
+                      <div className="relative">
+                        <img src={member.avatar} className="w-10 h-10 rounded-full object-cover bg-gray-800 opacity-50 border border-red-700" />
+                        <div className="absolute inset-0 flex items-center justify-center bg-black/50 rounded-full">
+                          <Ban size={16} className="text-red-500" />
+                        </div>
+                      </div>
+                      <div>
+                        <h4 className="text-red-400 font-medium text-sm line-through">{member.username}</h4>
+                        <span className="text-[10px] text-red-500">Banned</span>
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => handleToggleBan(member.id, true)}
+                      className="px-3 py-1.5 rounded-lg transition-all active:scale-95 bg-green-600/20 text-green-400 hover:bg-green-600/30 text-xs font-bold"
+                      title="Unban member"
+                    >
+                      Unban
+                    </button>
+                  </div>
+                ))}
+              </>
+            )}
           </div>
         )}
 
