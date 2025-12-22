@@ -18,12 +18,29 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const messaging = typeof window !== 'undefined' ? getMessaging(app) : null;
 
+let isRequestingToken = false;
+
 export const requestForToken = async (userId: string) => {
-    if (!messaging) return;
+    if (!messaging || isRequestingToken) return;
+    isRequestingToken = true;
 
     try {
+        // Check if we already have permission
+        if (Notification.permission !== 'granted') {
+            const permission = await Notification.requestPermission();
+            if (permission !== 'granted') {
+                isRequestingToken = false;
+                return;
+            }
+        }
+
+        // Explicitly register the service worker to avoid timeout issues
+        const registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js');
+        console.log('Service Worker registered successfully:', registration);
+
         const currentToken = await getToken(messaging, {
-            vapidKey: "BFOsxM8h_YBK9AAMirlTBT0gTm74lYrF7UxJlaudf5TTPEs0734j0UkkoltjEQNkQVPqE9vNV8bdiJUj6w4yJRs" // Get this from Firebase Console > Project Settings > Cloud Messaging > Web configuration
+            vapidKey: "BFOsxM8h_YBK9AAMirlTBT0gTm74lYrF7UxJlaudf5TTPEs0734j0UkkoltjEQNkQVPqE9vNV8bdiJUj6w4yJRs", // Get this from Firebase Console > Project Settings > Cloud Messaging > Web configuration
+            serviceWorkerRegistration: registration
         });
 
         if (currentToken) {
@@ -40,6 +57,8 @@ export const requestForToken = async (userId: string) => {
         }
     } catch (err) {
         console.log('An error occurred while retrieving token. ', err);
+    } finally {
+        isRequestingToken = false;
     }
 };
 
