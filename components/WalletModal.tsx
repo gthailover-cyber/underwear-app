@@ -28,44 +28,44 @@ const WalletModal: React.FC<WalletModalProps> = ({ isOpen, onClose, balance, onT
   const t = TRANSLATIONS[language];
   const amounts = [50, 100, 300, 500, 1000, 2000, 5000];
 
-  useEffect(() => {
-    if (isOpen && window.OmiseCard) {
-      window.OmiseCard.configure({
-        publicKey: OMISE_CONFIG.PUBLIC_KEY,
-        displayAmount: false,
-        frameLabel: 'GThaiLover Wallet',
-        frameColor: '#dc2626', // Red theme
-        submitLabel: 'PAY NOW',
-        currency: 'THB'
-      });
-    }
-  }, [isOpen]);
-
   const handleOmisePayment = () => {
-    if (!window.OmiseCard) {
-      setError('Payment system is loading, please try again in a moment.');
+    const { OmiseCard } = window;
+
+    if (!OmiseCard) {
+      setError('Payment system (Omise) is still loading. Please wait a few seconds.');
       return;
     }
 
-    setError(null);
-    window.OmiseCard.open({
-      amount: selectedAmount * 100, // Omise uses subunits (Satangs)
-      currency: 'THB',
-      defaultPaymentMethod: 'promptpay',
-      otherPaymentMethods: ['credit_card', 'truemoney', 'internet_banking'],
-      onCreateTokenSuccess: (nonce: string) => {
-        if (nonce.startsWith('tokn_')) {
-          console.log('Created Card Token:', nonce);
-          processCharge(nonce, 'card');
-        } else if (nonce.startsWith('src_')) {
-          console.log('Created Source (E-Wallet/PromptPay):', nonce);
-          processCharge(nonce, 'source');
+    try {
+      OmiseCard.configure({
+        publicKey: OMISE_CONFIG.PUBLIC_KEY,
+        displayAmount: false,
+        frameLabel: 'GThaiLover Wallet',
+        frameColor: '#dc2626',
+        submitLabel: 'PAY NOW',
+        currency: 'THB'
+      });
+
+      OmiseCard.open({
+        amount: selectedAmount * 100,
+        currency: 'THB',
+        defaultPaymentMethod: 'promptpay',
+        otherPaymentMethods: ['credit_card', 'truemoney', 'internet_banking'],
+        onCreateTokenSuccess: (nonce: string) => {
+          if (nonce.startsWith('tokn_')) {
+            processCharge(nonce, 'card');
+          } else if (nonce.startsWith('src_')) {
+            processCharge(nonce, 'source');
+          }
+        },
+        onFormClosed: () => {
+          // User closed the form
         }
-      },
-      onFormClosed: () => {
-        // Handle if user closed without paying
-      }
-    });
+      });
+    } catch (err: any) {
+      console.error('Omise initialization error:', err);
+      setError('Could not start payment system. Check your network or Public Key.');
+    }
   };
 
   const processCharge = async (tokenOrSource: string, type: 'card' | 'source') => {
