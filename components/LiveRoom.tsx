@@ -145,6 +145,9 @@ const LiveRoom: React.FC<LiveRoomProps> = ({
     const [tempAddress, setTempAddress] = useState('');
     const [tempPhone, setTempPhone] = useState('');
 
+    // Real-time Products State (for live sold/stock updates)
+    const [liveProducts, setLiveProducts] = useState<Product[]>(streamer.products || []);
+
     // Host Controls
     const [giftLogs, setGiftLogs] = useState<GiftLogItem[]>([]);
     const [isVideoEnabled, setIsVideoEnabled] = useState(true);
@@ -228,6 +231,47 @@ const LiveRoom: React.FC<LiveRoomProps> = ({
         };
         fetchInitialData();
     }, [streamer.id]);
+
+    // Update local products if streamer.products changes (initial sync)
+    useEffect(() => {
+        if (streamer.products) {
+            setLiveProducts(streamer.products);
+        }
+    }, [streamer.products]);
+
+    // Real-time Product Updates (Stock & Sold)
+    useEffect(() => {
+        if (!streamer.hostId) return;
+
+        console.log('[LiveRoom] Subscribing to real-time product updates for host:', streamer.hostId);
+
+        const channel = supabase
+            .channel(`public:products:seller:${streamer.hostId}`)
+            .on(
+                'postgres_changes',
+                {
+                    event: 'UPDATE',
+                    schema: 'public',
+                    table: 'products',
+                    filter: `seller_id=eq.${streamer.hostId}`
+                },
+                (payload) => {
+                    const updatedProduct = payload.new as Product;
+                    console.log('[LiveRoom] Product update received:', updatedProduct.id, 'Stock:', updatedProduct.stock, 'Sold:', updatedProduct.sold);
+
+                    setLiveProducts(prev => prev.map(p =>
+                        p.id === updatedProduct.id
+                            ? { ...p, stock: updatedProduct.stock, sold: updatedProduct.sold }
+                            : p
+                    ));
+                }
+            )
+            .subscribe();
+
+        return () => {
+            supabase.removeChannel(channel);
+        };
+    }, [streamer.hostId]);
 
     // Initial Setup & Socket Listeners
     // Heartbeat Logic: Update last_active_at every minute to keep room "alive"
@@ -1178,9 +1222,9 @@ const LiveRoom: React.FC<LiveRoomProps> = ({
                                         className="relative w-10 h-10 flex items-center justify-center bg-black/40 backdrop-blur-md rounded-full border border-white/20 text-white hover:bg-white/10 active:scale-90 transition-all"
                                     >
                                         <ShoppingBag size={20} />
-                                        {streamer.products.length > 0 && (
+                                        {liveProducts.length > 0 && (
                                             <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-600 rounded-full text-[10px] flex items-center justify-center font-bold border border-black">
-                                                {streamer.products.length}
+                                                {liveProducts.length}
                                             </span>
                                         )}
                                     </button>
@@ -1279,7 +1323,7 @@ const LiveRoom: React.FC<LiveRoomProps> = ({
                                 </div>
                             </div>
                             <div className="flex-1 overflow-y-auto p-4 space-y-4">
-                                {streamer.products.map(p => (
+                                {liveProducts.map(p => (
                                     <div key={p.id} className="flex gap-4 bg-gray-900 p-3 rounded-xl border border-gray-800">
                                         <img src={p.image} className="w-20 h-20 rounded-lg object-cover bg-gray-800" />
                                         <div className="flex-1 text-left">
