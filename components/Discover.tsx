@@ -43,7 +43,7 @@ const Discover: React.FC<DiscoverProps> = ({ language, onOpenStream, streamers, 
             hostId: room.host_id,
             hostName: room.host?.username || room.host_name || 'Host',
             hostAvatar: room.host?.avatar || DEFAULT_IMAGES.AVATAR,
-            coverImage: room.image || DEFAULT_IMAGES.ROOM,
+            image: room.image || DEFAULT_IMAGES.ROOM,
             members: room.members || 0,
             maxMembers: room.max_members || 50,
             type: room.type || 'public',
@@ -150,7 +150,7 @@ const Discover: React.FC<DiscoverProps> = ({ language, onOpenStream, streamers, 
                 {/* Cover Image */}
                 <div className="relative h-32 md:h-36">
                   <img
-                    src={room.coverImage}
+                    src={room.image}
                     className="w-full h-full object-cover"
                     alt={room.name}
                   />
