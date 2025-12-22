@@ -184,16 +184,33 @@ const WalletModal: React.FC<WalletModalProps> = ({ isOpen, onClose, balance, onT
               <button
                 type="button"
                 onClick={() => {
-                  const link = document.createElement('a');
-                  link.href = qrCodeUrl;
-                  link.download = `qr-code-${selectedAmount}.png`;
-                  document.body.appendChild(link);
-                  link.click();
-                  document.body.removeChild(link);
+                  const img = new Image();
+                  img.crossOrigin = "anonymous";
+                  img.onload = () => {
+                    const canvas = document.createElement('canvas');
+                    canvas.width = img.width;
+                    canvas.height = img.height;
+                    const ctx = canvas.getContext('2d');
+                    if (ctx) {
+                      // Draw white background (QR codes need contrast)
+                      ctx.fillStyle = "white";
+                      ctx.fillRect(0, 0, canvas.width, canvas.height);
+                      ctx.drawImage(img, 0, 0);
+
+                      const pngUrl = canvas.toDataURL("image/png");
+                      const link = document.createElement('a');
+                      link.href = pngUrl;
+                      link.download = `qr-code-${selectedAmount}.png`;
+                      document.body.appendChild(link);
+                      link.click();
+                      document.body.removeChild(link);
+                    }
+                  };
+                  img.src = qrCodeUrl;
                 }}
                 className="w-full py-5 rounded-[1.5rem] bg-white text-black font-black text-lg hover:bg-gray-100 transition-all active:scale-95 shadow-2xl flex items-center justify-center gap-2"
               >
-                <Download size={24} /> SAVE QR CODE IMAGE
+                <Download size={24} /> SAVE AS PNG
               </button>
             )}
 
