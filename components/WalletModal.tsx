@@ -250,6 +250,19 @@ const WalletModal: React.FC<WalletModalProps> = ({ isOpen, onClose, balance, onT
               </button>
             )}
 
+            {(qrCodeUrl || redirectUrl) && (
+              <button
+                type="button"
+                onClick={() => {
+                  setRedirectUrl(null);
+                  setQrCodeUrl(null);
+                }}
+                className="w-full py-4 text-gray-400 font-bold text-sm uppercase tracking-widest hover:text-white transition-colors"
+              >
+                CANCEL PAYMENT
+              </button>
+            )}
+
             {!qrCodeUrl && redirectUrl && (
               <a
                 href={redirectUrl}
