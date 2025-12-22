@@ -186,30 +186,38 @@ const WalletModal: React.FC<WalletModalProps> = ({ isOpen, onClose, balance, onT
                 onClick={() => {
                   if (!qrCodeUrl) return;
 
+                  // If it's already a data URL (Base64), we can try to save it directly or via canvas
                   const img = new Image();
                   img.onload = () => {
-                    const canvas = document.createElement('canvas');
-                    canvas.width = 1000; // High resolution
-                    canvas.height = 1000;
-                    const ctx = canvas.getContext('2d');
-                    if (ctx) {
-                      ctx.fillStyle = "white";
-                      ctx.fillRect(0, 0, canvas.width, canvas.height);
+                    try {
+                      const canvas = document.createElement('canvas');
+                      canvas.width = 1000;
+                      canvas.height = 1000;
+                      const ctx = canvas.getContext('2d');
+                      if (ctx) {
+                        ctx.fillStyle = "white";
+                        ctx.fillRect(0, 0, canvas.width, canvas.height);
+                        const padding = 100;
+                        ctx.drawImage(img, padding, padding, canvas.width - (padding * 2), canvas.height - (padding * 2));
 
-                      // Draw image with padding
-                      const padding = 100;
-                      ctx.drawImage(img, padding, padding, canvas.width - (padding * 2), canvas.height - (padding * 2));
-
-                      const pngUrl = canvas.toDataURL("image/png");
-                      const link = document.createElement('a');
-                      link.href = pngUrl;
-                      link.download = `PromptPay-QR-${selectedAmount}.png`;
-                      document.body.appendChild(link);
-                      link.click();
-                      document.body.removeChild(link);
+                        const pngUrl = canvas.toDataURL("image/png");
+                        const link = document.createElement('a');
+                        link.href = pngUrl;
+                        link.download = `PromptPay-QR-${selectedAmount}.png`;
+                        document.body.appendChild(link);
+                        link.click();
+                        document.body.removeChild(link);
+                      }
+                    } catch (err) {
+                      console.error("Export error:", err);
+                      setError("Failed to process QR image for download. Opening in new tab instead.");
+                      setTimeout(() => window.open(qrCodeUrl, '_blank'), 1000); // Fallback: Open in new window if canvas fail
                     }
                   };
-                  img.onerror = () => setError("Failed to process QR Image. Please try again.");
+                  img.onerror = () => {
+                    setError("Failed to load QR image for download. Please try again or open in new tab.");
+                    setTimeout(() => window.open(qrCodeUrl, '_blank'), 1000);
+                  };
                   img.src = qrCodeUrl;
                 }}
                 className="w-full py-5 rounded-[1.5rem] bg-white text-black font-black text-lg hover:bg-gray-100 transition-all active:scale-95 shadow-2xl flex items-center justify-center gap-2"
