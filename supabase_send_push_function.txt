@@ -1,0 +1,76 @@
+
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { JWT } from 'https://esm.sh/google-auth-library@8.7.0'
+
+const FIREBASE_SERVICE_ACCOUNT = JSON.parse(Deno.env.get('FIREBASE_SERVICE_ACCOUNT') || '{}')
+const SUPABASE_URL = Deno.env.get('SUPABASE_URL') || ''
+const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || ''
+
+const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
+
+async function getAccessToken() {
+  const client = new JWT({
+    email: FIREBASE_SERVICE_ACCOUNT.client_email,
+    key: FIREBASE_SERVICE_ACCOUNT.private_key,
+    scopes: ['https://www.googleapis.com/auth/cloud-platform'],
+  })
+  const tokens = await client.authorize()
+  return tokens.access_token
+}
+
+serve(async (req) => {
+  try {
+    const { record } = await req.json()
+    const userId = record.user_id
+    const title = record.type === 'follow' ? 'Follower' : 
+                  record.type === 'gift' ? 'Gift' : 'Notification'
+    const body = record.content
+
+    // 1. Get user's FCM Token from profile
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('fcm_token')
+      .eq('id', userId)
+      .single()
+
+    if (!profile?.fcm_token) {
+      return new Response(JSON.stringify({ message: 'No FCM token found' }), { status: 200 })
+    }
+
+    // 2. Get Google Access Token
+    const accessToken = await getAccessToken()
+
+    // 3. Send via FCM HTTP v1 API
+    const fcmResponse = await fetch(
+      `https://fcm.googleapis.com/v1/projects/${FIREBASE_SERVICE_ACCOUNT.project_id}/messages:send`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${accessToken}`,
+        },
+        body: JSON.stringify({
+          message: {
+            token: profile.fcm_token,
+            notification: {
+              title: title,
+              body: body,
+            },
+            webpush: {
+              fcm_options: {
+                link: "https://underwear-app-nine.vercel.app/"
+              }
+            }
+          },
+        }),
+      }
+    )
+
+    const result = await fcmResponse.json()
+    return new Response(JSON.stringify(result), { status: 200 })
+
+  } catch (error) {
+    return new Response(JSON.stringify({ error: error.message }), { status: 500 })
+  }
+})
