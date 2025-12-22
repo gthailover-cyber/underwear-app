@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { X, Check, Coins, CreditCard, Smartphone, ShieldCheck, AlertCircle, ChevronRight } from 'lucide-react';
+import { X, Check, Coins, CreditCard, Smartphone, ShieldCheck, AlertCircle, ChevronRight, Download } from 'lucide-react';
 import { TRANSLATIONS, OMISE_CONFIG } from '../constants';
 import { Language } from '../types';
 import { supabase } from '../lib/supabaseClient';
@@ -180,28 +180,33 @@ const WalletModal: React.FC<WalletModalProps> = ({ isOpen, onClose, balance, onT
               </p>
             </div>
 
-            {redirectUrl && (
+            {qrCodeUrl && (
+              <button
+                type="button"
+                onClick={() => {
+                  const link = document.createElement('a');
+                  link.href = qrCodeUrl;
+                  link.download = `qr-code-${selectedAmount}.png`;
+                  document.body.appendChild(link);
+                  link.click();
+                  document.body.removeChild(link);
+                }}
+                className="w-full py-5 rounded-[1.5rem] bg-white text-black font-black text-lg hover:bg-gray-100 transition-all active:scale-95 shadow-2xl flex items-center justify-center gap-2"
+              >
+                <Download size={24} /> SAVE QR CODE IMAGE
+              </button>
+            )}
+
+            {!qrCodeUrl && redirectUrl && (
               <a
                 href={redirectUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="w-full py-5 rounded-[1.5rem] bg-white text-black font-black text-xl hover:bg-gray-100 transition-all active:scale-95 shadow-2xl shadow-white/5 flex items-center justify-center gap-2 no-underline"
+                className="w-full py-5 rounded-[1.5rem] bg-white text-black font-black text-xl hover:bg-gray-100 transition-all active:scale-95 shadow-2xl flex items-center justify-center gap-2 no-underline"
               >
                 OPEN PAYMENT PAGE <ChevronRight size={24} />
               </a>
             )}
-
-            <div className="w-full space-y-2">
-              <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">Or copy link to browser:</p>
-              <div className="flex gap-2">
-                <input
-                  readOnly
-                  value={redirectUrl}
-                  className="flex-1 bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-[9px] text-gray-400 font-mono focus:outline-none"
-                  onClick={(e) => (e.target as HTMLInputElement).select()}
-                />
-              </div>
-            </div>
 
             <div className="flex items-center gap-2 bg-gray-800/50 p-4 rounded-2xl border border-gray-700">
               <div className="w-1.5 h-1.5 bg-yellow-500 rounded-full animate-pulse"></div>
