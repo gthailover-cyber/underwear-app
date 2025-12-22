@@ -745,6 +745,17 @@ const LiveRoom: React.FC<LiveRoomProps> = ({
                 message: `Payment successful! Items will be shipped to: ${userAddress}`,
                 type: 'success'
             });
+
+            // Immediate Refresh products to see stock change
+            if (streamer.hostId) {
+                supabase.from('products')
+                    .select('*')
+                    .eq('seller_id', streamer.hostId)
+                    .then(({ data }) => {
+                        if (data) setLiveProducts(data);
+                    });
+            }
+
             onNewOrder?.();
             return true;
 

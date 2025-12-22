@@ -1247,6 +1247,11 @@ const App: React.FC = () => {
 
       showAlert({ message: language === 'th' ? 'ชำระเงินสำเร็จ!' : 'Payment successful!', type: 'success' });
 
+      // Refresh global products/wallet
+      if (userProfile.id) {
+        fetchGlobalData(userProfile.id);
+      }
+
     } catch (err: any) {
       console.error("Checkout Error:", err);
       showAlert({ message: 'Failed to process order. Please try again.', type: 'error' });
