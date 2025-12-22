@@ -738,6 +738,30 @@ const LiveRoom: React.FC<LiveRoomProps> = ({
                         .insert(itemsToInsert);
 
                     if (itemsError) throw itemsError;
+
+                    // 3. Update Product Stock & Sold Count (Direct Update)
+                    // We loop through each item to update its stock/sold count
+                    for (const item of items) {
+                        try {
+                            const { data: currentProd, error: fetchErr } = await supabase
+                                .from('products')
+                                .select('stock, sold')
+                                .eq('id', item.id)
+                                .single();
+
+                            if (!fetchErr && currentProd) {
+                                await supabase
+                                    .from('products')
+                                    .update({
+                                        stock: Math.max(0, (currentProd.stock || 0) - item.quantity),
+                                        sold: (currentProd.sold || 0) + item.quantity
+                                    })
+                                    .eq('id', item.id);
+                            }
+                        } catch (updateErr) {
+                            console.error(`Failed to update stock for product ${item.id}:`, updateErr);
+                        }
+                    }
                 }
             }
 
