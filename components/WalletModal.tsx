@@ -85,17 +85,21 @@ const WalletModal: React.FC<WalletModalProps> = ({ isOpen, onClose, balance, onT
 
       if (funcError) throw funcError;
 
-      console.log('[Charge Response]:', data);
+      console.log('Omise API Response:', data);
 
-      // Handle PromptPay or Redirect-based payments (Highest Priority)
-      if (data.status === 'pending' && data.authorize_uri) {
-        console.log('[Redirecting to]:', data.authorize_uri);
-        window.location.href = data.authorize_uri;
-        return;
+      // 1. Handle PromptPay / Redirect (Status: pending)
+      if (data.status === 'pending') {
+        if (data.authorize_uri) {
+          console.log('Redirecting to QR Code page:', data.authorize_uri);
+          window.location.href = data.authorize_uri;
+          return;
+        } else {
+          throw new Error('Payment is pending but QR Code URL was not found.');
+        }
       }
 
-      // Handle Instant Success (Credit Card/Immediate Payment)
-      if (data.success && data.status === 'successful') {
+      // 2. Handle Instant Success (Status: successful)
+      if (data.status === 'successful') {
         onTopUp(selectedAmount);
         setIsProcessing(false);
         setIsSuccess(true);
@@ -105,11 +109,11 @@ const WalletModal: React.FC<WalletModalProps> = ({ isOpen, onClose, balance, onT
           onClose();
         }, 2000);
       } else {
-        throw new Error(data.error || 'Payment processing failed or incomplete');
+        throw new Error(data.error || 'Payment failed with status: ' + data.status);
       }
     } catch (err: any) {
-      console.error('Charge error:', err);
-      setError(err.message || 'Payment failed. Please try another method.');
+      console.error('Wallet Top-up Error:', err);
+      setError(err.message || 'Payment system error. Please try again.');
       setIsProcessing(false);
     }
   };

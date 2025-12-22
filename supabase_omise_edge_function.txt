@@ -1,7 +1,5 @@
 
-// This is a template for a Supabase Edge Function to handle Omise Charges
-// You can deploy this using 'supabase functions deploy omise-topup'
-
+// Updated Supabase Edge Function to handle Omise PromptPay QR Code
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.7.1'
 
@@ -16,22 +14,12 @@ export const corsHeaders = {
 }
 
 serve(async (req) => {
-  // 1. Handle CORS Preflight (VERY IMPORTANT)
-  if (req.method === 'OPTIONS') {
-    return new Response('ok', { 
-      status: 200,
-      headers: corsHeaders 
-    })
-  }
+  if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
 
   try {
     const { token, amount, userId, currency = 'thb' } = await req.json()
 
-    if (!userId || !amount || !token) {
-        throw new Error('Missing required fields: userId, amount, or token')
-    }
-
-    // 2. Create Charge with Omise
+    // 1. Create Charge
     const chargeResponse = await fetch('https://api.omise.co/charges', {
       method: 'POST',
       headers: {
@@ -39,49 +27,50 @@ serve(async (req) => {
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        amount: amount * 100, // Omise uses satangs
+        amount: amount * 100,
         currency: currency,
         card: token.startsWith('tokn_') ? token : undefined,
         source: token.startsWith('src_') ? token : undefined,
-        return_uri: 'https://underwear-app-nine.vercel.app' 
+        return_uri: 'https://underwear-app-nine.vercel.app',
+        metadata: { userId: userId }
       })
     })
 
     const charge = await chargeResponse.json()
+    console.log('Charge created:', charge.id, 'Status:', charge.status);
 
     if (charge.status === 'failed') {
-      throw new Error(charge.failure_message || 'Charge failed with status failed')
+      throw new Error(charge.failure_message || 'Charge failed')
     }
 
-    // 3. If Success, update user balance in Supabase
-    if (charge.status === 'successful') {
-      const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
-      
-      const { error: rpcError } = await supabase.rpc('add_coins', {
-        user_id: userId,
-        amount: amount
-      })
-
-      if (rpcError) throw rpcError
-      
-      return new Response(JSON.stringify({ success: true, charge_id: charge.id }), {
+    // 2. Handle Redirection (PromptPay / Rabbit LinePay / Internet Banking)
+    // สำหรับ PromptPay, Omise จะให้ authorize_uri เพื่อไปหน้า QR Code
+    if (charge.authorize_uri || charge.status === 'pending') {
+      return new Response(JSON.stringify({ 
+        success: true, 
+        status: 'pending', 
+        authorize_uri: charge.authorize_uri || (charge.source && charge.source.references ? charge.source.references.barcode : null)
+      }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 200
       })
     }
 
-    // 4. Handle Pending (for PromptPay/Redirect)
-    return new Response(JSON.stringify({ 
-      success: true, 
-      status: 'pending', 
-      authorize_uri: charge.authorize_uri 
-    }), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      status: 200
-    })
+    // 3. Handle Instant Success (Credit Card)
+    if (charge.status === 'successful') {
+      const supabase = createClient(SUPABASE_URL!, SUPABASE_SERVICE_ROLE_KEY!)
+      await supabase.rpc('add_coins', { user_id: userId, amount: amount })
+      
+      return new Response(JSON.stringify({ success: true, status: 'successful' }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 200
+      })
+    }
+
+    throw new Error('Unexpected charge status: ' + charge.status)
 
   } catch (error) {
-    console.error('Error processing payment:', error.message)
+    console.error('Error:', error.message)
     return new Response(JSON.stringify({ error: error.message }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 400
