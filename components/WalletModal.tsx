@@ -191,14 +191,38 @@ const WalletModal: React.FC<WalletModalProps> = ({ isOpen, onClose, balance, onT
                   img.onload = () => {
                     try {
                       const canvas = document.createElement('canvas');
-                      canvas.width = 1000;
-                      canvas.height = 1000;
+                      // Set a base size for high quality
+                      const baseSize = 1024;
+                      canvas.width = baseSize;
+                      canvas.height = baseSize;
+
                       const ctx = canvas.getContext('2d');
                       if (ctx) {
+                        // 1. Draw solid white background
                         ctx.fillStyle = "white";
                         ctx.fillRect(0, 0, canvas.width, canvas.height);
-                        const padding = 100;
-                        ctx.drawImage(img, padding, padding, canvas.width - (padding * 2), canvas.height - (padding * 2));
+
+                        // 2. Calculate aspect ratio to prevent distortion
+                        const imgAspectRatio = img.width / img.height;
+                        let drawWidth, drawHeight;
+                        const padding = 80;
+                        const maxSize = baseSize - (padding * 2);
+
+                        if (imgAspectRatio > 1) {
+                          // Wide image
+                          drawWidth = maxSize;
+                          drawHeight = maxSize / imgAspectRatio;
+                        } else {
+                          // Tall or square image
+                          drawHeight = maxSize;
+                          drawWidth = maxSize * imgAspectRatio;
+                        }
+
+                        // 3. Center the image on canvas
+                        const x = (baseSize - drawWidth) / 2;
+                        const y = (baseSize - drawHeight) / 2;
+
+                        ctx.drawImage(img, x, y, drawWidth, drawHeight);
 
                         const pngUrl = canvas.toDataURL("image/png");
                         const link = document.createElement('a');
