@@ -1927,67 +1927,134 @@ const App: React.FC = () => {
                 // Filter available models and shuffle them
                 const availableModels = people.filter(p => p.role === 'model' && p.is_available);
                 const shuffledModels = [...availableModels].sort(() => Math.random() - 0.5);
+                const allModels = people.filter(p => p.role === 'model');
 
                 return (
-                  <div className="px-4">
-                    {shuffledModels.length > 0 ? (
-                      <div className="overflow-x-auto no-scrollbar -mx-4 px-4">
-                        <div className="flex gap-4 pb-4">
-                          {shuffledModels.map((person) => {
-                            const isLive = streamers.some(s => s.name === person.username);
-                            return (
-                              <div
-                                key={person.id}
-                                onClick={() => { setSelectedPerson(person); setActiveTab('people'); }}
-                                className="flex-shrink-0 cursor-pointer group"
-                              >
-                                {/* Circular Avatar Container */}
-                                <div className="relative w-24 h-24 mb-2">
-                                  {/* Gradient Ring */}
-                                  <div className="absolute inset-0 rounded-full bg-gradient-to-tr from-blue-500 via-purple-500 to-pink-500 p-[3px] group-hover:scale-110 transition-transform">
-                                    <div className="w-full h-full rounded-full bg-black p-[2px]">
-                                      <img
-                                        src={person.avatar}
-                                        className="w-full h-full rounded-full object-cover"
-                                        alt={person.username}
-                                      />
+                  <div className="space-y-6">
+                    {/* Available Models - Circular Cards */}
+                    {shuffledModels.length > 0 && (
+                      <div className="px-4">
+                        <h3 className="text-sm font-bold text-green-500 mb-3 flex items-center gap-2">
+                          <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                          {language === 'th' ? 'นายแบบที่ว่าง' : 'Available Models'}
+                        </h3>
+                        <div className="overflow-x-auto no-scrollbar -mx-4 px-4">
+                          <div className="flex gap-4 pb-4">
+                            {shuffledModels.map((person) => {
+                              const isLive = streamers.some(s => s.name === person.username);
+                              return (
+                                <div
+                                  key={person.id}
+                                  onClick={() => { setSelectedPerson(person); setActiveTab('people'); }}
+                                  className="flex-shrink-0 cursor-pointer group"
+                                >
+                                  {/* Circular Avatar Container */}
+                                  <div className="relative w-24 h-24 mb-2">
+                                    {/* Gradient Ring */}
+                                    <div className="absolute inset-0 rounded-full bg-gradient-to-tr from-blue-500 via-purple-500 to-pink-500 p-[3px] group-hover:scale-110 transition-transform">
+                                      <div className="w-full h-full rounded-full bg-black p-[2px]">
+                                        <img
+                                          src={person.avatar}
+                                          className="w-full h-full rounded-full object-cover"
+                                          alt={person.username}
+                                        />
+                                      </div>
+                                    </div>
+
+                                    {/* Live Badge */}
+                                    {isLive && (
+                                      <div className="absolute -top-1 -right-1 bg-red-600 text-white text-[8px] font-bold px-1.5 py-0.5 rounded-full flex items-center gap-1 z-20 shadow-lg animate-pulse">
+                                        <span className="w-1.5 h-1.5 bg-white rounded-full"></span> LIVE
+                                      </div>
+                                    )}
+
+                                    {/* Online Status */}
+                                    {!isLive && person.isOnline && (
+                                      <div className="absolute bottom-1 right-1 w-4 h-4 bg-green-500 rounded-full border-2 border-black shadow-lg z-10 animate-pulse"></div>
+                                    )}
+
+                                    {/* Available Badge */}
+                                    <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 bg-green-500 text-white text-[8px] font-bold px-2 py-0.5 rounded-full shadow-lg whitespace-nowrap">
+                                      {language === 'th' ? 'ว่าง' : 'Available'}
                                     </div>
                                   </div>
 
-                                  {/* Live Badge */}
-                                  {isLive && (
-                                    <div className="absolute -top-1 -right-1 bg-red-600 text-white text-[8px] font-bold px-1.5 py-0.5 rounded-full flex items-center gap-1 z-20 shadow-lg animate-pulse">
-                                      <span className="w-1.5 h-1.5 bg-white rounded-full"></span> LIVE
-                                    </div>
-                                  )}
-
-                                  {/* Online Status */}
-                                  {!isLive && person.isOnline && (
-                                    <div className="absolute bottom-1 right-1 w-4 h-4 bg-green-500 rounded-full border-2 border-black shadow-lg z-10 animate-pulse"></div>
-                                  )}
-
-                                  {/* Available Badge */}
-                                  <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 bg-green-500 text-white text-[8px] font-bold px-2 py-0.5 rounded-full shadow-lg whitespace-nowrap">
-                                    {language === 'th' ? 'ว่าง' : 'Available'}
+                                  {/* Name */}
+                                  <div className="text-center max-w-[96px]">
+                                    <p className="text-xs font-bold text-white truncate">{person.username}</p>
+                                    <p className="text-[10px] text-gray-500 truncate">{person.followers || 0} Followers</p>
                                   </div>
                                 </div>
-
-                                {/* Name */}
-                                <div className="text-center max-w-[96px]">
-                                  <p className="text-xs font-bold text-white truncate">{person.username}</p>
-                                  <p className="text-[10px] text-gray-500 truncate">{person.followers || 0} Followers</p>
-                                </div>
-                              </div>
-                            );
-                          })}
+                              );
+                            })}
+                          </div>
                         </div>
                       </div>
-                    ) : (
-                      <div className="flex flex-col items-center justify-center py-20 text-gray-500">
-                        <Users size={48} className="mb-4 opacity-30" />
-                        <p>{language === 'th' ? 'ไม่มีนายแบบที่ว่างในขณะนี้' : 'No available models'}</p>
-                      </div>
                     )}
+
+                    {/* All Models - 9:16 Cards Grid */}
+                    <div className="px-4">
+                      <h3 className="text-sm font-bold text-gray-400 mb-3">
+                        {language === 'th' ? 'นายแบบทั้งหมด' : 'All Models'}
+                      </h3>
+                      <div className="grid grid-cols-3 gap-2">
+                        {allModels.length > 0 ? allModels.map((person) => {
+                          const isLive = streamers.some(s => s.name === person.username);
+                          return (
+                            <div
+                              key={person.id}
+                              onClick={() => { setSelectedPerson(person); setActiveTab('people'); }}
+                              className="relative aspect-[9/16] bg-gray-900 cursor-pointer overflow-hidden rounded-lg"
+                            >
+                              <img
+                                src={person.avatar}
+                                className="w-full h-full object-cover transition-transform duration-500 hover:scale-110"
+                                alt={person.username}
+                              />
+
+                              {/* Gradient Overlay */}
+                              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-90"></div>
+
+                              {/* Badge */}
+                              <div className="absolute top-2 right-2 w-5 h-5 rounded-full flex items-center justify-center shadow-lg z-10 bg-white">
+                                <BicepsFlexed size={12} className="text-black" strokeWidth={3} />
+                              </div>
+
+                              {/* Online/Live Status */}
+                              {isLive ? (
+                                <div className="absolute top-2 left-2 bg-red-600 text-white text-[8px] font-bold px-1.5 py-0.5 rounded flex items-center gap-1 z-20 shadow-md animate-pulse">
+                                  <span className="w-1.5 h-1.5 bg-white rounded-full"></span> LIVE
+                                </div>
+                              ) : person.isOnline ? (
+                                <div className="absolute top-2 left-2 w-2.5 h-2.5 bg-green-500 rounded-full border-2 border-black shadow-[0_0_8px_rgba(34,197,94,0.8)] z-10 animate-pulse"></div>
+                              ) : null}
+
+                              {/* Available Badge */}
+                              {person.is_available && (
+                                <div className="absolute top-2 left-1/2 -translate-x-1/2 bg-green-500 text-white text-[8px] font-bold px-2 py-0.5 rounded-full shadow-lg">
+                                  {language === 'th' ? 'ว่าง' : 'Available'}
+                                </div>
+                              )}
+
+                              {/* Info */}
+                              <div className="absolute bottom-2 left-2 right-2">
+                                <span className="text-xs font-bold text-white truncate block">
+                                  {person.username}
+                                </span>
+                                <span className="text-xs text-gray-400 block">
+                                  {person.followers} Followers
+                                </span>
+                              </div>
+                            </div>
+                          );
+                        }) : (
+                          <div className="col-span-full flex flex-col items-center justify-center py-20 text-gray-500">
+                            <Users size={48} className="mb-4 opacity-30" />
+                            <p>{language === 'th' ? 'ไม่มีนายแบบ' : 'No models found'}</p>
+                          </div>
+                        )}
+                      </div>
+                    </div>
                   </div>
                 );
               })()}
