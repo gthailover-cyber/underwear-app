@@ -56,6 +56,7 @@ const GroupChatRoom: React.FC<GroupChatRoomProps> = ({
   const [showAvailableModels, setShowAvailableModels] = useState(false);
   const [availableModelsStore, setAvailableModelsStore] = useState<any[]>([]);
   const [viewingProfile, setViewingProfile] = useState<any | null>(null);
+  const [isViewingGallery, setIsViewingGallery] = useState(false);
   const [loadingAvailable, setLoadingAvailable] = useState(false);
   const [selectedModelsForPoll, setSelectedModelsForPoll] = useState<string[]>([]);
   const [activePoll, setActivePoll] = useState<any | null>(null);
@@ -1080,7 +1081,13 @@ const GroupChatRoom: React.FC<GroupChatRoomProps> = ({
               <div className="flex items-center gap-3">
                 {viewingProfile && (
                   <button
-                    onClick={() => setViewingProfile(null)}
+                    onClick={() => {
+                      if (isViewingGallery) {
+                        setIsViewingGallery(false);
+                      } else {
+                        setViewingProfile(null);
+                      }
+                    }}
                     className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center text-white hover:bg-white/10 active:scale-90 transition-all"
                   >
                     <ArrowLeft size={20} />
@@ -1102,6 +1109,7 @@ const GroupChatRoom: React.FC<GroupChatRoomProps> = ({
                 onClick={() => {
                   setShowAvailableModels(false);
                   setViewingProfile(null);
+                  setIsViewingGallery(false);
                 }}
                 className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center text-gray-400 hover:text-white hover:bg-white/10 active:scale-90 transition-all"
               >
@@ -1117,82 +1125,104 @@ const GroupChatRoom: React.FC<GroupChatRoomProps> = ({
                   <span className="text-xs text-gray-500 font-bold uppercase tracking-widest animate-pulse">Scanning models...</span>
                 </div>
               ) : viewingProfile ? (
-                /* Profile View within Modal */
-                <div className="animate-slide-up space-y-6">
-                  {/* Top Header Card */}
-                  <div className="relative aspect-[4/3] rounded-3xl overflow-hidden group shadow-2xl border border-white/10">
-                    <img src={viewingProfile.avatar} className="w-full h-full object-cover" />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent"></div>
+                isViewingGallery ? (
+                  // Gallery View
+                  <div className="animate-slide-up h-full">
+                    {viewingProfile.gallery && viewingProfile.gallery.length > 0 ? (
+                      <div className="grid grid-cols-2 gap-3 pb-20">
+                        {viewingProfile.gallery.map((img: string, idx: number) => (
+                          <div key={idx} className="aspect-[3/4] rounded-2xl overflow-hidden border border-white/10 bg-gray-800 animate-scale-in" style={{ animationDelay: `${idx * 50}ms` }}>
+                            <img src={img} className="w-full h-full object-cover hover:scale-110 transition-transform duration-500" />
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="flex flex-col items-center justify-center py-32 text-gray-600">
+                        <div className="w-20 h-20 rounded-3xl bg-white/5 flex items-center justify-center mb-4 text-4xl">
+                          🖼️
+                        </div>
+                        <p className="text-xs font-black uppercase tracking-widest">No Photos Available</p>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  /* Profile View within Modal */
+                  <div className="animate-slide-up space-y-6">
+                    {/* Top Header Card */}
+                    <div className="relative aspect-[4/3] rounded-3xl overflow-hidden group shadow-2xl border border-white/10">
+                      <img src={viewingProfile.avatar} className="w-full h-full object-cover" />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent"></div>
 
-                    {/* Floating Badges */}
-                    <div className="absolute top-4 left-4 flex gap-2">
-                      {viewingProfile.isOnline && (
-                        <div className="bg-green-500 text-[10px] font-black px-3 py-1 rounded-full text-black shadow-lg animate-pulse">ONLINE</div>
-                      )}
-                      <div className="bg-white/10 backdrop-blur-md px-3 py-1 rounded-full text-[10px] font-black text-white border border-white/20">MODEL</div>
+                      {/* Floating Badges */}
+                      <div className="absolute top-4 left-4 flex gap-2">
+                        {viewingProfile.isOnline && (
+                          <div className="bg-green-500 text-[10px] font-black px-3 py-1 rounded-full text-black shadow-lg animate-pulse">ONLINE</div>
+                        )}
+                        <div className="bg-white/10 backdrop-blur-md px-3 py-1 rounded-full text-[10px] font-black text-white border border-white/20">MODEL</div>
+                      </div>
+                    </div>
+
+                    {/* Stats Row */}
+                    {/* Stats Row */}
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="bg-white/5 rounded-2xl p-3 border border-white/5 flex flex-col items-center justify-center">
+                        <p className="text-[8px] text-gray-400 font-bold uppercase tracking-widest mb-1 text-center">Followers</p>
+                        <p className="text-sm font-black text-white text-center">{viewingProfile.followers.toLocaleString()}</p>
+                      </div>
+                      <div className="bg-white/5 rounded-2xl p-3 border border-white/5 flex flex-col items-center justify-center">
+                        <p className="text-[8px] text-gray-400 font-bold uppercase tracking-widest mb-1 text-center">Location</p>
+                        <p className="text-xs font-black text-white text-center truncate w-full">{viewingProfile.location || 'Bangkok'}</p>
+                      </div>
+                    </div>
+
+                    {/* Bio */}
+                    <div className="bg-white/5 rounded-2xl p-5 border border-white/5">
+                      <h4 className="text-[10px] text-red-500 font-black uppercase tracking-widest mb-3 italic">About Model</h4>
+                      <p className="text-gray-300 text-sm leading-relaxed">{viewingProfile.bio || 'This model has not provided a biography yet.'}</p>
+                    </div>
+
+                    <div className="grid grid-cols-3 gap-2 mb-4">
+                      <div className="bg-white/5 rounded-2xl p-2 border border-white/5 flex flex-col items-center justify-center">
+                        <p className="text-[7px] text-gray-400 font-bold uppercase tracking-widest mb-1 text-center">Live Rate</p>
+                        <p className="text-xs font-black text-yellow-500 text-center truncate w-full">
+                          {viewingProfile.rate_event_live ? `฿${viewingProfile.rate_event_live.toLocaleString()}` : 'N/A'}
+                        </p>
+                      </div>
+                      <div className="bg-white/5 rounded-2xl p-2 border border-white/5 flex flex-col items-center justify-center">
+                        <p className="text-[7px] text-pink-400 font-bold uppercase tracking-widest mb-1 text-center">On-Site</p>
+                        <p className="text-xs font-black text-pink-500 text-center truncate w-full">
+                          {viewingProfile.rate_onsite ? `฿${viewingProfile.rate_onsite.toLocaleString()}` : 'N/A'}
+                        </p>
+                      </div>
+                      <div className="bg-white/5 rounded-2xl p-2 border border-white/5 flex flex-col items-center justify-center">
+                        <p className="text-[7px] text-blue-400 font-bold uppercase tracking-widest mb-1 text-center">Product</p>
+                        <p className="text-xs font-black text-blue-500 text-center truncate w-full">
+                          {viewingProfile.rate_product_presentation ? `฿${viewingProfile.rate_product_presentation.toLocaleString()}` : 'N/A'}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Actions */}
+                    <div className="grid grid-cols-2 gap-3 mt-4">
+                      <button
+                        onClick={() => setIsViewingGallery(true)}
+                        className="bg-gray-800 text-white font-bold py-3 rounded-xl uppercase text-[10px] tracking-widest border border-gray-700 hover:bg-gray-700 active:scale-95 transition-all"
+                      >
+                        View Gallery
+                      </button>
+                      <button
+                        onClick={() => {
+                          // Invite Logic Here (Mock for now)
+                          showAlert({ message: `Invite sent to ${viewingProfile.username}`, type: 'success' });
+                          // In future: Create a room_goal and room_invite record
+                        }}
+                        className="bg-gradient-to-r from-green-500 to-emerald-600 text-white font-black py-3 rounded-xl uppercase text-[10px] tracking-widest shadow-lg shadow-green-900/20 active:scale-95 transition-all flex items-center justify-center gap-2"
+                      >
+                        <Plus size={14} className="stroke-[3px]" /> Invite to Live
+                      </button>
                     </div>
                   </div>
-
-                  {/* Stats Row */}
-                  {/* Stats Row */}
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="bg-white/5 rounded-2xl p-3 border border-white/5 flex flex-col items-center justify-center">
-                      <p className="text-[8px] text-gray-400 font-bold uppercase tracking-widest mb-1 text-center">Followers</p>
-                      <p className="text-sm font-black text-white text-center">{viewingProfile.followers.toLocaleString()}</p>
-                    </div>
-                    <div className="bg-white/5 rounded-2xl p-3 border border-white/5 flex flex-col items-center justify-center">
-                      <p className="text-[8px] text-gray-400 font-bold uppercase tracking-widest mb-1 text-center">Location</p>
-                      <p className="text-xs font-black text-white text-center truncate w-full">{viewingProfile.location || 'Bangkok'}</p>
-                    </div>
-                  </div>
-
-                  {/* Bio */}
-                  <div className="bg-white/5 rounded-2xl p-5 border border-white/5">
-                    <h4 className="text-[10px] text-red-500 font-black uppercase tracking-widest mb-3 italic">About Model</h4>
-                    <p className="text-gray-300 text-sm leading-relaxed">{viewingProfile.bio || 'This model has not provided a biography yet.'}</p>
-                  </div>
-
-                  <div className="grid grid-cols-3 gap-2 mb-4">
-                    <div className="bg-white/5 rounded-2xl p-2 border border-white/5 flex flex-col items-center justify-center">
-                      <p className="text-[7px] text-gray-400 font-bold uppercase tracking-widest mb-1 text-center">Live Rate</p>
-                      <p className="text-xs font-black text-yellow-500 text-center truncate w-full">
-                        {viewingProfile.rate_event_live ? `฿${viewingProfile.rate_event_live.toLocaleString()}` : 'N/A'}
-                      </p>
-                    </div>
-                    <div className="bg-white/5 rounded-2xl p-2 border border-white/5 flex flex-col items-center justify-center">
-                      <p className="text-[7px] text-pink-400 font-bold uppercase tracking-widest mb-1 text-center">On-Site</p>
-                      <p className="text-xs font-black text-pink-500 text-center truncate w-full">
-                        {viewingProfile.rate_onsite ? `฿${viewingProfile.rate_onsite.toLocaleString()}` : 'N/A'}
-                      </p>
-                    </div>
-                    <div className="bg-white/5 rounded-2xl p-2 border border-white/5 flex flex-col items-center justify-center">
-                      <p className="text-[7px] text-blue-400 font-bold uppercase tracking-widest mb-1 text-center">Product</p>
-                      <p className="text-xs font-black text-blue-500 text-center truncate w-full">
-                        {viewingProfile.rate_product_presentation ? `฿${viewingProfile.rate_product_presentation.toLocaleString()}` : 'N/A'}
-                      </p>
-                    </div>
-                  </div>
-
-                  {/* Actions */}
-                  <div className="grid grid-cols-2 gap-3 mt-4">
-                    <button
-                      onClick={() => showAlert({ message: 'Gallery View coming soon!', type: 'info' })}
-                      className="bg-gray-800 text-white font-bold py-3 rounded-xl uppercase text-[10px] tracking-widest border border-gray-700 hover:bg-gray-700 active:scale-95 transition-all"
-                    >
-                      View Gallery
-                    </button>
-                    <button
-                      onClick={() => {
-                        // Invite Logic Here (Mock for now)
-                        showAlert({ message: `Invite sent to ${viewingProfile.username}`, type: 'success' });
-                        // In future: Create a room_goal and room_invite record
-                      }}
-                      className="bg-gradient-to-r from-green-500 to-emerald-600 text-white font-black py-3 rounded-xl uppercase text-[10px] tracking-widest shadow-lg shadow-green-900/20 active:scale-95 transition-all flex items-center justify-center gap-2"
-                    >
-                      <Plus size={14} className="stroke-[3px]" /> Invite to Live
-                    </button>
-                  </div>
-                </div>
+                )
               ) : (
                 /* Grid View */
                 <div className="space-y-6">
