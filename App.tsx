@@ -1867,7 +1867,7 @@ const App: React.FC = () => {
             </div>
 
             {/* Sub-tab Content */}
-            <div className="pt-12 pb-6 animate-fade-in">
+            <div className="pt-16 pb-6 animate-fade-in">
               {homeTab === 'live' && (
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 px-2">
                   {streamers.length > 0 ? streamers.map(streamer => (
@@ -1974,7 +1974,7 @@ const App: React.FC = () => {
                                     style={{ animationDelay: `${index * 50}ms` }}
                                   >
                                     {/* Circular Avatar Container */}
-                                    <div className="relative w-28 h-28 mb-3">
+                                    <div className="relative w-20 h-20 mb-2">
                                       {/* Outer Glow Ring */}
                                       <div className="absolute -inset-1 rounded-full bg-gradient-to-tr from-green-400 via-emerald-500 to-teal-500 opacity-75 group-hover:opacity-100 blur-sm group-hover:blur-md transition-all"></div>
 
@@ -2010,7 +2010,7 @@ const App: React.FC = () => {
                                     </div>
 
                                     {/* Name */}
-                                    <div className="text-center max-w-[112px]">
+                                    <div className="text-center max-w-[80px]">
                                       <p className="text-sm font-black text-white truncate mb-0.5">{person.username}</p>
                                       <p className="text-[10px] text-gray-500 font-medium truncate">{person.followers || 0} Followers</p>
                                     </div>
