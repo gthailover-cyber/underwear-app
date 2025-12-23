@@ -351,7 +351,7 @@ export const TRANSLATIONS = {
     applyNow: 'สมัครเลย',
     myOrders: 'รายการคำสั่งซื้อ',
     myAddress: 'ที่อยู่ของฉัน',
-    myPayment: 'ช่องทางการชำระเงิน',
+    myPayment: 'รายการชำระเงินของฉัน',
     myWallet: 'กระเป๋าเงิน',
     customerOrders: 'คำสั่งซื้อจากลูกค้า',
     myProducts: 'สินค้าของฉัน',
