@@ -23,3 +23,9 @@ messaging.onBackgroundMessage((payload) => {
     console.log('[SW] Background message received:', payload);
     // ไม่ต้อง showNotification เพราะ FCM จัดการให้แล้ว
 });
+
+// Basic fetch handler (required for PWA installability on some versions)
+self.addEventListener('fetch', (event) => {
+    // Standard fetch behavior
+});
+
