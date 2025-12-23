@@ -99,6 +99,7 @@ export interface Person {
   followers?: number;
   role?: UserRole;
   lastSeenAt?: string;
+  is_available?: boolean;
 }
 
 export interface MessagePreview {
