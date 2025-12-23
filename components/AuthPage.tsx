@@ -113,7 +113,7 @@ const AuthPage: React.FC<AuthPageProps> = ({ language, onLanguageChange }) => {
         {/* Branding */}
         <div className="text-center mb-8">
           <h1 className="text-4xl font-athletic italic tracking-wider text-white mb-2">
-            GUNDERWEAR<span className="text-red-600">.LIVE</span>
+            GunderWear<span className="text-red-600">.LIVE</span>
           </h1>
           <p className="text-gray-400 text-sm font-light">
             {isForgotPassword

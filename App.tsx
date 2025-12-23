@@ -2229,7 +2229,7 @@ const App: React.FC = () => {
               )}
             </button>
             <h1 className="text-lg font-bold font-athletic text-white tracking-wider flex items-center">
-              GUNDERWEAR<span className="text-red-600">.LIVE</span>
+              GunderWear<span className="text-red-600">.LIVE</span>
             </h1>
           </div>
 
