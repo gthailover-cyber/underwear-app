@@ -747,7 +747,8 @@ const App: React.FC = () => {
           rate_event_live: data.rate_event_live,
           rate_product_presentation: data.rate_product_presentation,
           rate_onsite: data.rate_onsite,
-          lastSeenAt: data.last_seen_at
+          lastSeenAt: data.last_seen_at,
+          is_available: data.is_available ?? true // Default to available if not set
         });
         setWalletBalance(data.wallet_balance || 0);
       }
@@ -2043,6 +2044,47 @@ const App: React.FC = () => {
               <button onClick={() => setLanguage('th')} className={`px-3 py-1 rounded-md text-xs font-bold transition-all ${language === 'th' ? 'bg-red-600 text-white shadow-lg' : 'text-gray-400 hover:text-white'}`}>TH</button>
               <button onClick={() => setLanguage('en')} className={`px-3 py-1 rounded-md text-xs font-bold transition-all ${language === 'en' ? 'bg-red-600 text-white shadow-lg' : 'text-gray-400 hover:text-white'}`}>EN</button>
             </div>
+
+            {/* Model Availability Toggle */}
+            {userProfile.role === 'model' && (
+              <div className="mt-4 bg-gray-800 rounded-lg p-3 border border-gray-700">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <div className={`w-2 h-2 rounded-full ${userProfile.is_available ? 'bg-green-500 animate-pulse' : 'bg-red-500'}`}></div>
+                    <span className="text-xs font-bold text-white">
+                      {language === 'th'
+                        ? (userProfile.is_available ? 'เปิดรับงาน' : 'ไม่ว่าง')
+                        : (userProfile.is_available ? 'Available' : 'Busy')}
+                    </span>
+                  </div>
+                  <button
+                    onClick={async () => {
+                      const newStatus = !userProfile.is_available;
+                      setUserProfile(prev => ({ ...prev, is_available: newStatus }));
+
+                      if (session?.user) {
+                        try {
+                          const { error } = await supabase
+                            .from('profiles')
+                            .update({ is_available: newStatus })
+                            .eq('id', session.user.id);
+
+                          if (error) throw error;
+                        } catch (err) {
+                          console.error('Error updating availability:', err);
+                          setUserProfile(prev => ({ ...prev, is_available: !newStatus }));
+                        }
+                      }
+                    }}
+                    className={`relative w-12 h-6 rounded-full transition-colors ${userProfile.is_available ? 'bg-green-500' : 'bg-gray-600'
+                      }`}
+                  >
+                    <div className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow-md transition-transform ${userProfile.is_available ? 'translate-x-6' : 'translate-x-0'
+                      }`}></div>
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Roles Upgrade Section */}

@@ -85,7 +85,10 @@ export interface UserProfile {
   followers: number; // Added
   following: number; // Added
   rate_onsite?: number;
+  rate_event_live?: number;
+  rate_product_presentation?: number;
   lastSeenAt?: string;
+  is_available?: boolean; // Added: Model availability status (true = available, false = busy)
 }
 
 export interface Person {
