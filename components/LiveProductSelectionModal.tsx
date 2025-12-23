@@ -108,44 +108,53 @@ const LiveProductSelectionModal: React.FC<LiveProductSelectionModalProps> = ({
           ) : (
             <div className="space-y-3">
               {products.map(product => {
+                const isOutOfStock = product.stock <= 0 && liveType !== 'auction'; // Auction usually has virtual stock or 1
                 const isSelected = selectedIds.has(product.id);
+
                 return (
                   <div
                     key={product.id}
-                    onClick={() => toggleSelection(product.id)}
-                    className={`flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-all ${isSelected
+                    onClick={() => !isOutOfStock && toggleSelection(product.id)}
+                    className={`flex items-center gap-3 p-3 rounded-xl border transition-all ${isOutOfStock
+                      ? 'bg-gray-900 border-gray-800 opacity-60 cursor-not-allowed'
+                      : isSelected
                         ? (liveType === 'auction' ? 'bg-yellow-900/10 border-yellow-600' : 'bg-red-900/20 border-red-600')
-                        : 'bg-gray-800 border-gray-700 hover:border-gray-600 shadow-inner'
+                        : 'bg-gray-800 border-gray-700 hover:border-gray-600 shadow-inner cursor-pointer'
                       }`}
                   >
                     <div className={`w-5 h-5 rounded-full border flex items-center justify-center flex-shrink-0 transition-colors ${isSelected
-                        ? (liveType === 'auction' ? 'bg-yellow-500 border-yellow-500' : 'bg-red-600 border-red-600')
-                        : 'border-gray-500'
+                      ? (liveType === 'auction' ? 'bg-yellow-500 border-yellow-500' : 'bg-red-600 border-red-600')
+                      : isOutOfStock ? 'border-gray-700 bg-gray-800' : 'border-gray-500'
                       }`}>
                       {isSelected
                         ? <CheckCircle size={14} className="text-white" />
-                        : selectionMode === 'single' && <Circle size={14} className="text-transparent" />
+                        : selectionMode === 'single' && !isOutOfStock && <Circle size={14} className="text-transparent" />
                       }
                     </div>
 
                     <div className="relative">
-                      <img src={product.image} className="w-12 h-12 rounded-lg object-cover bg-gray-700 shadow-md" alt={product.name} />
+                      <img src={product.image} className={`w-12 h-12 rounded-lg object-cover bg-gray-700 shadow-md ${isOutOfStock ? 'grayscale' : ''}`} alt={product.name} />
                       {product.type === 'auction' && (
                         <div className="absolute -top-1 -left-1 bg-yellow-600 text-[6px] font-black px-1 rounded shadow-sm">
                           BID
                         </div>
                       )}
+                      {isOutOfStock && (
+                        <div className="absolute inset-0 flex items-center justify-center bg-black/60 rounded-lg">
+                          <span className="text-[8px] text-white font-bold uppercase">{language === 'th' ? 'หมด' : 'Out'}</span>
+                        </div>
+                      )}
                     </div>
 
                     <div className="flex-1 min-w-0">
-                      <h4 className={`text-sm font-bold truncate ${isSelected ? 'text-white' : 'text-gray-300'}`}>
+                      <h4 className={`text-sm font-bold truncate ${isSelected ? 'text-white' : isOutOfStock ? 'text-gray-500' : 'text-gray-300'}`}>
                         {product.name}
                       </h4>
                       <div className="flex justify-between mt-1">
-                        <span className="text-[10px] text-gray-500 uppercase font-medium">
-                          {liveType === 'auction' ? 'Rare Item' : `Stock: ${product.stock}`}
+                        <span className={`text-[10px] uppercase font-medium ${isOutOfStock ? 'text-red-500' : 'text-gray-500'}`}>
+                          {liveType === 'auction' ? 'Rare Item' : (isOutOfStock ? (language === 'th' ? 'สินค้าหมด' : 'Out of Stock') : `Stock: ${product.stock}`)}
                         </span>
-                        <span className="text-xs font-bold text-yellow-500">฿{product.price.toLocaleString()}</span>
+                        <span className={`text-xs font-bold ${isOutOfStock ? 'text-gray-600' : 'text-yellow-500'}`}>฿{product.price.toLocaleString()}</span>
                       </div>
                     </div>
                   </div>
@@ -162,10 +171,10 @@ const LiveProductSelectionModal: React.FC<LiveProductSelectionModalProps> = ({
               onClick={handleConfirm}
               disabled={selectedIds.size === 0}
               className={`w-full py-4 rounded-xl font-bold text-lg flex items-center justify-center gap-2 shadow-lg transition-all ${selectedIds.size > 0
-                  ? (liveType === 'auction'
-                    ? 'bg-gradient-to-r from-yellow-600 to-yellow-500 text-white shadow-yellow-900/50 hover:from-yellow-500 hover:to-yellow-400 active:scale-95'
-                    : 'bg-gradient-to-r from-red-600 to-red-500 text-white shadow-red-900/50 hover:from-red-500 hover:to-red-400 active:scale-95')
-                  : 'bg-gray-800 text-gray-500 cursor-not-allowed'
+                ? (liveType === 'auction'
+                  ? 'bg-gradient-to-r from-yellow-600 to-yellow-500 text-white shadow-yellow-900/50 hover:from-yellow-500 hover:to-yellow-400 active:scale-95'
+                  : 'bg-gradient-to-r from-red-600 to-red-500 text-white shadow-red-900/50 hover:from-red-500 hover:to-red-400 active:scale-95')
+                : 'bg-gray-800 text-gray-500 cursor-not-allowed'
                 }`}
             >
               {selectionMode === 'single' ? (language === 'th' ? 'ไปตั้งค่าประมูล' : 'Continue to Setup') : (
