@@ -53,6 +53,10 @@ const GroupChatRoom: React.FC<GroupChatRoomProps> = ({
   const [isMuted, setIsMuted] = useState(false);
   const [isBanned, setIsBanned] = useState(false);
   const [currentUserIdState, setCurrentUserIdState] = useState<string | null>(null);
+  const [showAvailableModels, setShowAvailableModels] = useState(false);
+  const [availableModelsStore, setAvailableModelsStore] = useState<any[]>([]);
+  const [viewingProfile, setViewingProfile] = useState<any | null>(null);
+  const [loadingAvailable, setLoadingAvailable] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
@@ -281,6 +285,35 @@ const GroupChatRoom: React.FC<GroupChatRoomProps> = ({
       }
     } catch (error) {
       console.error('[Room] Fetch members error:', error);
+    }
+  };
+
+  const fetchAvailableModels = async () => {
+    setLoadingAvailable(true);
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('role', 'model')
+        .eq('is_available', true);
+
+      if (data && !error) {
+        setAvailableModelsStore(data.map(p => ({
+          id: p.id,
+          username: p.username || 'User',
+          avatar: p.avatar || DEFAULT_IMAGES.AVATAR,
+          role: p.role,
+          followers: p.followers || 0,
+          bio: p.bio,
+          location: p.location,
+          isOnline: p.last_seen_at ?
+            (new Date().getTime() - new Date(p.last_seen_at).getTime()) < 600000 : false,
+        })));
+      }
+    } catch (err) {
+      console.error('[Room] Fetch available models error:', err);
+    } finally {
+      setLoadingAvailable(false);
     }
   };
 
@@ -780,9 +813,8 @@ const GroupChatRoom: React.FC<GroupChatRoomProps> = ({
           <button
             onClick={() => {
               if (isHost) {
-                // Placeholder for future host function
-                console.log('Host clicked add action');
-                showAlert({ message: 'Host tools coming soon!', type: 'info' });
+                fetchAvailableModels();
+                setShowAvailableModels(true);
               } else {
                 setShowGifts(true);
               }
@@ -819,6 +851,154 @@ const GroupChatRoom: React.FC<GroupChatRoomProps> = ({
           >
             <Send size={20} className={inputText.trim() && !isMuted ? "translate-x-0.5" : ""} />
           </button>
+        </div>
+      )}
+
+      {/* Available Models Modal for Organizer */}
+      {showAvailableModels && (
+        <div className="absolute inset-0 z-50 bg-black/80 backdrop-blur-md animate-fade-in flex flex-col pt-10">
+          <div className="flex-1 bg-gray-900/95 rounded-t-[40px] border-t border-white/10 flex flex-col overflow-hidden shadow-2xl">
+            {/* Modal Header */}
+            <div className="flex items-center justify-between px-6 py-5 border-b border-white/5">
+              <div className="flex items-center gap-3">
+                {viewingProfile && (
+                  <button
+                    onClick={() => setViewingProfile(null)}
+                    className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center text-white hover:bg-white/10 active:scale-90 transition-all"
+                  >
+                    <ArrowLeft size={20} />
+                  </button>
+                )}
+                <div>
+                  <h3 className="text-white font-black text-xl tracking-tight uppercase italic">
+                    {viewingProfile ? viewingProfile.username : (language === 'th' ? 'นายแบบที่ว่าง' : 'Available Models')}
+                  </h3>
+                  {!viewingProfile && (
+                    <div className="flex items-center gap-1.5 mt-0.5">
+                      <div className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse"></div>
+                      <span className="text-[10px] text-green-400 font-bold uppercase tracking-widest">{availableModelsStore.length} Ready for work</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+              <button
+                onClick={() => {
+                  setShowAvailableModels(false);
+                  setViewingProfile(null);
+                }}
+                className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center text-gray-400 hover:text-white hover:bg-white/10 active:scale-90 transition-all"
+              >
+                <X size={22} />
+              </button>
+            </div>
+
+            {/* Modal Content */}
+            <div className="flex-1 overflow-y-auto no-scrollbar p-5">
+              {loadingAvailable ? (
+                <div className="flex flex-col items-center justify-center h-64 gap-4">
+                  <div className="w-10 h-10 border-4 border-red-600 border-t-transparent rounded-full animate-spin"></div>
+                  <span className="text-xs text-gray-500 font-bold uppercase tracking-widest animate-pulse">Scanning models...</span>
+                </div>
+              ) : viewingProfile ? (
+                /* Profile View within Modal */
+                <div className="animate-slide-up space-y-6">
+                  {/* Top Header Card */}
+                  <div className="relative aspect-[4/3] rounded-3xl overflow-hidden group shadow-2xl border border-white/10">
+                    <img src={viewingProfile.avatar} className="w-full h-full object-cover" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent"></div>
+
+                    {/* Floating Badges */}
+                    <div className="absolute top-4 left-4 flex gap-2">
+                      {viewingProfile.isOnline && (
+                        <div className="bg-green-500 text-[10px] font-black px-3 py-1 rounded-full text-black shadow-lg animate-pulse">ONLINE</div>
+                      )}
+                      <div className="bg-white/10 backdrop-blur-md px-3 py-1 rounded-full text-[10px] font-black text-white border border-white/20">MODEL</div>
+                    </div>
+                  </div>
+
+                  {/* Stats Row */}
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="bg-white/5 rounded-2xl p-4 border border-white/5">
+                      <p className="text-[9px] text-gray-400 font-bold uppercase tracking-widest mb-1 text-center">Followers</p>
+                      <p className="text-xl font-black text-white text-center">{viewingProfile.followers.toLocaleString()}</p>
+                    </div>
+                    <div className="bg-white/5 rounded-2xl p-4 border border-white/5">
+                      <p className="text-[9px] text-gray-400 font-bold uppercase tracking-widest mb-1 text-center">Location</p>
+                      <p className="text-sm font-black text-white text-center truncate">{viewingProfile.location || 'Bangkok'}</p>
+                    </div>
+                  </div>
+
+                  {/* Bio */}
+                  <div className="bg-white/5 rounded-2xl p-5 border border-white/5">
+                    <h4 className="text-[10px] text-red-500 font-black uppercase tracking-widest mb-3 italic">About Model</h4>
+                    <p className="text-gray-300 text-sm leading-relaxed">{viewingProfile.bio || 'This model has not provided a biography yet.'}</p>
+                  </div>
+
+                  {/* Actions */}
+                  <div className="flex gap-4">
+                    <button
+                      onClick={() => {
+                        // Use the passed onUserClick prop to switch to full profile view if desired
+                        setShowAvailableModels(false);
+                        onUserClick(viewingProfile.id);
+                      }}
+                      className="flex-1 bg-white text-black font-black py-4 rounded-2xl uppercase text-xs tracking-widest active:scale-95 transition-all shadow-xl shadow-white/5"
+                    >
+                      Open Full Profile
+                    </button>
+                    <button
+                      onClick={() => setViewingProfile(null)}
+                      className="flex-1 bg-red-600 text-white font-black py-4 rounded-2xl uppercase text-xs tracking-widest active:scale-95 transition-all shadow-xl shadow-red-900/20"
+                    >
+                      Back to List
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                /* Grid View */
+                <div className="grid grid-cols-3 gap-3">
+                  {availableModelsStore.length > 0 ? availableModelsStore.map((model, idx) => (
+                    <button
+                      key={model.id}
+                      onClick={() => setViewingProfile(model)}
+                      className="flex flex-col animate-scale-in group"
+                      style={{ animationDelay: `${idx * 50}ms` }}
+                    >
+                      <div className="relative aspect-square mb-2">
+                        {/* Outer Glow */}
+                        <div className="absolute -inset-1 rounded-2xl bg-gradient-to-tr from-green-400 to-emerald-600 opacity-0 group-hover:opacity-100 blur-sm transition-all duration-300"></div>
+
+                        <div className="relative w-full h-full rounded-2xl overflow-hidden border border-white/10 group-hover:border-green-500/50 transition-all duration-300">
+                          <img src={model.avatar} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" />
+                          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+
+                          {/* Bottom Indicator */}
+                          {model.isOnline && (
+                            <div className="absolute top-2 right-2 w-2 h-2 bg-green-500 rounded-full border border-black shadow-lg shadow-green-500/50"></div>
+                          )}
+                        </div>
+                      </div>
+                      <div className="px-1 text-center">
+                        <span className="text-[10px] font-black text-white truncate block uppercase tracking-tighter decoration-red-500 group-hover:text-red-500 transition-colors">
+                          {model.username}
+                        </span>
+                        <span className="text-[8px] text-gray-500 font-bold uppercase tracking-widest truncate block opacity-60">
+                          {model.followers} Foll.
+                        </span>
+                      </div>
+                    </button>
+                  )) : (
+                    <div className="col-span-3 flex flex-col items-center justify-center py-20 bg-white/5 rounded-[40px] border border-white/5">
+                      <div className="w-16 h-16 rounded-full bg-white/5 flex items-center justify-center mb-4">
+                        <Users size={32} className="text-gray-600" />
+                      </div>
+                      <p className="text-gray-500 font-black text-xs uppercase tracking-widest">No models available</p>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
         </div>
       )}
 
