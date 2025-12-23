@@ -57,6 +57,12 @@ const GroupChatRoom: React.FC<GroupChatRoomProps> = ({
   const [availableModelsStore, setAvailableModelsStore] = useState<any[]>([]);
   const [viewingProfile, setViewingProfile] = useState<any | null>(null);
   const [loadingAvailable, setLoadingAvailable] = useState(false);
+  const [selectedModelsForPoll, setSelectedModelsForPoll] = useState<string[]>([]);
+  const [activePoll, setActivePoll] = useState<any | null>(null);
+  const [pollVotes, setPollVotes] = useState<Record<string, number>>({});
+  const [userVote, setUserVote] = useState<string | null>(null);
+  const [pollModels, setPollModels] = useState<any[]>([]);
+  const [timeLeft, setTimeLeft] = useState<number>(0);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
@@ -212,12 +218,39 @@ const GroupChatRoom: React.FC<GroupChatRoomProps> = ({
       )
       .subscribe();
 
+    // Poll & Voting Realtime
+    const pollChannel = supabase
+      .channel(`room_polls:${room.id}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'room_polls', filter: `room_id=eq.${room.id}` },
+        payload => {
+          if (payload.eventType === 'INSERT') {
+            fetchActivePoll();
+          } else if (payload.eventType === 'UPDATE' && payload.new.status === 'ended') {
+            setActivePoll(null);
+          }
+        }
+      )
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'room_poll_votes' },
+        payload => {
+          if (activePoll && payload.new.poll_id === activePoll.id) {
+            setPollVotes(prev => ({
+              ...prev,
+              [payload.new.model_id]: (prev[payload.new.model_id] || 0) + 1
+            }));
+          }
+        }
+      )
+      .subscribe();
+
+    fetchActivePoll();
+
     return () => {
       supabase.removeChannel(messagesChannel);
       supabase.removeChannel(moderationChannel);
       supabase.removeChannel(roomChannel);
+      supabase.removeChannel(pollChannel);
     };
-  }, [room.id]);
+  }, [room.id, activePoll?.id]);
 
   const fetchMessages = async () => {
     try {
@@ -314,6 +347,127 @@ const GroupChatRoom: React.FC<GroupChatRoomProps> = ({
       console.error('[Room] Fetch available models error:', err);
     } finally {
       setLoadingAvailable(false);
+    }
+  };
+
+  const fetchActivePoll = async () => {
+    try {
+      const { data: poll, error } = await supabase
+        .from('room_polls')
+        .select('*')
+        .eq('room_id', room.id)
+        .eq('status', 'active')
+        .gt('expires_at', new Date().toISOString())
+        .maybeSingle();
+
+      if (poll) {
+        setActivePoll(poll);
+
+        // Fetch model details
+        const { data: models } = await supabase
+          .from('profiles')
+          .select('id, username, avatar')
+          .in('id', poll.model_ids);
+
+        setPollModels(models || []);
+
+        // Fetch votes count
+        const { data: votes } = await supabase
+          .from('room_poll_votes')
+          .select('model_id')
+          .eq('poll_id', poll.id);
+
+        const counts: Record<string, number> = {};
+        votes?.forEach(v => {
+          counts[v.model_id] = (counts[v.model_id] || 0) + 1;
+        });
+        setPollVotes(counts);
+
+        // Check if I voted
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          const { data: myVote } = await supabase
+            .from('room_poll_votes')
+            .select('model_id')
+            .eq('poll_id', poll.id)
+            .eq('user_id', user.id)
+            .maybeSingle();
+          if (myVote) setUserVote(myVote.model_id);
+        }
+
+        // Start timer
+        const expiry = new Date(poll.expires_at).getTime();
+        const updateTimer = () => {
+          const diff = Math.max(0, Math.floor((expiry - new Date().getTime()) / 1000));
+          setTimeLeft(diff);
+          if (diff <= 0) setActivePoll(null);
+        };
+        updateTimer();
+        const interval = setInterval(updateTimer, 1000);
+        return () => clearInterval(interval);
+      } else {
+        setActivePoll(null);
+      }
+    } catch (err) {
+      console.error('Error fetching poll:', err);
+    }
+  };
+
+  const handleStartPoll = async () => {
+    if (selectedModelsForPoll.length !== 3) {
+      showAlert({ message: 'Select exactly 3 models to start voting', type: 'warning' });
+      return;
+    }
+
+    try {
+      const expiresAt = new Date(Date.now() + 15 * 60 * 1000).toISOString();
+      const { data, error } = await supabase
+        .from('room_polls')
+        .insert({
+          room_id: room.id,
+          host_id: room.hostId,
+          model_ids: selectedModelsForPoll,
+          expires_at: expiresAt
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      setShowAvailableModels(false);
+      setSelectedModelsForPoll([]);
+      showAlert({ message: 'Voting started!', type: 'success' });
+      fetchActivePoll();
+    } catch (err) {
+      console.error('Error starting poll:', err);
+      showAlert({ message: 'Failed to start voting', type: 'error' });
+    }
+  };
+
+  const handleVote = async (modelId: string) => {
+    if (userVote) {
+      showAlert({ message: 'You have already voted!', type: 'info' });
+      return;
+    }
+
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { error } = await supabase
+        .from('room_poll_votes')
+        .insert({
+          poll_id: activePoll.id,
+          user_id: user.id,
+          model_id: modelId
+        });
+
+      if (error) throw error;
+      setUserVote(modelId);
+      showAlert({ message: 'Vote recorded!', type: 'success' });
+    } catch (err) {
+      console.error('Error voting:', err);
+      showAlert({ message: 'Failed to record vote', type: 'error' });
     }
   };
 
@@ -573,91 +727,150 @@ const GroupChatRoom: React.FC<GroupChatRoomProps> = ({
 
         {/* --- Chat View --- */}
         {activeTab === 'chat' && (
-          <div className="p-4 space-y-4 pb-20">
-            <div className="text-center text-xs text-gray-600 my-4 uppercase tracking-widest font-medium">
-              Today
-            </div>
-
-            {messages.map((msg) => {
-              const isMe = msg.senderId === currentUserIdState || msg.senderId === 'me';
-              return (
-                <div key={msg.id} className={`flex ${isMe ? 'justify-end' : 'justify-start'}`}>
-
-                  {!isMe && (
-                    <button
-                      onClick={() => onUserClick(msg.senderId)}
-                      className="flex flex-col items-center mr-2 mt-auto active:scale-95 transition-transform"
-                    >
-                      <div className="relative">
-                        <div className={`w-8 h-8 rounded-full bg-gray-800 overflow-hidden border border-gray-700 ${members.find(m => m.id === msg.senderId)?.isMuted ? 'opacity-50' : ''}`}>
-                          <img src={msg.senderAvatar} className="w-full h-full object-cover" />
-                        </div>
-                        {/* Muted Overlay */}
-                        {members.find(m => m.id === msg.senderId)?.isMuted && (
-                          <div className="absolute inset-0 flex items-center justify-center bg-black/50 rounded-full">
-                            <VolumeX size={12} className="text-red-500" />
-                          </div>
-                        )}
-                        {/* Role Badge */}
-                        <UserBadge
-                          role={members.find(m => m.id === msg.senderId)?.role}
-                          size="xs"
-                          className="absolute -top-1 -right-1"
-                        />
-                        {/* Online Status */}
-                        {members.find(m => m.id === msg.senderId)?.isOnline && !members.find(m => m.id === msg.senderId)?.isMuted && (
-                          <div className="absolute -bottom-0.5 -left-0.5 w-2.5 h-2.5 bg-green-500 border-2 border-black rounded-full"></div>
-                        )}
-                      </div>
-                    </button>
-                  )}
-
-                  <div className={`max-w-[75%]`}>
-
-                    {!isMe && (
-                      <div className="flex items-center gap-1 ml-1 mb-0.5">
-                        <span className="text-[10px] text-gray-400">{msg.senderName}</span>
-                        {/* Mute indicator */}
-                        {members.find(m => m.id === msg.senderId)?.isMuted && (
-                          <VolumeX size={10} className="text-red-400" />
-                        )}
-                        {/* Host Mute Button */}
-                        {isHost && msg.senderId !== room.hostId && (
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              const member = members.find(m => m.id === msg.senderId);
-                              if (member) handleToggleMute(msg.senderId, member.isMuted);
-                            }}
-                            className={`ml-1 p-0.5 rounded transition-all hover:scale-110 ${members.find(m => m.id === msg.senderId)?.isMuted
-                              ? 'text-green-400 hover:bg-green-600/20'
-                              : 'text-red-400 hover:bg-red-600/20'
-                              }`}
-                            title={members.find(m => m.id === msg.senderId)?.isMuted ? 'Unmute' : 'Mute'}
-                          >
-                            {members.find(m => m.id === msg.senderId)?.isMuted ? <Volume2 size={12} /> : <VolumeX size={12} />}
-                          </button>
-                        )}
-                      </div>
-                    )}
-
-                    {/* Message Bubble */}
-                    <div className={`rounded-2xl px-4 py-3 shadow-sm relative ${isMe
-                      ? 'bg-red-600 text-white rounded-br-sm'
-                      : 'bg-gray-800 text-gray-100 rounded-bl-sm border border-gray-700'
-                      }`}>
-                      <p className="text-sm leading-relaxed">{msg.text}</p>
-                    </div>
-
-                    {/* Timestamp */}
-                    <div className={`text-[10px] text-gray-500 flex items-center gap-1 mt-1 ${isMe ? 'justify-end' : 'justify-start'}`}>
-                      {msg.timestamp}
-                    </div>
+          <div className="flex flex-col h-full">
+            {/* Active Poll Banner */}
+            {activePoll && (
+              <div className="bg-gradient-to-r from-red-600/20 to-black border-b border-red-600/30 p-4 animate-slide-down sticky top-0 z-20 backdrop-blur-md">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 bg-red-600 rounded-full animate-ping"></div>
+                    <span className="text-xs font-black text-white uppercase tracking-widest italic">Live Voting</span>
+                  </div>
+                  <div className="flex items-center gap-2 bg-black/40 px-3 py-1 rounded-full border border-white/10">
+                    <span className="text-[10px] text-gray-400 font-bold uppercase">Time Left</span>
+                    <span className="text-xs font-mono font-bold text-red-500">
+                      {Math.floor(timeLeft / 60)}:{(timeLeft % 60).toString().padStart(2, '0')}
+                    </span>
                   </div>
                 </div>
-              );
-            })}
-            <div ref={messagesEndRef} />
+
+                <div className="grid grid-cols-3 gap-3">
+                  {pollModels.map(model => {
+                    const votes = pollVotes[model.id] || 0;
+                    const totalVotes = (Object.values(pollVotes) as number[]).reduce((a: number, b: number) => a + b, 0) || 1;
+                    const percentage = Math.round((votes / totalVotes) * 100);
+                    const isMyVote = userVote === model.id;
+
+                    return (
+                      <button
+                        key={model.id}
+                        onClick={() => handleVote(model.id)}
+                        disabled={!!userVote}
+                        className={`group relative flex flex-col items-center transition-all ${userVote && !isMyVote ? 'opacity-40 grayscale' : 'opacity-100'
+                          }`}
+                      >
+                        <div className={`relative w-16 h-16 rounded-2xl overflow-hidden border-2 mb-2 transition-all ${isMyVote ? 'border-red-600 scale-110 shadow-lg shadow-red-900/40' : 'border-white/10 group-hover:border-white/30'
+                          }`}>
+                          <img src={model.avatar} className="w-full h-full object-cover" />
+                          {isMyVote && (
+                            <div className="absolute inset-x-0 bottom-0 bg-red-600 text-[8px] font-black text-white py-0.5 text-center uppercase">VOTED</div>
+                          )}
+                        </div>
+
+                        <div className="w-full h-1 bg-white/10 rounded-full overflow-hidden mb-1">
+                          <div
+                            className="h-full bg-red-600 transition-all duration-1000"
+                            style={{ width: `${percentage}%` }}
+                          ></div>
+                        </div>
+
+                        <div className="flex flex-col items-center">
+                          <span className="text-[10px] font-black text-white truncate max-w-[60px]">{model.username}</span>
+                          <span className="text-[9px] text-red-500 font-bold">{votes} {votes === 1 ? 'Vote' : 'Votes'}</span>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            <div className="p-4 space-y-4 pb-20 flex-1 overflow-y-auto no-scrollbar">
+              <div className="text-center text-xs text-gray-600 my-4 uppercase tracking-widest font-medium">
+                Today
+              </div>
+
+              {messages.map((msg) => {
+                const isMe = msg.senderId === currentUserIdState || msg.senderId === 'me';
+                return (
+                  <div key={msg.id} className={`flex ${isMe ? 'justify-end' : 'justify-start'}`}>
+
+                    {!isMe && (
+                      <button
+                        onClick={() => onUserClick(msg.senderId)}
+                        className="flex flex-col items-center mr-2 mt-auto active:scale-95 transition-transform"
+                      >
+                        <div className="relative">
+                          <div className={`w-8 h-8 rounded-full bg-gray-800 overflow-hidden border border-gray-700 ${members.find(m => m.id === msg.senderId)?.isMuted ? 'opacity-50' : ''}`}>
+                            <img src={msg.senderAvatar} className="w-full h-full object-cover" />
+                          </div>
+                          {/* Muted Overlay */}
+                          {members.find(m => m.id === msg.senderId)?.isMuted && (
+                            <div className="absolute inset-0 flex items-center justify-center bg-black/50 rounded-full">
+                              <VolumeX size={12} className="text-red-500" />
+                            </div>
+                          )}
+                          {/* Role Badge */}
+                          <UserBadge
+                            role={members.find(m => m.id === msg.senderId)?.role}
+                            size="xs"
+                            className="absolute -top-1 -right-1"
+                          />
+                          {/* Online Status */}
+                          {members.find(m => m.id === msg.senderId)?.isOnline && !members.find(m => m.id === msg.senderId)?.isMuted && (
+                            <div className="absolute -bottom-0.5 -left-0.5 w-2.5 h-2.5 bg-green-500 border-2 border-black rounded-full"></div>
+                          )}
+                        </div>
+                      </button>
+                    )}
+
+                    <div className={`max-w-[75%]`}>
+
+                      {!isMe && (
+                        <div className="flex items-center gap-1 ml-1 mb-0.5">
+                          <span className="text-[10px] text-gray-400">{msg.senderName}</span>
+                          {/* Mute indicator */}
+                          {members.find(m => m.id === msg.senderId)?.isMuted && (
+                            <VolumeX size={10} className="text-red-400" />
+                          )}
+                          {/* Host Mute Button */}
+                          {isHost && msg.senderId !== room.hostId && (
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                const member = members.find(m => m.id === msg.senderId);
+                                if (member) handleToggleMute(msg.senderId, member.isMuted);
+                              }}
+                              className={`ml-1 p-0.5 rounded transition-all hover:scale-110 ${members.find(m => m.id === msg.senderId)?.isMuted
+                                ? 'text-green-400 hover:bg-green-600/20'
+                                : 'text-red-400 hover:bg-red-600/20'
+                                }`}
+                              title={members.find(m => m.id === msg.senderId)?.isMuted ? 'Unmute' : 'Mute'}
+                            >
+                              {members.find(m => m.id === msg.senderId)?.isMuted ? <Volume2 size={12} /> : <VolumeX size={12} />}
+                            </button>
+                          )}
+                        </div>
+                      )}
+
+                      {/* Message Bubble */}
+                      <div className={`rounded-2xl px-4 py-3 shadow-sm relative ${isMe
+                        ? 'bg-red-600 text-white rounded-br-sm'
+                        : 'bg-gray-800 text-gray-100 rounded-bl-sm border border-gray-700'
+                        }`}>
+                        <p className="text-sm leading-relaxed">{msg.text}</p>
+                      </div>
+
+                      {/* Timestamp */}
+                      <div className={`text-[10px] text-gray-500 flex items-center gap-1 mt-1 ${isMe ? 'justify-end' : 'justify-start'}`}>
+                        {msg.timestamp}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+              <div ref={messagesEndRef} />
+            </div>
           </div>
         )}
 
@@ -956,43 +1169,117 @@ const GroupChatRoom: React.FC<GroupChatRoomProps> = ({
                 </div>
               ) : (
                 /* Grid View */
-                <div className="grid grid-cols-3 gap-3">
-                  {availableModelsStore.length > 0 ? availableModelsStore.map((model, idx) => (
-                    <button
-                      key={model.id}
-                      onClick={() => setViewingProfile(model)}
-                      className="flex flex-col animate-scale-in group"
-                      style={{ animationDelay: `${idx * 50}ms` }}
-                    >
-                      <div className="relative aspect-square mb-2">
-                        {/* Outer Glow */}
-                        <div className="absolute -inset-1 rounded-2xl bg-gradient-to-tr from-green-400 to-emerald-600 opacity-0 group-hover:opacity-100 blur-sm transition-all duration-300"></div>
+                <div className="space-y-6">
+                  <div className="grid grid-cols-3 gap-3">
+                    {availableModelsStore.length > 0 ? availableModelsStore.map((model, idx) => {
+                      const isSelected = selectedModelsForPoll.includes(model.id);
+                      return (
+                        <div
+                          key={model.id}
+                          className="flex flex-col animate-scale-in group relative"
+                          style={{ animationDelay: `${idx * 50}ms` }}
+                        >
+                          {/* Profile Click Area */}
+                          <button
+                            onClick={() => setViewingProfile(model)}
+                            className="absolute top-0 right-0 z-10 p-1 bg-black/40 rounded-full text-white/60 hover:text-white"
+                          >
+                            <MoreVertical size={14} />
+                          </button>
 
-                        <div className="relative w-full h-full rounded-2xl overflow-hidden border border-white/10 group-hover:border-green-500/50 transition-all duration-300">
-                          <img src={model.avatar} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" />
-                          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                          <button
+                            onClick={() => {
+                              if (isSelected) {
+                                setSelectedModelsForPoll(prev => prev.filter(id => id !== model.id));
+                              } else if (selectedModelsForPoll.length < 3) {
+                                setSelectedModelsForPoll(prev => [...prev, model.id]);
+                              } else {
+                                showAlert({ message: 'Select up to 3 models only', type: 'warning' });
+                              }
+                            }}
+                            className="flex flex-col w-full"
+                          >
+                            <div className="relative aspect-square mb-2 group">
+                              {/* Selection Ring */}
+                              {isSelected && (
+                                <div className="absolute -inset-1 rounded-2xl bg-red-600 animate-pulse z-[1]"></div>
+                              )}
 
-                          {/* Bottom Indicator */}
-                          {model.isOnline && (
-                            <div className="absolute top-2 right-2 w-2 h-2 bg-green-500 rounded-full border border-black shadow-lg shadow-green-500/50"></div>
-                          )}
+                              {/* Selection Checkmark */}
+                              {isSelected && (
+                                <div className="absolute top-1 left-1 z-[2] bg-red-600 rounded-full p-1 shadow-lg">
+                                  <Check size={12} className="text-white" strokeWidth={4} />
+                                </div>
+                              )}
+
+                              <div className={`relative w-full h-full rounded-2xl overflow-hidden border transition-all duration-300 z-[1] ${isSelected ? 'border-red-600 scale-[0.9]' : 'border-white/10 group-hover:border-red-500/50'
+                                }`}>
+                                <img src={model.avatar} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" />
+                                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+
+                                {/* Bottom Indicator */}
+                                {model.isOnline && (
+                                  <div className="absolute top-2 right-2 w-2 h-2 bg-green-500 rounded-full border border-black shadow-lg shadow-green-500/50"></div>
+                                )}
+                              </div>
+                            </div>
+                            <div className="px-1 text-center">
+                              <span className={`text-[10px] font-black truncate block uppercase tracking-tighter transition-colors ${isSelected ? 'text-red-500' : 'text-white'
+                                }`}>
+                                {model.username}
+                              </span>
+                              <span className="text-[8px] text-gray-500 font-bold uppercase tracking-widest truncate block opacity-60">
+                                {model.followers} Foll.
+                              </span>
+                            </div>
+                          </button>
+                        </div>
+                      );
+                    }) : (
+                      <div className="col-span-3 flex flex-col items-center justify-center py-20 bg-white/5 rounded-[40px] border border-white/5 w-full">
+                        <div className="w-16 h-16 rounded-full bg-white/5 flex items-center justify-center mb-4">
+                          <Users size={32} className="text-gray-600" />
+                        </div>
+                        <p className="text-gray-500 font-black text-xs uppercase tracking-widest">No models available</p>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Voting Footer */}
+                  {selectedModelsForPoll.length > 0 && (
+                    <div className="animate-slide-up bg-white/5 rounded-3xl p-5 border border-white/10 mt-4">
+                      <div className="flex items-center justify-between mb-4">
+                        <div className="flex -space-x-2">
+                          {selectedModelsForPoll.map(id => {
+                            const model = availableModelsStore.find(m => m.id === id);
+                            return (
+                              <div key={id} className="w-10 h-10 rounded-full border-2 border-red-600 overflow-hidden bg-gray-800">
+                                <img src={model?.avatar} className="w-full h-full object-cover" />
+                              </div>
+                            );
+                          })}
+                          {[...Array(3 - selectedModelsForPoll.length)].map((_, i) => (
+                            <div key={i} className="w-10 h-10 rounded-full border-2 border-dashed border-white/10 flex items-center justify-center text-white/20 text-xs">
+                              ?
+                            </div>
+                          ))}
+                        </div>
+                        <div className="text-right">
+                          <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">Selected</p>
+                          <p className="text-lg font-black text-white">{selectedModelsForPoll.length}/3</p>
                         </div>
                       </div>
-                      <div className="px-1 text-center">
-                        <span className="text-[10px] font-black text-white truncate block uppercase tracking-tighter decoration-red-500 group-hover:text-red-500 transition-colors">
-                          {model.username}
-                        </span>
-                        <span className="text-[8px] text-gray-500 font-bold uppercase tracking-widest truncate block opacity-60">
-                          {model.followers} Foll.
-                        </span>
-                      </div>
-                    </button>
-                  )) : (
-                    <div className="col-span-3 flex flex-col items-center justify-center py-20 bg-white/5 rounded-[40px] border border-white/5">
-                      <div className="w-16 h-16 rounded-full bg-white/5 flex items-center justify-center mb-4">
-                        <Users size={32} className="text-gray-600" />
-                      </div>
-                      <p className="text-gray-500 font-black text-xs uppercase tracking-widest">No models available</p>
+
+                      <button
+                        onClick={handleStartPoll}
+                        disabled={selectedModelsForPoll.length !== 3}
+                        className={`w-full py-4 rounded-2xl font-black uppercase text-xs tracking-widest transition-all shadow-xl ${selectedModelsForPoll.length === 3
+                          ? 'bg-red-600 text-white shadow-red-900/40 active:scale-95'
+                          : 'bg-white/5 text-white/20 cursor-not-allowed'
+                          }`}
+                      >
+                        Start Voting (15 Mins)
+                      </button>
                     </div>
                   )}
                 </div>
