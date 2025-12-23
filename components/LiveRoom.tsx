@@ -519,6 +519,88 @@ const LiveRoom: React.FC<LiveRoomProps> = ({
         }
     }, [isAuctionOver, highestBidderName, currentUser, streamer.products, currentHighestBid, isHost, hasSentWinnerOrder]);
 
+    const processOrder = async (items: CartItem[]) => {
+        const total = items.reduce((acc, item) => acc + (item.price * item.quantity), 0);
+
+        if (!userAddress || !userPhone) {
+            showAlert({
+                message: language === 'th' ? "กรุณาป้อนที่อยู่และเบอร์โทรศัพท์ก่อนดำเนินการต่อ" : "Please add a shipping address and phone number before proceeding.",
+                type: 'warning'
+            });
+            setCart(items); // Pre-fill cart with the items being bought
+            setIsEditingAddress(true);
+            setShowCheckoutModal(true);
+            return false;
+        }
+
+        if (walletBalance < total) {
+            showAlert({ message: 'Insufficient coins. Please top up.', type: 'error' });
+            onOpenWallet();
+            return false;
+        }
+
+        // Deduct coins
+        onUseCoinsLocal(total);
+
+        try {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (user) {
+                // 1. Insert Order
+                const { data: orderData, error: orderError } = await supabase
+                    .from('orders')
+                    .insert({
+                        buyer_id: user.id,
+                        total_amount: total,
+                        status: 'shipping', // Paid immediately
+                        shipping_address: userAddress,
+                    })
+                    .select()
+                    .single();
+
+                if (orderError) throw orderError;
+
+                if (orderData) {
+                    // 2. Insert Order Items
+                    const itemsToInsert = items.map(item => ({
+                        order_id: orderData.id,
+                        product_id: item.id,
+                        product_name: item.name,
+                        product_image: item.image,
+                        quantity: item.quantity,
+                        price: item.price,
+                        color: item.color,
+                        size: item.size,
+                        seller_id: item.seller_id,
+                        item_type: item.type || 'normal'
+                    }));
+
+                    const { error: itemsError } = await supabase
+                        .from('order_items')
+                        .insert(itemsToInsert);
+
+                    if (itemsError) throw itemsError;
+
+                    // SUCCESS: Only return true and show alert if DB was actually updated
+                    showAlert({
+                        message: `Payment successful! Items will be shipped to: ${userAddress}`,
+                        type: 'success'
+                    });
+
+                    onNewOrder?.();
+                    return true;
+                }
+            }
+            return false;
+        } catch (err: any) {
+            console.error("Exception creating order:", err);
+            showAlert({
+                message: `Failed to create order: ${err.message || err}`,
+                type: 'error'
+            });
+            return false;
+        }
+    };
+
     // Video & Camera Handling (Legacy & YouTube)
     useEffect(() => {
         // Skip if using LiveKit, the LiveKitVideo component handles it
@@ -723,104 +805,6 @@ const LiveRoom: React.FC<LiveRoomProps> = ({
         setShowCart(false);
     };
 
-    const processOrder = async (items: CartItem[]) => {
-        const total = items.reduce((acc, item) => acc + (item.price * item.quantity), 0);
-
-        if (!userAddress || !userPhone) {
-            showAlert({
-                message: language === 'th' ? "กรุณาป้อนที่อยู่และเบอร์โทรศัพท์ก่อนดำเนินการต่อ" : "Please add a shipping address and phone number before proceeding.",
-                type: 'warning'
-            });
-            setCart(items); // Pre-fill cart with the items being bought
-            setIsEditingAddress(true);
-            setShowCheckoutModal(true);
-            return false;
-        }
-
-        if (walletBalance < total) {
-            showAlert({ message: 'Insufficient coins. Please top up.', type: 'error' });
-            onOpenWallet();
-            return false;
-        }
-
-        // Deduct coins
-        onUseCoinsLocal(total);
-
-        try {
-            const { data: { user } } = await supabase.auth.getUser();
-            if (user) {
-                // 1. Insert Order
-                const { data: orderData, error: orderError } = await supabase
-                    .from('orders')
-                    .insert({
-                        buyer_id: user.id,
-                        total_amount: total,
-                        status: 'shipping', // Paid immediately
-                        shipping_address: userAddress,
-                    })
-                    .select()
-                    .single();
-
-                if (orderError) throw orderError;
-
-                if (orderData) {
-                    // 2. Insert Order Items
-                    const itemsToInsert = items.map(item => ({
-                        order_id: orderData.id,
-                        product_id: item.id,
-                        product_name: item.name,
-                        product_image: item.image,
-                        quantity: item.quantity,
-                        price: item.price,
-                        color: item.color,
-                        size: item.size,
-                        seller_id: item.seller_id,
-                        item_type: item.type || 'normal'
-                    }));
-
-                    const { error: itemsError } = await supabase
-                        .from('order_items')
-                        .insert(itemsToInsert);
-
-                    if (itemsError) throw itemsError;
-                }
-            }
-
-            showAlert({
-                message: `Payment successful! Items will be shipped to: ${userAddress}`,
-                type: 'success'
-            });
-
-            // Immediate Refresh products to see stock change
-            if (streamer.hostId) {
-                supabase.from('products')
-                    .select('*')
-                    .eq('seller_id', streamer.hostId)
-                    .then(({ data }) => {
-                        if (data) {
-                            // Filter only products belonging to this room
-                            const filtered = data.filter(p =>
-                                Array.isArray(streamer.product_ids) && streamer.product_ids.length > 0
-                                    ? streamer.product_ids.includes(p.id)
-                                    : streamer.products.some(original => original.id === p.id)
-                            );
-                            setLiveProducts(filtered);
-                        }
-                    });
-            }
-
-            onNewOrder?.();
-            return true;
-
-        } catch (err: any) {
-            console.error("Exception creating order:", err);
-            showAlert({
-                message: `Failed to create order: ${err.message || err}`,
-                type: 'error'
-            });
-            return false;
-        }
-    };
 
     const handleFinalPayment = async () => {
         const success = await processOrder(cart);
