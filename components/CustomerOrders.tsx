@@ -64,24 +64,20 @@ const CustomerOrders: React.FC<CustomerOrdersProps> = ({ language, onBack }) => 
                         size,
                         product_id,
                         order_id,
+                        seller_id,
                         orders!inner(
                             id,
                             status,
                             created_at,
                             tracking_number,
-                            buyer_id,
                             shipping_address,
                             profiles:buyer_id (
                                 username,
                                 avatar
                             )
-                        ),
-                        products!inner(
-                            id,
-                            seller_id
                         )
                     `)
-                .eq('products.seller_id', user.id)
+                .eq('seller_id', user.id)
                 // @ts-ignore
                 .order('created_at', { foreignTable: 'orders', ascending: false });
 
@@ -118,24 +114,19 @@ const CustomerOrders: React.FC<CustomerOrdersProps> = ({ language, onBack }) => 
         let channel: any;
         supabase.auth.getUser().then(async ({ data: { user } }) => {
             if (user) {
-                // Get my product IDs to filter realtime updates
-                const { data: myProducts } = await supabase
-                    .from('products')
-                    .select('id')
-                    .eq('seller_id', user.id);
-
-                const productIds = myProducts?.map(p => p.id) || [];
-
                 channel = supabase
                     .channel('public:customer_order_items')
                     .on(
                         'postgres_changes',
-                        { event: 'INSERT', schema: 'public', table: 'order_items' },
+                        {
+                            event: 'INSERT',
+                            schema: 'public',
+                            table: 'order_items',
+                            filter: `seller_id=eq.${user.id}`
+                        },
                         (payload) => {
-                            if (productIds.includes(payload.new.product_id)) {
-                                console.log('New order item for my product, refreshing!');
-                                fetchCustomerOrders();
-                            }
+                            console.log('New order item received for me, refreshing!');
+                            fetchCustomerOrders();
                         }
                     )
                     .subscribe();
