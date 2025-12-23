@@ -872,14 +872,28 @@ const App: React.FC = () => {
   };
 
   const handlePlusClick = () => {
-    // Only Models and Organizers can start a live stream
-    if (userProfile.role === 'supporter') {
-      showAlert({ message: language === 'th' ? "เฉพาะนายแบบและผู้จัดเท่านั้นที่สามารถเริ่มไลฟ์ได้ กรุณาสมัครเป็นนายแบบก่อน" : "Only Models and Organizers can start a live stream. Please apply to become a Model.", type: 'warning' });
+    // If Organizer, show Create Group Room modal
+    if (userProfile.role === 'organizer') {
+      setIsCreateRoomOpen(true);
+      return;
+    }
+
+    // Only Models can start a live stream
+    if (userProfile.role !== 'model') {
+      showAlert({
+        message: language === 'th'
+          ? "เฉพาะนายแบบเท่านั้นที่สามารถเริ่มไลฟ์ได้ กรุณาสมัครเป็นนายแบบก่อน"
+          : "Only Models can start a live stream. Please apply to become a Model.",
+        type: 'warning'
+      });
       setIsMenuOpen(true); // Open menu to guide them to apply
       return;
     }
+
+    // Models go to live selection
     setIsLiveSelectionOpen(true);
   };
+
 
   const handleLiveTypeSelect = (type: 'selling' | 'auction') => {
     setLiveType(type);
