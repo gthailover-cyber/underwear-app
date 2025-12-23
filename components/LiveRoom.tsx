@@ -828,14 +828,72 @@ const LiveRoom: React.FC<LiveRoomProps> = ({
         setCart(prev => prev.filter((_, i) => i !== index));
     };
 
-    const handleCheckoutCart = () => {
-        if (!userAddress) {
-            setIsEditingAddress(true);
-            // Pre-fill tempAddress with current userAddress if any (though it's null here)
-            // or just leave as is. Since userAddress is null, we might want to guide them.
+    const handleCheckoutCart = async () => {
+        if (cart.length === 0) return;
+
+        // 1. ตรวจสอบสต็อกล่าสุดจาก Database ทุกรายการในตะกร้า
+        const productIds = Array.from(new Set(cart.map(item => item.id)));
+
+        try {
+            // ดึงข้อมูล Stock ล่าสุดของ products
+            const { data: dbProducts } = await supabase
+                .from('products')
+                .select('id, name, stock')
+                .in('id', productIds);
+
+            // ดึงข้อมูล Stock ล่าสุดของ variants
+            const { data: dbVariants } = await supabase
+                .from('product_variants')
+                .select('product_id, color, size, stock')
+                .in('product_id', productIds);
+
+            const outOfStockItems: string[] = [];
+            const remainingCart = cart.filter(item => {
+                let availableStock = 0;
+
+                const variantMatch = dbVariants?.find(v =>
+                    v.product_id === item.id &&
+                    v.color === item.color &&
+                    v.size === item.size
+                );
+
+                if (variantMatch) {
+                    availableStock = variantMatch.stock;
+                } else {
+                    const productMatch = dbProducts?.find(p => p.id === item.id);
+                    availableStock = productMatch ? productMatch.stock : 0;
+                }
+
+                if (availableStock < item.quantity) {
+                    outOfStockItems.push(`${item.name} (${item.color}/${item.size})`);
+                    return false; // กรองออก
+                }
+                return true;
+            });
+
+            // 2. ถ้ามีสินค้าหมด แจ้งเตือนและอัพเดทตะกร้า
+            if (outOfStockItems.length > 0) {
+                setCart(remainingCart);
+                showAlert({
+                    message: language === 'th'
+                        ? `สินค้าต่อไปนี้หมดแล้วและถูกนำออกจากตะกร้า: ${outOfStockItems.join(', ')}`
+                        : `The following items are out of stock and have been removed: ${outOfStockItems.join(', ')}`,
+                    type: 'warning'
+                });
+                return; // หยุดการ Checkout
+            }
+
+            // 3. ถ้าทุกอย่างปกติ ไปหน้า Checkout
+            if (!userAddress) {
+                setIsEditingAddress(true);
+            }
+            setShowCheckoutModal(true);
+            setShowCart(false);
+
+        } catch (error) {
+            console.error('Error validating stock:', error);
+            showAlert({ message: 'Error checking stock. Please try again.', type: 'error' });
         }
-        setShowCheckoutModal(true);
-        setShowCart(false);
     };
 
 
@@ -1496,17 +1554,33 @@ const LiveRoom: React.FC<LiveRoomProps> = ({
                                     <div key={index} className="flex gap-4 bg-gray-900 p-3 rounded-xl border border-gray-800">
                                         <img src={item.image} className="w-16 h-16 rounded-lg object-cover" />
                                         <div className="flex-1">
-                                            <h3 className="font-bold text-sm">{item.name}</h3>
-                                            <div className="flex justify-between items-center mt-2">
-                                                <div className="flex items-center gap-2 bg-black rounded-lg px-2 py-1">
-                                                    <button onClick={() => handleUpdateCartQuantity(index, -1)}><Minus size={12} /></button>
-                                                    <span className="text-xs">{item.quantity}</span>
-                                                    <button onClick={() => handleUpdateCartQuantity(index, 1)}><Plus size={12} /></button>
+                                            <div className="flex justify-between items-start">
+                                                <h3 className="font-bold text-sm">{item.name}</h3>
+                                                <button onClick={() => handleRemoveCartItem(index)} className="text-gray-500 hover:text-white transition-colors"><X size={16} /></button>
+                                            </div>
+
+                                            <div className="flex flex-wrap gap-2 mt-1">
+                                                {item.color && (
+                                                    <span className="text-[10px] bg-gray-800 text-gray-300 px-2 py-0.5 rounded border border-gray-700">
+                                                        {item.color}
+                                                    </span>
+                                                )}
+                                                {item.size && (
+                                                    <span className="text-[10px] bg-gray-800 text-gray-300 px-2 py-0.5 rounded border border-gray-700">
+                                                        {item.size}
+                                                    </span>
+                                                )}
+                                            </div>
+
+                                            <div className="flex justify-between items-center mt-3">
+                                                <div className="flex items-center gap-2 bg-black rounded-lg px-2 py-1 border border-gray-800">
+                                                    <button onClick={() => handleUpdateCartQuantity(index, -1)} className="hover:text-blue-400 transition-colors"><Minus size={12} /></button>
+                                                    <span className="text-xs font-bold w-4 text-center">{item.quantity}</span>
+                                                    <button onClick={() => handleUpdateCartQuantity(index, 1)} className="hover:text-blue-400 transition-colors"><Plus size={12} /></button>
                                                 </div>
                                                 <p className="text-red-500 font-bold text-sm">฿{(item.price * item.quantity).toLocaleString()}</p>
                                             </div>
                                         </div>
-                                        <button onClick={() => handleRemoveCartItem(index)} className="text-gray-500"><X size={16} /></button>
                                     </div>
                                 ))}
                             </div>
