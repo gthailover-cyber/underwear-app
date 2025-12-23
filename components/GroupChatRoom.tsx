@@ -1211,10 +1211,43 @@ const GroupChatRoom: React.FC<GroupChatRoomProps> = ({
                         View Gallery
                       </button>
                       <button
-                        onClick={() => {
-                          // Invite Logic Here (Mock for now)
-                          showAlert({ message: `Invite sent to ${viewingProfile.username}`, type: 'success' });
-                          // In future: Create a room_goal and room_invite record
+                        onClick={async () => {
+                          try {
+                            // 1. Create Invite Record
+                            const { data: inviteData, error: inviteError } = await supabase
+                              .from('room_invites')
+                              .insert({
+                                room_id: room.id,
+                                model_id: viewingProfile.id,
+                                status: 'pending'
+                              })
+                              .select()
+                              .single();
+
+                            if (inviteError) throw inviteError;
+
+                            // 2. Create Notification
+                            const { error: notifError } = await supabase
+                              .from('notifications')
+                              .insert({
+                                user_id: viewingProfile.id,
+                                actor_id: room.hostId, // Current user is host
+                                type: 'room_invite',
+                                content: `Invited you to co-host in room ${room.name}`,
+                                metadata: {
+                                  room_id: room.id,
+                                  invite_id: inviteData.id
+                                },
+                                is_read: false
+                              });
+
+                            if (notifError) throw notifError;
+
+                            showAlert({ message: `Invite sent to ${viewingProfile.username}`, type: 'success' });
+                          } catch (err) {
+                            console.error('Invite Error:', err);
+                            showAlert({ message: 'Failed to send invite', type: 'error' });
+                          }
                         }}
                         className="bg-gradient-to-r from-green-500 to-emerald-600 text-white font-black py-3 rounded-xl uppercase text-[10px] tracking-widest shadow-lg shadow-green-900/20 active:scale-95 transition-all flex items-center justify-center gap-2"
                       >

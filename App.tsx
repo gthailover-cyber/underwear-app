@@ -37,6 +37,7 @@ import StartLiveModal from './components/StartLiveModal';
 import UpdatePasswordModal from './components/UpdatePasswordModal';
 import CustomerOrders from './components/CustomerOrders';
 import Stories from './components/Stories';
+import InviteModal from './components/InviteModal';
 import { TRANSLATIONS, MOCK_USER_PROFILE, DEFAULT_IMAGES } from './constants';
 import { Streamer, Language, CartItem, UserProfile, MessagePreview, Product, Person, ChatRoom, ReceivedGift, AppNotification } from './types';
 import { useAlert } from './context/AlertContext';
@@ -133,6 +134,7 @@ const App: React.FC = () => {
     // console.log(`[Status] Checking online status. Diff: ${Math.round(diff/1000)}s`);
     return diff < (10 * 60 * 1000); // 10 minutes threshold for better reliability
   };
+  const [activeInvite, setActiveInvite] = useState<any>(null);
 
   const fetchFollowing = async (userId: string) => {
     try {
@@ -420,6 +422,11 @@ const App: React.FC = () => {
 
             if (data) {
               setNotifications(prev => [data, ...prev].slice(0, 20));
+
+              // Show Invite Modal if it's a room invite
+              if (data.type === 'room_invite') {
+                setActiveInvite(data);
+              }
             }
           }
         )
@@ -2719,6 +2726,44 @@ const App: React.FC = () => {
           status={roomApprovalStatus}
           onClose={() => setPendingJoinRoom(null)}
           onRequestJoin={handleRequestJoin}
+        />
+      )}
+
+      {/* Invite Modal */}
+      {activeInvite && (
+        <InviteModal
+          invite={activeInvite}
+          onAccept={async (invite: any) => {
+            // Update invite status in room_invites and maybe join room automatically
+            if (invite.metadata?.invite_id) {
+              await supabase.from('room_invites').update({ status: 'accepted' }).eq('id', invite.metadata.invite_id);
+            }
+            setActiveInvite(null);
+            // Optional: Auto join room logic here
+            if (invite.metadata?.room_id) {
+              const { data: roomData } = await supabase.from('chat_rooms').select('*').eq('id', invite.metadata.room_id).single();
+              if (roomData) {
+                // Standardize room data and set as selected
+                const formattedRoom: ChatRoom = {
+                  id: roomData.id,
+                  name: roomData.name,
+                  image: roomData.image || DEFAULT_IMAGES.COVER,
+                  type: roomData.type,
+                  hostId: roomData.host_id,
+                  hostName: '', // Will be fetched inside GroupChatRoom or we fetch active host here
+                  members: roomData.members || 1
+                };
+                setSelectedGroupRoom(formattedRoom);
+              }
+            }
+          }}
+          onDecline={async (invite: any) => {
+            if (invite.metadata?.invite_id) {
+              await supabase.from('room_invites').update({ status: 'rejected' }).eq('id', invite.metadata.invite_id);
+            }
+            setActiveInvite(null);
+            showAlert({ message: 'Invitation declined', type: 'info' });
+          }}
         />
       )}
     </div>
