@@ -242,13 +242,14 @@ const LiveRoom: React.FC<LiveRoomProps> = ({
                     .in('product_id', productIds);
 
                 if (variantsData) {
+                    console.log('[LiveRoom] Initial variants fetched:', variantsData.length);
                     setLiveVariants(variantsData);
                 }
             }
         };
 
         fetchInitialData();
-    }, [streamer.id]);
+    }, [streamer.id, streamer.products]); // Added streamer.products to dependencies
 
     // Update local products if streamer.products changes (initial sync)
     useEffect(() => {
@@ -291,25 +292,32 @@ const LiveRoom: React.FC<LiveRoomProps> = ({
                     schema: 'public',
                     table: 'product_variants'
                 },
-                async () => {
-                    // Re-fetch all variants for simplicity when any variant changes for this streamer's products
-                    if (streamer.products && streamer.products.length > 0) {
-                        const productIds = streamer.products.map(p => p.id);
-                        const { data } = await supabase
+                async (payload) => {
+                    console.log('[LiveRoom] Variant change detected:', payload.eventType, (payload.new as any)?.id);
+                    // Re-fetch all variants for the products in this room
+                    const productIds = streamer.products?.map(p => p.id) || [];
+                    if (productIds.length > 0) {
+                        const { data, error } = await supabase
                             .from('product_variants')
                             .select('*')
                             .in('product_id', productIds);
-                        if (data) setLiveVariants(data);
+
+                        if (data) {
+                            console.log('[LiveRoom] Variants re-fetched:', data.length);
+                            setLiveVariants(data);
+                        }
                     }
                 }
             )
-            .subscribe();
+            .subscribe((status) => {
+                console.log('[LiveRoom] Product sync channel status:', status);
+            });
 
 
         return () => {
             supabase.removeChannel(channel);
         };
-    }, [streamer.hostId]);
+    }, [streamer.hostId, streamer.products]);
 
     // Initial Setup & Socket Listeners
     // Heartbeat Logic: Update last_active_at every minute to keep room "alive"
@@ -908,14 +916,15 @@ const LiveRoom: React.FC<LiveRoomProps> = ({
     const handleConfirmPurchase = async (action: 'buy_now' | 'add_to_cart') => {
         if (!selectedProductForPurchase) return;
 
-        // Check variant stock
+        // Check latest stock from live state
+        const liveProduct = liveProducts.find(p => p.id === selectedProductForPurchase.id);
         const variant = liveVariants.find(v =>
             v.product_id === selectedProductForPurchase.id &&
             v.color === purchaseConfig.color &&
             v.size === purchaseConfig.size
         );
 
-        const availableStock = variant ? variant.stock : selectedProductForPurchase.stock;
+        const availableStock = variant ? variant.stock : (liveProduct ? liveProduct.stock : selectedProductForPurchase.stock);
 
         if (availableStock < purchaseConfig.quantity) {
             showAlert({
@@ -1695,14 +1704,16 @@ const LiveRoom: React.FC<LiveRoomProps> = ({
                                     {selectedProductForPurchase && (
                                         <span className="text-[10px] text-gray-500">
                                             {(() => {
+                                                const liveProduct = liveProducts.find(p => p.id === selectedProductForPurchase.id);
                                                 const v = liveVariants.find(v =>
                                                     v.product_id === selectedProductForPurchase.id &&
                                                     v.color === purchaseConfig.color &&
                                                     v.size === purchaseConfig.size
                                                 );
-                                                const stock = v ? v.stock : selectedProductForPurchase.stock;
+                                                const stock = v ? v.stock : (liveProduct ? liveProduct.stock : selectedProductForPurchase.stock);
                                                 return language === 'th' ? `คงเหลือ: ${stock}` : `In Stock: ${stock}`;
                                             })()}
+
                                         </span>
                                     )}
                                 </div>
@@ -1711,14 +1722,16 @@ const LiveRoom: React.FC<LiveRoomProps> = ({
                                     <span className="font-bold w-4 text-center">{purchaseConfig.quantity}</span>
                                     <button
                                         onClick={() => {
-                                            const v = liveVariants.find(v =>
-                                                v.product_id === selectedProductForPurchase!.id &&
-                                                v.color === purchaseConfig.color &&
-                                                v.size === purchaseConfig.size
+                                            const liveProduct = liveProducts.find(p => p.id === selectedProductForPurchase!.id);
+                                            const v = liveVariants.find(iv =>
+                                                iv.product_id === selectedProductForPurchase!.id &&
+                                                iv.color === purchaseConfig.color &&
+                                                iv.size === purchaseConfig.size
                                             );
-                                            const stock = v ? v.stock : selectedProductForPurchase!.stock;
+                                            const stock = v ? v.stock : (liveProduct ? liveProduct.stock : selectedProductForPurchase!.stock);
                                             if (purchaseConfig.quantity < stock) {
                                                 setPurchaseConfig(p => ({ ...p, quantity: p.quantity + 1 }));
+
                                             } else {
                                                 showAlert({ message: language === 'th' ? 'สินค้าในสต็อกไม่พอ' : 'Reached stock limit', type: 'warning' });
                                             }
