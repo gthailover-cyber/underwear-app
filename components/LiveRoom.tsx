@@ -155,6 +155,9 @@ const LiveRoom: React.FC<LiveRoomProps> = ({
     const [videoError, setVideoError] = useState(false); // To handle video load failures
     const [isAuctionOver, setIsAuctionOver] = useState(false);
     const [hasSentWinnerOrder, setHasSentWinnerOrder] = useState(false);
+    const [liveVariants, setLiveVariants] = useState<any[]>([]);
+
+
 
     const commentsEndRef = useRef<HTMLDivElement>(null);
     const heartIdCounter = useRef(0);
@@ -229,7 +232,21 @@ const LiveRoom: React.FC<LiveRoomProps> = ({
                     setTempPhone(data.phone || '');
                 }
             }
+
+            // 3. Fetch Product Variants for the current products
+            if (streamer.products && streamer.products.length > 0) {
+                const productIds = streamer.products.map(p => p.id);
+                const { data: variantsData } = await supabase
+                    .from('product_variants')
+                    .select('*')
+                    .in('product_id', productIds);
+
+                if (variantsData) {
+                    setLiveVariants(variantsData);
+                }
+            }
         };
+
         fetchInitialData();
     }, [streamer.id]);
 
@@ -267,7 +284,27 @@ const LiveRoom: React.FC<LiveRoomProps> = ({
                     ));
                 }
             )
+            .on(
+                'postgres_changes',
+                {
+                    event: '*',
+                    schema: 'public',
+                    table: 'product_variants'
+                },
+                async () => {
+                    // Re-fetch all variants for simplicity when any variant changes for this streamer's products
+                    if (streamer.products && streamer.products.length > 0) {
+                        const productIds = streamer.products.map(p => p.id);
+                        const { data } = await supabase
+                            .from('product_variants')
+                            .select('*')
+                            .in('product_id', productIds);
+                        if (data) setLiveVariants(data);
+                    }
+                }
+            )
             .subscribe();
+
 
         return () => {
             supabase.removeChannel(channel);
@@ -871,7 +908,25 @@ const LiveRoom: React.FC<LiveRoomProps> = ({
     const handleConfirmPurchase = async (action: 'buy_now' | 'add_to_cart') => {
         if (!selectedProductForPurchase) return;
 
+        // Check variant stock
+        const variant = liveVariants.find(v =>
+            v.product_id === selectedProductForPurchase.id &&
+            v.color === purchaseConfig.color &&
+            v.size === purchaseConfig.size
+        );
+
+        const availableStock = variant ? variant.stock : selectedProductForPurchase.stock;
+
+        if (availableStock < purchaseConfig.quantity) {
+            showAlert({
+                message: language === 'th' ? 'สินค้าไม่พอในสต็อก' : 'Not enough stock available.',
+                type: 'warning'
+            });
+            return;
+        }
+
         if (action === 'buy_now') {
+
             const tempItem: CartItem = {
                 ...selectedProductForPurchase,
                 quantity: purchaseConfig.quantity,
@@ -1635,13 +1690,46 @@ const LiveRoom: React.FC<LiveRoomProps> = ({
                             )}
 
                             <div className="flex items-center justify-between">
-                                <span>Quantity</span>
+                                <div className="flex flex-col">
+                                    <span>Quantity</span>
+                                    {selectedProductForPurchase && (
+                                        <span className="text-[10px] text-gray-500">
+                                            {(() => {
+                                                const v = liveVariants.find(v =>
+                                                    v.product_id === selectedProductForPurchase.id &&
+                                                    v.color === purchaseConfig.color &&
+                                                    v.size === purchaseConfig.size
+                                                );
+                                                const stock = v ? v.stock : selectedProductForPurchase.stock;
+                                                return language === 'th' ? `คงเหลือ: ${stock}` : `In Stock: ${stock}`;
+                                            })()}
+                                        </span>
+                                    )}
+                                </div>
                                 <div className="flex items-center gap-3 bg-black rounded-lg p-1 border border-gray-700">
                                     <button onClick={() => setPurchaseConfig(p => ({ ...p, quantity: Math.max(1, p.quantity - 1) }))} className="px-3 hover:bg-gray-800 rounded"><Minus size={14} /></button>
                                     <span className="font-bold w-4 text-center">{purchaseConfig.quantity}</span>
-                                    <button onClick={() => setPurchaseConfig(p => ({ ...p, quantity: p.quantity + 1 }))} className="px-3 hover:bg-gray-800 rounded"><Plus size={14} /></button>
+                                    <button
+                                        onClick={() => {
+                                            const v = liveVariants.find(v =>
+                                                v.product_id === selectedProductForPurchase!.id &&
+                                                v.color === purchaseConfig.color &&
+                                                v.size === purchaseConfig.size
+                                            );
+                                            const stock = v ? v.stock : selectedProductForPurchase!.stock;
+                                            if (purchaseConfig.quantity < stock) {
+                                                setPurchaseConfig(p => ({ ...p, quantity: p.quantity + 1 }));
+                                            } else {
+                                                showAlert({ message: language === 'th' ? 'สินค้าในสต็อกไม่พอ' : 'Reached stock limit', type: 'warning' });
+                                            }
+                                        }}
+                                        className="px-3 hover:bg-gray-800 rounded"
+                                    >
+                                        <Plus size={14} />
+                                    </button>
                                 </div>
                             </div>
+
                         </div>
 
                         <div className="mt-6 flex gap-3">

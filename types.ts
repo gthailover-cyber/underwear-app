@@ -6,6 +6,14 @@ export type UserRole = 'model' | 'organizer' | 'supporter';
 
 export type ApplicationStatus = 'none' | 'pending' | 'approved' | 'rejected';
 
+export interface ProductVariant {
+  id?: string;
+  product_id?: string;
+  color: string;
+  size: string;
+  stock: number;
+}
+
 export interface Product {
   id: string;
   name: string;
@@ -18,7 +26,9 @@ export interface Product {
   description?: string;
   type?: 'normal' | 'auction'; // Added: normal or auction product
   seller_id?: string;        // Added: ID of the seller
+  variants?: ProductVariant[];
 }
+
 
 export interface CartItem extends Product {
   quantity: number;

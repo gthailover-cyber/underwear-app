@@ -1,7 +1,7 @@
 
 import React, { useState, useRef } from 'react';
 import { Plus, Edit2, Trash2, X, Package, Check, ImagePlus, ArrowLeft, Loader2, Save, Gavel, ShoppingBag } from 'lucide-react';
-import { Product, Language } from '../types';
+import { Product, Language, ProductVariant } from '../types';
 import { TRANSLATIONS } from '../constants';
 import { supabase } from '../lib/supabaseClient';
 
@@ -43,7 +43,8 @@ const MyProducts: React.FC<MyProductsProps> = ({ language, onBack, products, set
     colors: [],
     sizes: [],
     image: '',
-    type: 'normal'
+    type: 'normal',
+    variants: []
   });
 
   const handleOpenModal = (product?: Product) => {
@@ -52,7 +53,8 @@ const MyProducts: React.FC<MyProductsProps> = ({ language, onBack, products, set
       setEditingProduct(product);
       setFormData({
         ...product,
-        type: product.type || 'normal'
+        type: product.type || 'normal',
+        variants: product.variants || []
       });
       setPreviewImage(product.image);
     } else {
@@ -64,7 +66,8 @@ const MyProducts: React.FC<MyProductsProps> = ({ language, onBack, products, set
         colors: [],
         sizes: [],
         image: '',
-        type: 'normal'
+        type: 'normal',
+        variants: []
       });
       setPreviewImage('');
     }
@@ -193,17 +196,24 @@ const MyProducts: React.FC<MyProductsProps> = ({ language, onBack, products, set
       }
 
       // 2. Prepare Data Payload
+      // Total stock is sum of variant stocks if normal product
+      const totalStock = formData.type === 'normal' && formData.variants && formData.variants.length > 0
+        ? formData.variants.reduce((sum, v) => sum + (v.stock || 0), 0)
+        : (formData.type === 'auction' ? 1 : Number(formData.stock));
+
       const payload = {
         seller_id: user.id,
         name: formData.name,
         price: Number(formData.price),
-        stock: formData.type === 'auction' ? 1 : Number(formData.stock),
+        stock: totalStock,
         colors: formData.colors,
         sizes: formData.sizes,
         image: finalImageUrl,
         description: formData.description || '',
         type: formData.type || 'normal'
       };
+
+      let finalProductId: string;
 
       if (editingProduct) {
         // UPDATE
@@ -215,8 +225,9 @@ const MyProducts: React.FC<MyProductsProps> = ({ language, onBack, products, set
           .single();
 
         if (error) throw error;
+        finalProductId = editingProduct.id;
 
-        // Update Local State
+        // Update Local State for Product List
         setProducts(prev => prev.map(p => (p.id === editingProduct.id ? { ...p, ...data } as Product : p)));
 
       } else {
@@ -228,6 +239,7 @@ const MyProducts: React.FC<MyProductsProps> = ({ language, onBack, products, set
           .single();
 
         if (error) throw error;
+        finalProductId = data.id;
 
         // Update Local State
         if (data) {
@@ -244,6 +256,25 @@ const MyProducts: React.FC<MyProductsProps> = ({ language, onBack, products, set
           };
           setProducts(prev => [newProduct, ...prev]);
         }
+      }
+
+      // 3. Upsert Variants
+      if (formData.type === 'normal' && formData.variants && formData.variants.length > 0) {
+        // First delete old variants (simplest way to sync)
+        await supabase.from('product_variants').delete().eq('product_id', finalProductId);
+
+        const variantsToInsert = formData.variants.map(v => ({
+          product_id: finalProductId,
+          color: v.color,
+          size: v.size,
+          stock: v.stock
+        }));
+
+        const { error: variantError } = await supabase
+          .from('product_variants')
+          .insert(variantsToInsert);
+
+        if (variantError) throw variantError;
       }
 
       handleCloseModal();
@@ -299,6 +330,40 @@ const MyProducts: React.FC<MyProductsProps> = ({ language, onBack, products, set
       };
     });
   };
+
+  const updateVariantStock = (color: string, size: string, stock: number) => {
+    setFormData(prev => ({
+      ...prev,
+      variants: prev.variants?.map(v =>
+        (v.color === color && v.size === size) ? { ...v, stock } : v
+      )
+    }));
+  };
+
+  // Sync variants whenever colors or sizes change
+  React.useEffect(() => {
+    if (formData.type === 'normal') {
+      const newVariants: ProductVariant[] = [];
+      formData.colors?.forEach(color => {
+        formData.sizes?.forEach(size => {
+          const existing = formData.variants?.find(v => v.color === color && v.size === size);
+          newVariants.push({
+            color,
+            size,
+            stock: existing ? existing.stock : 0
+          });
+        });
+      });
+
+      // Only update if something actually changed to avoid infinite loops
+      const currentKeys = (formData.variants || []).map(v => `${v.color}-${v.size}`).sort().join(',');
+      const nextKeys = newVariants.map(v => `${v.color}-${v.size}`).sort().join(',');
+
+      if (currentKeys !== nextKeys) {
+        setFormData(prev => ({ ...prev, variants: newVariants }));
+      }
+    }
+  }, [formData.colors, formData.sizes, formData.type]);
 
   return (
     <div className="pb-24 animate-fade-in min-h-screen bg-black text-white">
@@ -407,8 +472,8 @@ const MyProducts: React.FC<MyProductsProps> = ({ language, onBack, products, set
                     type="button"
                     onClick={() => handleTypeChange('normal')}
                     className={`flex flex-col items-center gap-2 p-3 rounded-xl border-2 transition-all ${formData.type === 'normal'
-                        ? 'bg-red-600/10 border-red-600 text-white'
-                        : 'bg-gray-800/50 border-gray-800 text-gray-500 hover:border-gray-700'
+                      ? 'bg-red-600/10 border-red-600 text-white'
+                      : 'bg-gray-800/50 border-gray-800 text-gray-500 hover:border-gray-700'
                       }`}
                   >
                     <ShoppingBag size={20} className={formData.type === 'normal' ? 'text-red-500' : 'text-gray-600'} />
@@ -418,8 +483,8 @@ const MyProducts: React.FC<MyProductsProps> = ({ language, onBack, products, set
                     type="button"
                     onClick={() => handleTypeChange('auction')}
                     className={`flex flex-col items-center gap-2 p-3 rounded-xl border-2 transition-all ${formData.type === 'auction'
-                        ? 'bg-yellow-600/10 border-yellow-600 text-white'
-                        : 'bg-gray-800/50 border-gray-800 text-gray-500 hover:border-gray-700'
+                      ? 'bg-yellow-600/10 border-yellow-600 text-white'
+                      : 'bg-gray-800/50 border-gray-800 text-gray-500 hover:border-gray-700'
                       }`}
                   >
                     <Gavel size={20} className={formData.type === 'auction' ? 'text-yellow-500' : 'text-gray-600'} />
@@ -497,10 +562,10 @@ const MyProducts: React.FC<MyProductsProps> = ({ language, onBack, products, set
                     required
                     type="number"
                     min="0"
-                    disabled={formData.type === 'auction'}
-                    value={formData.type === 'auction' ? 1 : formData.stock}
+                    disabled={formData.type === 'auction' || (formData.variants && formData.variants.length > 0)}
+                    value={formData.type === 'auction' ? 1 : (formData.variants && formData.variants.length > 0 ? formData.variants.reduce((sum, v) => sum + (v.stock || 0), 0) : formData.stock)}
                     onChange={e => setFormData({ ...formData, stock: Number(e.target.value) })}
-                    className={`w-full bg-gray-800 border border-gray-700 rounded-xl p-3 text-white focus:border-red-600 focus:outline-none transition-colors ${formData.type === 'auction' ? 'opacity-50 cursor-not-allowed' : ''}`}
+                    className={`w-full bg-gray-800 border border-gray-700 rounded-xl p-3 text-white focus:border-red-600 focus:outline-none transition-colors ${(formData.type === 'auction' || (formData.variants && formData.variants.length > 0)) ? 'opacity-50 cursor-not-allowed bg-gray-900 border-none' : ''}`}
                   />
                 </div>
               </div>
@@ -518,8 +583,8 @@ const MyProducts: React.FC<MyProductsProps> = ({ language, onBack, products, set
                       key={size}
                       onClick={() => toggleSize(size)}
                       className={`w-10 h-10 rounded-lg font-bold text-sm transition-all border ${formData.sizes?.includes(size)
-                          ? (formData.type === 'auction' ? 'bg-yellow-600 border-yellow-600 text-white' : 'bg-red-600 border-red-600 text-white')
-                          : 'bg-gray-800 border-gray-700 text-gray-400 hover:border-gray-500'
+                        ? (formData.type === 'auction' ? 'bg-yellow-600 border-yellow-600 text-white' : 'bg-red-600 border-red-600 text-white')
+                        : 'bg-gray-800 border-gray-700 text-gray-400 hover:border-gray-500'
                         }`}
                     >
                       {size}
@@ -552,6 +617,46 @@ const MyProducts: React.FC<MyProductsProps> = ({ language, onBack, products, set
                   })}
                 </div>
               </div>
+
+              {/* Variant Stock Management */}
+              {formData.type === 'normal' && (formData.colors?.length || 0) > 0 && (formData.sizes?.length || 0) > 0 && (
+                <div className="space-y-4">
+                  <label className="text-xs font-bold text-gray-500 uppercase ml-1 block mb-3">
+                    Stock by Color & Size
+                  </label>
+                  <div className="bg-gray-800/30 rounded-xl border border-gray-800 p-4 space-y-4">
+                    {formData.colors?.map(colorHex => {
+                      const colorName = AVAILABLE_COLORS.find(c => c.hex === colorHex)?.name || colorHex;
+                      return (
+                        <div key={colorHex} className="space-y-3">
+                          <div className="flex items-center gap-2">
+                            <div className="w-3 h-3 rounded-full border border-gray-600" style={{ backgroundColor: colorHex }}></div>
+                            <span className="text-xs font-bold text-gray-300">{colorName}</span>
+                          </div>
+                          <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
+                            {formData.sizes?.map(size => {
+                              const variant = formData.variants?.find(v => v.color === colorHex && v.size === size);
+                              return (
+                                <div key={size} className="flex flex-col gap-1">
+                                  <span className="text-[10px] text-gray-500 font-bold ml-1">{size}</span>
+                                  <input
+                                    type="number"
+                                    min="0"
+                                    value={variant?.stock || 0}
+                                    onChange={(e) => updateVariantStock(colorHex, size, Number(e.target.value))}
+                                    className="w-full bg-gray-900 border border-gray-700 rounded-lg px-2 py-1.5 text-xs text-white focus:border-red-600 focus:outline-none"
+                                  />
+                                </div>
+                              );
+                            })}
+                          </div>
+                          <div className="h-px bg-gray-800/50 last:hidden"></div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
 
               {/* Description */}
               <div>
