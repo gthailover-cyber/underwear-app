@@ -67,6 +67,8 @@ const GroupChatRoom: React.FC<GroupChatRoomProps> = ({
   const [activeGoal, setActiveGoal] = useState<any | null>(null);
   const [goalTimeLeft, setGoalTimeLeft] = useState<number>(0);
   const [goalModel, setGoalModel] = useState<any | null>(null);
+  const [showDonationInput, setShowDonationInput] = useState(false);
+  const [donationAmount, setDonationAmount] = useState<string>('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
@@ -655,12 +657,60 @@ const GroupChatRoom: React.FC<GroupChatRoomProps> = ({
     }
   };
 
-  const handleDonateToGoal = async () => {
-    // Mock Donation Logic for now
+  const handleDonateToGoal = () => {
     if (!activeGoal) return;
-    // Ideally show a modal to input amount, for now just link to wallet or generic alert
-    showAlert({ message: 'Select "Gift" to donate coins effectively for now!', type: 'info' });
-    onOpenWallet();
+    setShowDonationInput(true);
+    setDonationAmount('');
+  };
+
+  const handleConfirmDonation = async () => {
+    if (!donationAmount || isNaN(Number(donationAmount)) || Number(donationAmount) <= 0) {
+      showAlert({ message: 'Please enter a valid amount', type: 'error' });
+      return;
+    }
+
+    const amount = Number(donationAmount);
+    if (walletBalance < amount) {
+      showAlert({ message: 'Insufficient coins. Please top up.', type: 'error' });
+      setShowDonationInput(false);
+      onOpenWallet();
+      return;
+    }
+
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      // 1. Deduct from wallet (assuming onUseCoins handles local + DB sync or we rely on backend trigger)
+      // Actually onUseCoins in App.tsx might just update UI or call API. 
+      // We should use the same secure method as gifts.
+
+      // Deduct from sender
+      await onUseCoins(amount);
+
+      // 2. Call RPC to update goal and record donation
+      const { error } = await supabase.rpc('donate_to_goal', {
+        p_goal_id: activeGoal.id,
+        p_amount: amount,
+        p_user_id: user.id
+      });
+
+      if (error) throw error;
+
+      showAlert({ message: `Successfully donated ${amount} coins!`, type: 'success' });
+      setShowDonationInput(false);
+
+      // 3. Optional: Send chat message about donation
+      await supabase.from('room_messages').insert({
+        room_id: room.id,
+        sender_id: user.id,
+        content: `🎉 Donated ${amount} coins to the goal!`
+      });
+
+    } catch (err: any) {
+      console.error('Donation error:', err);
+      showAlert({ message: 'Donation failed', type: 'error' });
+    }
   };
 
 
@@ -1550,6 +1600,47 @@ const GroupChatRoom: React.FC<GroupChatRoomProps> = ({
         </div>
       )}
 
+      {/* Donation Input Modal */}
+      {showDonationInput && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fade-in">
+          <div className="w-full max-w-xs bg-gray-900 rounded-3xl p-6 border border-amber-500/30 shadow-2xl shadow-amber-900/20">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-white font-black text-lg">Donate Coins</h3>
+              <button onClick={() => setShowDonationInput(false)} className="text-gray-400 hover:text-white">
+                <X size={20} />
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              <div className="bg-black/40 rounded-xl p-3 border border-white/10 flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-amber-500/20 flex items-center justify-center text-amber-500">
+                  <Coins size={20} />
+                </div>
+                <input
+                  type="number"
+                  value={donationAmount}
+                  onChange={(e) => setDonationAmount(e.target.value)}
+                  placeholder="Amount"
+                  className="bg-transparent border-none text-white font-black text-xl w-full focus:ring-0 placeholder-gray-600"
+                  autoFocus
+                />
+              </div>
+
+              <div className="flex items-center justify-between text-xs text-gray-400 px-1">
+                <span>Balance:</span>
+                <span className="text-amber-500 font-bold">{walletBalance.toLocaleString()}</span>
+              </div>
+
+              <button
+                onClick={handleConfirmDonation}
+                className="w-full bg-gradient-to-r from-amber-500 to-yellow-600 text-black font-black py-3 rounded-xl uppercase text-sm shadow-lg shadow-amber-900/20 active:scale-95 transition-all"
+              >
+                CONFIRM DONATION
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
