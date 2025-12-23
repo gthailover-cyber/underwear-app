@@ -258,6 +258,39 @@ const LiveRoom: React.FC<LiveRoomProps> = ({
         }
     }, [streamer.products]);
 
+    const refreshLiveProducts = async () => {
+        if (!streamer.hostId || !streamer.products || streamer.products.length === 0) return;
+
+        console.log('[LiveRoom] Manually refreshing products & variants stock...');
+        try {
+            const productIds = streamer.products.map(p => p.id);
+
+            // 1. Fetch latest products
+            const { data: productsData } = await supabase
+                .from('products')
+                .select('*')
+                .in('id', productIds);
+
+            if (productsData) {
+                // Keep the filter consistent with initial room selection if needed
+                // But generally, showing all host products that were selected for this room is correct.
+                setLiveProducts(productsData);
+            }
+
+            // 2. Fetch latest variants
+            const { data: variantsData } = await supabase
+                .from('product_variants')
+                .select('*')
+                .in('product_id', productIds);
+
+            if (variantsData) {
+                setLiveVariants(variantsData);
+            }
+        } catch (err) {
+            console.error('[LiveRoom] Error refreshing stock:', err);
+        }
+    };
+
     // Real-time Product Updates (Stock & Sold)
     useEffect(() => {
         if (!streamer.hostId) return;
@@ -886,7 +919,9 @@ const LiveRoom: React.FC<LiveRoomProps> = ({
     };
 
     // Buy Now Logic - Step 1: Open Selection Sheet
-    const handleBuyNow = (product: Product) => {
+    const handleBuyNow = async (product: Product) => {
+        // Refresh stock for THIS specific product (or all) before opening modal
+        await refreshLiveProducts();
         setShowProducts(false); // Close list to "replace" with purchase modal
         setSelectedProductForPurchase(product);
         setPurchaseConfig({
@@ -1308,7 +1343,10 @@ const LiveRoom: React.FC<LiveRoomProps> = ({
                             <div className="flex items-center gap-2 shrink-0">
                                 {!streamer.isAuction && (
                                     <button
-                                        onClick={() => setShowProducts(true)}
+                                        onClick={async () => {
+                                            await refreshLiveProducts();
+                                            setShowProducts(true);
+                                        }}
                                         className="relative w-10 h-10 flex items-center justify-center bg-black/40 backdrop-blur-md rounded-full border border-white/20 text-white hover:bg-white/10 active:scale-90 transition-all"
                                     >
                                         <ShoppingBag size={20} />
@@ -1342,7 +1380,10 @@ const LiveRoom: React.FC<LiveRoomProps> = ({
                             {/* Product Button */}
                             {!streamer.isAuction && (
                                 <button
-                                    onClick={() => setShowProducts(true)}
+                                    onClick={async () => {
+                                        await refreshLiveProducts();
+                                        setShowProducts(true);
+                                    }}
                                     className="shrink-0 relative w-10 h-10 flex items-center justify-center bg-black/40 backdrop-blur-md rounded-full border border-white/20 text-white hover:bg-white/10 active:scale-90 transition-all"
                                 >
                                     <ShoppingBag size={20} />
