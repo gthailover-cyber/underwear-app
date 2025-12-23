@@ -618,24 +618,16 @@ const LiveRoom: React.FC<LiveRoomProps> = ({
 
                     if (itemsError) throw itemsError;
 
-                    // 3. ลบสินค้าประมูลออกจาก Database (สินค้าประมูลมีชิ้นเดียว เมื่อขายแล้วให้ลบออก)
+                    // 3. Update local state to reflect deletion (The DB deletion is handled by a trigger)
                     const auctionItemIds = items
                         .filter(item => item.type === 'auction')
                         .map(item => item.id);
 
                     if (auctionItemIds.length > 0) {
-                        console.log('[Order] Deleting sold auction products from DB:', auctionItemIds);
-                        const { error: deleteError } = await supabase
-                            .from('products')
-                            .delete()
-                            .in('id', auctionItemIds);
+                        // DB removal is handled by Version 5 of the database trigger.
 
-                        if (deleteError) {
-                            console.error('[Order] Error deleting auction products:', deleteError);
-                        } else {
-                            // Local state update to reflect deletion immediately inside the room
-                            setLiveProducts(prev => prev.filter(p => !auctionItemIds.includes(p.id)));
-                        }
+                        // We filter locally so the host/viewers see the item disappear instantly.
+                        setLiveProducts(prev => prev.filter(p => !auctionItemIds.includes(p.id)));
                     }
 
                     // SUCCESS: Only return true and show alert if DB was actually updated
