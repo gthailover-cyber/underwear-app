@@ -302,20 +302,25 @@ const LiveRoom: React.FC<LiveRoomProps> = ({
             .on(
                 'postgres_changes',
                 {
-                    event: 'UPDATE',
+                    event: '*', // Listen for ALL events including DELETE
                     schema: 'public',
                     table: 'products',
                     filter: `seller_id=eq.${streamer.hostId}`
                 },
                 (payload) => {
-                    const updatedProduct = payload.new as Product;
-                    console.log('[LiveRoom] Product update received:', updatedProduct.id, 'Stock:', updatedProduct.stock, 'Sold:', updatedProduct.sold);
-
-                    setLiveProducts(prev => prev.map(p =>
-                        p.id === updatedProduct.id
-                            ? { ...p, stock: updatedProduct.stock, sold: updatedProduct.sold }
-                            : p
-                    ));
+                    if (payload.eventType === 'UPDATE') {
+                        const updatedProduct = payload.new as Product;
+                        console.log('[LiveRoom] Product update received:', updatedProduct.id, 'Stock:', updatedProduct.stock);
+                        setLiveProducts(prev => prev.map(p =>
+                            p.id === updatedProduct.id
+                                ? { ...p, stock: updatedProduct.stock, sold: updatedProduct.sold }
+                                : p
+                        ));
+                    } else if (payload.eventType === 'DELETE') {
+                        const deletedId = (payload.old as any).id;
+                        console.log('[LiveRoom] Product deletion received:', deletedId);
+                        setLiveProducts(prev => prev.filter(p => p.id !== deletedId));
+                    }
                 }
             )
             .on(
@@ -612,6 +617,26 @@ const LiveRoom: React.FC<LiveRoomProps> = ({
                         .insert(itemsToInsert);
 
                     if (itemsError) throw itemsError;
+
+                    // 3. ลบสินค้าประมูลออกจาก Database (สินค้าประมูลมีชิ้นเดียว เมื่อขายแล้วให้ลบออก)
+                    const auctionItemIds = items
+                        .filter(item => item.type === 'auction')
+                        .map(item => item.id);
+
+                    if (auctionItemIds.length > 0) {
+                        console.log('[Order] Deleting sold auction products from DB:', auctionItemIds);
+                        const { error: deleteError } = await supabase
+                            .from('products')
+                            .delete()
+                            .in('id', auctionItemIds);
+
+                        if (deleteError) {
+                            console.error('[Order] Error deleting auction products:', deleteError);
+                        } else {
+                            // Local state update to reflect deletion immediately inside the room
+                            setLiveProducts(prev => prev.filter(p => !auctionItemIds.includes(p.id)));
+                        }
+                    }
 
                     // SUCCESS: Only return true and show alert if DB was actually updated
                     showAlert({
