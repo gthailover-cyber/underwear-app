@@ -100,6 +100,7 @@ export interface Person {
   role?: UserRole;
   lastSeenAt?: string;
   is_available?: boolean;
+  rate_event_live?: number;
 }
 
 export interface MessagePreview {

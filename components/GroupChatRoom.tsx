@@ -339,8 +339,9 @@ const GroupChatRoom: React.FC<GroupChatRoomProps> = ({
           followers: p.followers || 0,
           bio: p.bio,
           location: p.location,
+          rate_event_live: p.rate_event_live || 0,
           isOnline: p.last_seen_at ?
-            (new Date().getTime() - new Date(p.last_seen_at).getTime()) < 600000 : false,
+            (new Date().getTime() - new Date(p.last_seen_at).getTime()) < 600000 : false
         })));
       }
     } catch (err) {
@@ -1130,14 +1131,21 @@ const GroupChatRoom: React.FC<GroupChatRoomProps> = ({
                   </div>
 
                   {/* Stats Row */}
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="bg-white/5 rounded-2xl p-4 border border-white/5">
-                      <p className="text-[9px] text-gray-400 font-bold uppercase tracking-widest mb-1 text-center">Followers</p>
-                      <p className="text-xl font-black text-white text-center">{viewingProfile.followers.toLocaleString()}</p>
+                  {/* Stats Row */}
+                  <div className="grid grid-cols-3 gap-3">
+                    <div className="bg-white/5 rounded-2xl p-3 border border-white/5 flex flex-col items-center justify-center">
+                      <p className="text-[8px] text-gray-400 font-bold uppercase tracking-widest mb-1 text-center">Followers</p>
+                      <p className="text-sm font-black text-white text-center">{viewingProfile.followers.toLocaleString()}</p>
                     </div>
-                    <div className="bg-white/5 rounded-2xl p-4 border border-white/5">
-                      <p className="text-[9px] text-gray-400 font-bold uppercase tracking-widest mb-1 text-center">Location</p>
-                      <p className="text-sm font-black text-white text-center truncate">{viewingProfile.location || 'Bangkok'}</p>
+                    <div className="bg-white/5 rounded-2xl p-3 border border-white/5 flex flex-col items-center justify-center">
+                      <p className="text-[8px] text-gray-400 font-bold uppercase tracking-widest mb-1 text-center">Location</p>
+                      <p className="text-xs font-black text-white text-center truncate w-full">{viewingProfile.location || 'Bangkok'}</p>
+                    </div>
+                    <div className="bg-white/5 rounded-2xl p-3 border border-white/5 flex flex-col items-center justify-center">
+                      <p className="text-[8px] text-yellow-500 font-bold uppercase tracking-widest mb-1 text-center">Rate/Hr</p>
+                      <p className="text-sm font-black text-white text-center truncate">
+                        {viewingProfile.rate_event_live ? `฿${viewingProfile.rate_event_live.toLocaleString()}` : 'N/A'}
+                      </p>
                     </div>
                   </div>
 
@@ -1231,6 +1239,11 @@ const GroupChatRoom: React.FC<GroupChatRoomProps> = ({
                               <span className="text-[8px] text-gray-500 font-bold uppercase tracking-widest truncate block opacity-60">
                                 {model.followers} Foll.
                               </span>
+                              {model.rate_event_live && (
+                                <span className="text-[8px] text-yellow-500 font-black uppercase tracking-widest truncate block mt-0.5">
+                                  ฿{model.rate_event_live.toLocaleString()}/hr
+                                </span>
+                              )}
                             </div>
                           </button>
                         </div>

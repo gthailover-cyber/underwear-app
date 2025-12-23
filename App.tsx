@@ -645,7 +645,8 @@ const App: React.FC = () => {
           lastSeenAt: p.last_seen_at,
           followers: p.followers || 0,
           role: p.role,
-          is_available: p.is_available ?? true
+          is_available: p.is_available ?? true,
+          rate_event_live: p.rate_event_live || 0
         })));
       }
     } catch (err) {
@@ -2013,6 +2014,11 @@ const App: React.FC = () => {
                                     <div className="text-center max-w-[80px]">
                                       <p className="text-sm font-black text-white truncate mb-0.5">{person.username}</p>
                                       <p className="text-[10px] text-gray-500 font-medium truncate">{person.followers || 0} Followers</p>
+                                      {person.rate_event_live && (
+                                        <p className="text-[9px] text-yellow-500 font-bold truncate mt-0.5">
+                                          ฿{person.rate_event_live.toLocaleString()}/hr
+                                        </p>
+                                      )}
                                     </div>
                                   </div>
                                 );
@@ -2098,8 +2104,12 @@ const App: React.FC = () => {
                                   <span className="text-[10px] text-gray-400 font-medium">
                                     {person.followers || 0} Followers
                                   </span>
-                                  {person.is_available && (
-                                    <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                                  {person.rate_event_live ? (
+                                    <span className="text-[10px] text-yellow-400 font-bold bg-black/40 px-1.5 py-0.5 rounded border border-yellow-500/30">
+                                      ฿{person.rate_event_live.toLocaleString()}
+                                    </span>
+                                  ) : (
+                                    person.is_available && <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
                                   )}
                                 </div>
                               </div>
