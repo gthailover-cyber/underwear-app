@@ -154,6 +154,7 @@ const LiveRoom: React.FC<LiveRoomProps> = ({
     const [isAudioEnabled, setIsAudioEnabled] = useState(true);
     const [videoError, setVideoError] = useState(false); // To handle video load failures
     const [isAuctionOver, setIsAuctionOver] = useState(false);
+    const [auctionWinner, setAuctionWinner] = useState<{ name: string; bid: number } | null>(null);
     const [hasSentWinnerOrder, setHasSentWinnerOrder] = useState(false);
     const [liveVariants, setLiveVariants] = useState<any[]>([]);
 
@@ -500,6 +501,13 @@ const LiveRoom: React.FC<LiveRoomProps> = ({
     // Auction Timer Logic
     useEffect(() => {
         if (streamer.isAuction && streamer.auctionEndTime) {
+            // Reset winner state if this is a new auction session starting
+            if (notifiedAuctionEndRef.current !== streamer.auctionEndTime && notifiedAuctionEndRef.current !== null) {
+                setIsAuctionOver(false);
+                setAuctionWinner(null);
+                setHasSentWinnerOrder(false);
+            }
+
             const updateTimer = () => {
                 const now = new Date().getTime();
                 const end = new Date(streamer.auctionEndTime!).getTime();
@@ -509,6 +517,7 @@ const LiveRoom: React.FC<LiveRoomProps> = ({
                     setAuctionTimeLeft('0:00');
                     // Only trigger completion once per unique auction end time
                     if (notifiedAuctionEndRef.current !== streamer.auctionEndTime) {
+                        setAuctionWinner({ name: highestBidderName, bid: currentHighestBid });
                         setIsAuctionOver(true);
                         notifiedAuctionEndRef.current = streamer.auctionEndTime;
                     }
@@ -1869,7 +1878,7 @@ const LiveRoom: React.FC<LiveRoomProps> = ({
                     </div>
                 )}
                 {/* Auction Winner Overlay (PROFESSIONAL WIN UI) - Placed at end for highest priority click accessibility */}
-                {isAuctionOver && highestBidderName && (
+                {isAuctionOver && auctionWinner && (
                     <div className="absolute inset-0 z-[999] flex items-center justify-center p-6 bg-black/80 backdrop-blur-sm animate-fade-in">
                         <div className="w-full max-w-sm bg-gradient-to-b from-gray-900 via-gray-900 to-black rounded-3xl border-2 border-yellow-500/50 p-8 text-center shadow-[0_0_50px_rgba(234,179,8,0.3)] animate-scale-in overflow-hidden relative">
                             {/* Decorative Background effects */}
@@ -1891,19 +1900,19 @@ const LiveRoom: React.FC<LiveRoomProps> = ({
                                     <div>
                                         <p className="text-gray-500 text-[10px] uppercase font-bold tracking-[0.2em] mb-1">Winning Username</p>
                                         <div className="text-2xl font-black text-white bg-white/5 rounded-xl py-2 border border-white/10">
-                                            {highestBidderName}
+                                            {auctionWinner.name}
                                         </div>
                                     </div>
 
                                     <div>
                                         <p className="text-gray-500 text-[10px] uppercase font-bold tracking-[0.2em] mb-1">Final Auction Price</p>
                                         <div className="text-4xl font-black text-yellow-500 font-athletic tracking-tight">
-                                            ฿{currentHighestBid.toLocaleString()}
+                                            ฿{auctionWinner.bid.toLocaleString()}
                                         </div>
                                     </div>
                                 </div>
 
-                                {currentUser?.username === highestBidderName && (
+                                {currentUser?.username === auctionWinner.name && (
                                     <div className="mt-8 bg-green-500/10 border border-green-500/30 rounded-2xl p-4 animate-pulse">
                                         <p className="text-green-400 font-bold text-xs flex items-center justify-center gap-2">
                                             <Check size={16} /> ORDER CREATED AUTOMATICALLY

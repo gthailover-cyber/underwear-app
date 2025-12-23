@@ -364,6 +364,9 @@ const App: React.FC = () => {
     if (activeTab === 'my_gifts' && session?.user?.id) {
       fetchReceivedGifts(session.user.id);
     }
+    if (activeTab === 'my_products' && session?.user?.id) {
+      fetchGlobalData(session.user.id);
+    }
   }, [activeTab, session]);
 
   // --- REALTIME LISTENER: Auto-refresh when lives start/end ---
