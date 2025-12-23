@@ -1,6 +1,6 @@
 
 import React, { useState, useRef, useEffect } from 'react';
-import { ArrowLeft, MoreVertical, Send, Plus, Smile, Users, Lock, Globe, Gift, Coins, X, Check, Crown, BicepsFlexed, Ban, VolumeX, Volume2 } from 'lucide-react';
+import { ArrowLeft, MoreVertical, Send, Plus, Smile, Users, Lock, Globe, Gift, Coins, X, Check, Crown, BicepsFlexed, Ban, VolumeX, Volume2, Clock } from 'lucide-react';
 import { ChatRoom, ChatMessage, Language } from '../types';
 import { TRANSLATIONS } from '../constants';
 import { supabase } from '../lib/supabaseClient';
@@ -64,6 +64,9 @@ const GroupChatRoom: React.FC<GroupChatRoomProps> = ({
   const [userVote, setUserVote] = useState<string | null>(null);
   const [pollModels, setPollModels] = useState<any[]>([]);
   const [timeLeft, setTimeLeft] = useState<number>(0);
+  const [activeGoal, setActiveGoal] = useState<any | null>(null);
+  const [goalTimeLeft, setGoalTimeLeft] = useState<number>(0);
+  const [goalModel, setGoalModel] = useState<any | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
@@ -243,7 +246,20 @@ const GroupChatRoom: React.FC<GroupChatRoomProps> = ({
       )
       .subscribe();
 
+    // Donation Goal Realtime
+    const goalChannel = supabase
+      .channel(`room_goals:${room.id}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'room_donation_goals', filter: `room_id=eq.${room.id}` },
+        payload => {
+          if (payload.eventType === 'INSERT' || payload.eventType === 'UPDATE') {
+            fetchActiveGoal();
+          }
+        }
+      )
+      .subscribe();
+
     fetchActivePoll();
+    fetchActiveGoal();
 
     return () => {
       supabase.removeChannel(messagesChannel);
@@ -415,6 +431,48 @@ const GroupChatRoom: React.FC<GroupChatRoomProps> = ({
       }
     } catch (err) {
       console.error('Error fetching poll:', err);
+    }
+  };
+
+  const fetchActiveGoal = async () => {
+    try {
+      const { data: goal } = await supabase
+        .from('room_donation_goals')
+        .select('*')
+        .eq('room_id', room.id)
+        .eq('status', 'active')
+        .maybeSingle();
+
+      if (goal) {
+        setActiveGoal(goal);
+
+        // Fetch model details
+        const { data: model } = await supabase.from('profiles').select('*').eq('id', goal.model_id).single();
+        if (model) setGoalModel(model);
+
+        // Timer logic (10 mins from created_at)
+        const created = new Date(goal.created_at).getTime();
+        const expiry = created + (10 * 60 * 1000);
+
+        const updateGoalTimer = () => {
+          const now = new Date().getTime();
+          const diff = Math.max(0, Math.floor((expiry - now) / 1000));
+          setGoalTimeLeft(diff);
+          if (diff <= 0) {
+            // Optionally auto-expire locally or wait for backend
+            // setActiveGoal(null); 
+          }
+        };
+        updateGoalTimer();
+        const interval = setInterval(updateGoalTimer, 1000);
+        return () => clearInterval(interval);
+
+      } else {
+        setActiveGoal(null);
+        setGoalModel(null);
+      }
+    } catch (err) {
+      console.error('Error fetching goal:', err);
     }
   };
 
@@ -591,15 +649,20 @@ const GroupChatRoom: React.FC<GroupChatRoomProps> = ({
         m.id === memberId ? { ...m, isMuted: !currentlyMuted } : m
       ));
 
-      showAlert({
-        message: !currentlyMuted ? 'Member has been muted' : 'Member has been unmuted',
-        type: 'info'
-      });
-    } catch (error) {
-      console.error('[Room] Mute error:', error);
-      showAlert({ message: 'Failed to update mute status', type: 'error' });
+      showAlert({ message: `Member ${currentlyMuted ? 'unmuted' : 'muted'}`, type: 'success' });
+    } catch (err) {
+      console.error('Error toggling mute:', err);
     }
   };
+
+  const handleDonateToGoal = async () => {
+    // Mock Donation Logic for now
+    if (!activeGoal) return;
+    // Ideally show a modal to input amount, for now just link to wallet or generic alert
+    showAlert({ message: 'Select "Gift" to donate coins effectively for now!', type: 'info' });
+    onOpenWallet();
+  };
+
 
   // Host can ban/unban members
   const handleToggleBan = async (memberId: string, currentlyBanned: boolean) => {
@@ -734,6 +797,70 @@ const GroupChatRoom: React.FC<GroupChatRoomProps> = ({
         {activeTab === 'chat' && (
           <div className="flex flex-col h-full">
             {/* Active Poll Banner */}
+            {/* Active Donation Goal */}
+            {activeGoal && goalModel && (
+              <div className="mx-4 mt-4 bg-gradient-to-br from-gray-800 to-black rounded-3xl p-4 border border-amber-500/30 shadow-2xl shadow-amber-900/10 relative overflow-hidden animate-slide-down">
+                {/* Decorative Glow */}
+                <div className="absolute top-0 right-0 w-32 h-32 bg-amber-500/10 rounded-full blur-3xl -mr-10 -mt-10"></div>
+
+                <div className="flex items-center gap-4 relative z-10">
+                  {/* Model Avatar */}
+                  <div className="relative">
+                    <div className="w-16 h-16 rounded-full p-[2px] bg-gradient-to-tr from-amber-400 to-yellow-600">
+                      <img src={goalModel.avatar} className="w-full h-full rounded-full object-cover border-2 border-black" />
+                    </div>
+                    <div className="absolute -bottom-1 -right-1 bg-amber-500 text-black text-[8px] font-black px-1.5 py-0.5 rounded-full border border-black">
+                      LIVE
+                    </div>
+                  </div>
+
+                  <div className="flex-1">
+                    <h3 className="text-white font-bold text-sm flex items-center gap-2">
+                      <span>Support {goalModel.username}</span>
+                      <span className="text-[10px] bg-amber-500/20 text-amber-500 px-2 py-0.5 rounded-full border border-amber-500/30">
+                        Goal
+                      </span>
+                    </h3>
+
+                    <div className="flex items-end justify-between mt-2 mb-1">
+                      <div className="text-amber-400 font-black text-lg leading-none">
+                        <Coins size={14} className="inline mr-1 mb-0.5" />
+                        {activeGoal.current_amount.toLocaleString()}
+                      </div>
+                      <div className="text-gray-500 font-bold text-xs">
+                        / {activeGoal.target_amount.toLocaleString()} Coins
+                      </div>
+                    </div>
+
+                    {/* Progress Bar */}
+                    <div className="w-full h-2 bg-gray-700 rounded-full overflow-hidden">
+                      <div
+                        className="h-full bg-gradient-to-r from-amber-400 to-yellow-600 shadow-[0_0_10px_rgba(251,191,36,0.5)] transition-all duration-1000 ease-out"
+                        style={{ width: `${Math.min(100, (activeGoal.current_amount / activeGoal.target_amount) * 100)}%` }}
+                      ></div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Timer & Action */}
+                <div className="flex items-center justify-between mt-4 pt-3 border-t border-white/5 relative z-10">
+                  <div className="text-xs font-mono text-gray-400 flex items-center gap-1.5">
+                    <Clock size={12} className="text-amber-500/80" />
+                    <span className={goalTimeLeft < 60 ? 'text-red-500 animate-pulse font-bold' : ''}>
+                      {Math.floor(goalTimeLeft / 60)}:{(goalTimeLeft % 60).toString().padStart(2, '0')}
+                    </span>
+                  </div>
+
+                  <button
+                    onClick={handleDonateToGoal}
+                    className="bg-amber-500 hover:bg-amber-400 text-black font-black text-xs px-4 py-2 rounded-xl transition-all active:scale-95 shadow-lg shadow-amber-500/20 flex items-center gap-1.5"
+                  >
+                    <Gift size={12} /> DONATE
+                  </button>
+                </div>
+              </div>
+            )}
+
             {activePoll && (
               <div className="bg-gradient-to-r from-red-600/20 to-black border-b border-red-600/30 p-4 animate-slide-down sticky top-0 z-20 backdrop-blur-md">
                 <div className="flex items-center justify-between mb-4">
