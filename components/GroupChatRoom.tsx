@@ -340,6 +340,9 @@ const GroupChatRoom: React.FC<GroupChatRoomProps> = ({
           bio: p.bio,
           location: p.location,
           rate_event_live: p.rate_event_live || 0,
+          rate_onsite: p.rate_onsite || 0,
+          rate_product_presentation: p.rate_product_presentation || 0,
+          gallery: p.gallery || [],
           isOnline: p.last_seen_at ?
             (new Date().getTime() - new Date(p.last_seen_at).getTime()) < 600000 : false
         })));
@@ -1132,7 +1135,7 @@ const GroupChatRoom: React.FC<GroupChatRoomProps> = ({
 
                   {/* Stats Row */}
                   {/* Stats Row */}
-                  <div className="grid grid-cols-3 gap-3">
+                  <div className="grid grid-cols-2 gap-3">
                     <div className="bg-white/5 rounded-2xl p-3 border border-white/5 flex flex-col items-center justify-center">
                       <p className="text-[8px] text-gray-400 font-bold uppercase tracking-widest mb-1 text-center">Followers</p>
                       <p className="text-sm font-black text-white text-center">{viewingProfile.followers.toLocaleString()}</p>
@@ -1140,12 +1143,6 @@ const GroupChatRoom: React.FC<GroupChatRoomProps> = ({
                     <div className="bg-white/5 rounded-2xl p-3 border border-white/5 flex flex-col items-center justify-center">
                       <p className="text-[8px] text-gray-400 font-bold uppercase tracking-widest mb-1 text-center">Location</p>
                       <p className="text-xs font-black text-white text-center truncate w-full">{viewingProfile.location || 'Bangkok'}</p>
-                    </div>
-                    <div className="bg-white/5 rounded-2xl p-3 border border-white/5 flex flex-col items-center justify-center">
-                      <p className="text-[8px] text-yellow-500 font-bold uppercase tracking-widest mb-1 text-center">Rate/Hr</p>
-                      <p className="text-sm font-black text-white text-center truncate">
-                        {viewingProfile.rate_event_live ? `฿${viewingProfile.rate_event_live.toLocaleString()}` : 'N/A'}
-                      </p>
                     </div>
                   </div>
 
@@ -1155,23 +1152,44 @@ const GroupChatRoom: React.FC<GroupChatRoomProps> = ({
                     <p className="text-gray-300 text-sm leading-relaxed">{viewingProfile.bio || 'This model has not provided a biography yet.'}</p>
                   </div>
 
+                  <div className="grid grid-cols-3 gap-2 mb-4">
+                    <div className="bg-white/5 rounded-2xl p-2 border border-white/5 flex flex-col items-center justify-center">
+                      <p className="text-[7px] text-gray-400 font-bold uppercase tracking-widest mb-1 text-center">Live Rate</p>
+                      <p className="text-xs font-black text-yellow-500 text-center truncate w-full">
+                        {viewingProfile.rate_event_live ? `฿${viewingProfile.rate_event_live.toLocaleString()}` : 'N/A'}
+                      </p>
+                    </div>
+                    <div className="bg-white/5 rounded-2xl p-2 border border-white/5 flex flex-col items-center justify-center">
+                      <p className="text-[7px] text-pink-400 font-bold uppercase tracking-widest mb-1 text-center">On-Site</p>
+                      <p className="text-xs font-black text-pink-500 text-center truncate w-full">
+                        {viewingProfile.rate_onsite ? `฿${viewingProfile.rate_onsite.toLocaleString()}` : 'N/A'}
+                      </p>
+                    </div>
+                    <div className="bg-white/5 rounded-2xl p-2 border border-white/5 flex flex-col items-center justify-center">
+                      <p className="text-[7px] text-blue-400 font-bold uppercase tracking-widest mb-1 text-center">Product</p>
+                      <p className="text-xs font-black text-blue-500 text-center truncate w-full">
+                        {viewingProfile.rate_product_presentation ? `฿${viewingProfile.rate_product_presentation.toLocaleString()}` : 'N/A'}
+                      </p>
+                    </div>
+                  </div>
+
                   {/* Actions */}
-                  <div className="flex gap-4">
+                  <div className="grid grid-cols-2 gap-3 mt-4">
                     <button
-                      onClick={() => {
-                        // Use the passed onUserClick prop to switch to full profile view if desired
-                        setShowAvailableModels(false);
-                        onUserClick(viewingProfile.id);
-                      }}
-                      className="flex-1 bg-white text-black font-black py-4 rounded-2xl uppercase text-xs tracking-widest active:scale-95 transition-all shadow-xl shadow-white/5"
+                      onClick={() => showAlert({ message: 'Gallery View coming soon!', type: 'info' })}
+                      className="bg-gray-800 text-white font-bold py-3 rounded-xl uppercase text-[10px] tracking-widest border border-gray-700 hover:bg-gray-700 active:scale-95 transition-all"
                     >
-                      Open Full Profile
+                      View Gallery
                     </button>
                     <button
-                      onClick={() => setViewingProfile(null)}
-                      className="flex-1 bg-red-600 text-white font-black py-4 rounded-2xl uppercase text-xs tracking-widest active:scale-95 transition-all shadow-xl shadow-red-900/20"
+                      onClick={() => {
+                        // Invite Logic Here (Mock for now)
+                        showAlert({ message: `Invite sent to ${viewingProfile.username}`, type: 'success' });
+                        // In future: Create a room_goal and room_invite record
+                      }}
+                      className="bg-gradient-to-r from-green-500 to-emerald-600 text-white font-black py-3 rounded-xl uppercase text-[10px] tracking-widest shadow-lg shadow-green-900/20 active:scale-95 transition-all flex items-center justify-center gap-2"
                     >
-                      Back to List
+                      <Plus size={14} className="stroke-[3px]" /> Invite to Live
                     </button>
                   </div>
                 </div>

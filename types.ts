@@ -101,6 +101,9 @@ export interface Person {
   lastSeenAt?: string;
   is_available?: boolean;
   rate_event_live?: number;
+  rate_onsite?: number;
+  rate_product_presentation?: number;
+  gallery?: string[];
 }
 
 export interface MessagePreview {
