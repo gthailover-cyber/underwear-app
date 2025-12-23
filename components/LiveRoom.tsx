@@ -166,11 +166,20 @@ const LiveRoom: React.FC<LiveRoomProps> = ({
     const streamRef = useRef<MediaStream | null>(null);
     const notifiedAuctionEndRef = useRef<number | null>(null);
     const processedGiftsRef = useRef<Set<string>>(new Set());
+    const latestBidRef = useRef<{ name: string; bid: number }>({
+        name: streamer.topBidder || '',
+        bid: streamer.currentBid || streamer.auctionStartingPrice || 0
+    });
 
     // Auto-scroll comments
     useEffect(() => {
         commentsEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     }, [comments]);
+
+    // Sync latest bid ref with state
+    useEffect(() => {
+        latestBidRef.current = { name: highestBidderName, bid: currentHighestBid };
+    }, [highestBidderName, currentHighestBid]);
 
     // Fetch Message History & User Address on Mount
     useEffect(() => {
@@ -457,6 +466,7 @@ const LiveRoom: React.FC<LiveRoomProps> = ({
             console.log('[LiveRoom] Bid update received:', data);
             setCurrentHighestBid(data.amount);
             setHighestBidderName(data.user);
+            latestBidRef.current = { name: data.user, bid: data.amount };
             // If I'm the host, I might want to trigger a local sound/effect
             setMyBidAmount(data.amount + 1); // Auto-update bid amount to be ready for next bid
         });
@@ -480,9 +490,11 @@ const LiveRoom: React.FC<LiveRoomProps> = ({
                 if (typeof payload.new.current_bid === 'number') {
                     setCurrentHighestBid(prev => Math.max(prev, payload.new.current_bid));
                     setMyBidAmount(prev => Math.max(prev, payload.new.current_bid + 1)); // Sync my bid amount from DB updates
+                    latestBidRef.current.bid = Math.max(latestBidRef.current.bid, payload.new.current_bid);
                 }
                 if (payload.new.top_bidder_name !== undefined) {
-                    setHighestBidderName(payload.new.top_bidder_name);
+                    setHighestBidderName(payload.new.top_bidder_name || '');
+                    latestBidRef.current.name = payload.new.top_bidder_name || '';
                 }
             })
             .subscribe();
@@ -517,7 +529,7 @@ const LiveRoom: React.FC<LiveRoomProps> = ({
                     setAuctionTimeLeft('0:00');
                     // Only trigger completion once per unique auction end time
                     if (notifiedAuctionEndRef.current !== streamer.auctionEndTime) {
-                        setAuctionWinner({ name: highestBidderName, bid: currentHighestBid });
+                        setAuctionWinner({ name: latestBidRef.current.name, bid: latestBidRef.current.bid });
                         setIsAuctionOver(true);
                         notifiedAuctionEndRef.current = streamer.auctionEndTime;
                     }
@@ -1900,7 +1912,7 @@ const LiveRoom: React.FC<LiveRoomProps> = ({
                                     <div>
                                         <p className="text-gray-500 text-[10px] uppercase font-bold tracking-[0.2em] mb-1">Winning Username</p>
                                         <div className="text-2xl font-black text-white bg-white/5 rounded-xl py-2 border border-white/10">
-                                            {auctionWinner.name}
+                                            {auctionWinner.name || (language === 'th' ? 'ไม่มีผู้ประมูล' : 'No Bids')}
                                         </div>
                                     </div>
 
