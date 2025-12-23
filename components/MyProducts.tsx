@@ -38,9 +38,10 @@ const MyProducts: React.FC<MyProductsProps> = ({ language, onBack, products, set
   // Form State
   const [formData, setFormData] = useState<Partial<Product>>({
     name: '',
-    price: 0,
-    stock: 0,
+    price: '' as any,
+    stock: '' as any,
     colors: [],
+
     sizes: [],
     image: '',
     type: 'normal',
@@ -53,22 +54,26 @@ const MyProducts: React.FC<MyProductsProps> = ({ language, onBack, products, set
       setEditingProduct(product);
       setFormData({
         ...product,
+        price: product.price as any,
+        stock: product.stock as any,
         type: product.type || 'normal',
-        variants: product.variants || []
+        variants: (product.variants || []).map(v => ({ ...v, stock: v.stock as any }))
       });
       setPreviewImage(product.image);
+
     } else {
       setEditingProduct(null);
       setFormData({
         name: '',
-        price: 0,
-        stock: 1,
+        price: '' as any,
+        stock: '' as any,
         colors: [],
         sizes: [],
         image: '',
         type: 'normal',
         variants: []
       });
+
       setPreviewImage('');
     }
     setIsModalOpen(true);
@@ -267,7 +272,7 @@ const MyProducts: React.FC<MyProductsProps> = ({ language, onBack, products, set
           product_id: finalProductId,
           color: v.color,
           size: v.size,
-          stock: v.stock
+          stock: Number(v.stock || 0)
         }));
 
         const { error: variantError } = await supabase
@@ -276,6 +281,7 @@ const MyProducts: React.FC<MyProductsProps> = ({ language, onBack, products, set
 
         if (variantError) throw variantError;
       }
+
 
       handleCloseModal();
 
@@ -551,8 +557,9 @@ const MyProducts: React.FC<MyProductsProps> = ({ language, onBack, products, set
                     required
                     type="number"
                     min="0"
-                    value={formData.price}
-                    onChange={e => setFormData({ ...formData, price: Number(e.target.value) })}
+                    placeholder="0"
+                    value={formData.price === 0 ? '' : formData.price}
+                    onChange={e => setFormData({ ...formData, price: e.target.value === '' ? '' as any : Number(e.target.value) })}
                     className="w-full bg-gray-800 border border-gray-700 rounded-xl p-3 text-white focus:border-red-600 focus:outline-none transition-colors"
                   />
                 </div>
@@ -562,12 +569,14 @@ const MyProducts: React.FC<MyProductsProps> = ({ language, onBack, products, set
                     required
                     type="number"
                     min="0"
+                    placeholder="0"
                     disabled={formData.type === 'auction' || (formData.variants && formData.variants.length > 0)}
-                    value={formData.type === 'auction' ? 1 : (formData.variants && formData.variants.length > 0 ? formData.variants.reduce((sum, v) => sum + (v.stock || 0), 0) : formData.stock)}
-                    onChange={e => setFormData({ ...formData, stock: Number(e.target.value) })}
+                    value={formData.type === 'auction' ? 1 : (formData.variants && formData.variants.length > 0 ? formData.variants.reduce((sum, v) => sum + Number(v.stock || 0), 0) : (formData.stock === 0 ? '' : formData.stock))}
+                    onChange={e => setFormData({ ...formData, stock: e.target.value === '' ? '' as any : Number(e.target.value) })}
                     className={`w-full bg-gray-800 border border-gray-700 rounded-xl p-3 text-white focus:border-red-600 focus:outline-none transition-colors ${(formData.type === 'auction' || (formData.variants && formData.variants.length > 0)) ? 'opacity-50 cursor-not-allowed bg-gray-900 border-none' : ''}`}
                   />
                 </div>
+
               </div>
 
               {/* Sizes */}
@@ -642,10 +651,12 @@ const MyProducts: React.FC<MyProductsProps> = ({ language, onBack, products, set
                                   <input
                                     type="number"
                                     min="0"
-                                    value={variant?.stock || 0}
-                                    onChange={(e) => updateVariantStock(colorHex, size, Number(e.target.value))}
+                                    placeholder="0"
+                                    value={variant?.stock === 0 ? '' : variant?.stock}
+                                    onChange={(e) => updateVariantStock(colorHex, size, e.target.value === '' ? '' as any : Number(e.target.value))}
                                     className="w-full bg-gray-900 border border-gray-700 rounded-lg px-2 py-1.5 text-xs text-white focus:border-red-600 focus:outline-none"
                                   />
+
                                 </div>
                               );
                             })}
