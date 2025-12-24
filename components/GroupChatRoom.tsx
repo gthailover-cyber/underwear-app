@@ -460,9 +460,8 @@ const GroupChatRoom: React.FC<GroupChatRoomProps> = ({
           const now = new Date().getTime();
           const diff = Math.max(0, Math.floor((expiry - now) / 1000));
           setGoalTimeLeft(diff);
-          if (diff <= 0) {
-            // Optionally auto-expire locally or wait for backend
-            // setActiveGoal(null); 
+          if (diff <= 0 && isHost) {
+            finalizeGoal(goal);
           }
         };
         updateGoalTimer();
@@ -475,6 +474,52 @@ const GroupChatRoom: React.FC<GroupChatRoomProps> = ({
       }
     } catch (err) {
       console.error('Error fetching goal:', err);
+    }
+  };
+
+  const finalizeGoal = async (goal: any) => {
+    if (!goal) return;
+
+    // 1. Determine status
+    const success = goal.current_amount >= goal.target_amount;
+    const newStatus = success ? 'completed' : 'expired';
+
+    try {
+      // 2. Update DB
+      const { error } = await supabase
+        .from('room_donation_goals')
+        .update({ status: newStatus })
+        .eq('id', goal.id);
+
+      if (error) throw error;
+
+      // 3. Notify Model if failed or success
+      if (!success) {
+        const { error: notifError } = await supabase
+          .from('notifications')
+          .insert({
+            user_id: goal.model_id,
+            actor_id: room.hostId,
+            type: 'system',
+            content: `ยอดบริจาคจากห้อง ${room.name || 'Group'} ไม่ถึงเป้าหมาย (${goal.current_amount.toLocaleString()}/${goal.target_amount.toLocaleString()})`,
+            is_read: false,
+            metadata: { room_id: room.id, goal_id: goal.id, result: 'failed' }
+          });
+        if (notifError) console.error('Failed to send failure notification', notifError);
+      } else {
+        await supabase.from('notifications').insert({
+          user_id: goal.model_id,
+          actor_id: room.hostId,
+          type: 'system',
+          content: `🎉 ยอดบริจาคห้อง ${room.name || 'Group'} ครบเป้าหมายแล้ว! (${goal.current_amount.toLocaleString()}/${goal.target_amount.toLocaleString()})`,
+          is_read: false,
+          metadata: { room_id: room.id, goal_id: goal.id, result: 'success' }
+        });
+      }
+
+      setActiveGoal(null);
+    } catch (err) {
+      console.error('Error finalizing goal:', err);
     }
   };
 
