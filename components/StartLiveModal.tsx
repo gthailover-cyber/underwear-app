@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { X, Video, Youtube, Link as LinkIcon, ImagePlus, Radio } from 'lucide-react';
 import { Language, Streamer, Product } from '../types';
 import { TRANSLATIONS } from '../constants';
@@ -8,17 +8,44 @@ interface StartLiveModalProps {
   language: Language;
   onClose: () => void;
   onStart: (newStream: Streamer) => void;
+  autoStart?: boolean;
+  initialTitle?: string;
 }
 
 type StreamMethod = 'livekit' | 'youtube';
 
-const StartLiveModal: React.FC<StartLiveModalProps> = ({ language, onClose, onStart }) => {
-  const [title, setTitle] = useState('');
+const StartLiveModal: React.FC<StartLiveModalProps> = ({ language, onClose, onStart, autoStart, initialTitle }) => {
+  const [title, setTitle] = useState(initialTitle || '');
   const [coverImage, setCoverImage] = useState<string>('https://picsum.photos/400/700?random=' + Date.now());
   const [isLoading, setIsLoading] = useState(false);
-  const [agreedToTerms, setAgreedToTerms] = useState(false);
+  const [agreedToTerms, setAgreedToTerms] = useState(autoStart || false);
 
   const t = TRANSLATIONS[language];
+
+  const handleStartProcess = () => {
+    setIsLoading(true);
+    // Simulate API delay
+    setTimeout(() => {
+      const newStreamer: Streamer = {
+        id: `live-${Date.now()}`,
+        name: 'Me (Host)', // In real app, get from user profile
+        title: title || initialTitle || 'Live Sale! 🔥',
+        viewerCount: 0,
+        coverImage: coverImage,
+        useLiveKit: true, // Always use LiveKit now
+        itemCount: 0, // Will be populated in App.tsx logic if products selected
+        products: [] // Will be populated in App.tsx logic if products selected
+      };
+      onStart(newStreamer);
+      setIsLoading(false);
+    }, 1500);
+  };
+
+  useEffect(() => {
+    if (autoStart) {
+      handleStartProcess();
+    }
+  }, [autoStart]);
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -34,24 +61,7 @@ const StartLiveModal: React.FC<StartLiveModalProps> = ({ language, onClose, onSt
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!agreedToTerms) return;
-    setIsLoading(true);
-
-    // Simulate API delay
-    setTimeout(() => {
-      const newStreamer: Streamer = {
-        id: `live-${Date.now()}`,
-        name: 'Me (Host)', // In real app, get from user profile
-        title: title || 'Live Sale! 🔥',
-        viewerCount: 0,
-        coverImage: coverImage,
-        useLiveKit: true, // Always use LiveKit now
-        itemCount: 0, // Will be populated in App.tsx logic if products selected
-        products: [] // Will be populated in App.tsx logic if products selected
-      };
-
-      onStart(newStreamer);
-      setIsLoading(false);
-    }, 1500);
+    handleStartProcess();
   };
 
   return (

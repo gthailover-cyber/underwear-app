@@ -71,6 +71,7 @@ const App: React.FC = () => {
   const [selectedGroupRoom, setSelectedGroupRoom] = useState<ChatRoom | null>(null);
   const [organizerToolTab, setOrganizerToolTab] = useState<'rooms' | 'members'>('rooms'); // State for organizer tool tab
   const [isStartLiveModalOpen, setIsStartLiveModalOpen] = useState(false);
+  const [isAutoStartLive, setIsAutoStartLive] = useState(false);
 
   // People Tab State
   const [selectedPerson, setSelectedPerson] = useState<Person | null>(null);
@@ -1526,6 +1527,7 @@ const App: React.FC = () => {
             onUseCoins={handleUseCoins}
             onOpenWallet={() => setIsWalletOpen(true)}
             onUserClick={handleOpenProfileById}
+            onStartLive={() => setIsStartLiveModalOpen(true)}
           />
         );
       }
@@ -2629,8 +2631,10 @@ const App: React.FC = () => {
       {isStartLiveModalOpen && (
         <StartLiveModal
           language={language}
-          onClose={() => setIsStartLiveModalOpen(false)}
-          onStart={handleStartStream}
+          onClose={() => { setIsStartLiveModalOpen(false); setIsAutoStartLive(false); }}
+          onStart={(stream) => { handleStartStream(stream); setIsAutoStartLive(false); }}
+          autoStart={isAutoStartLive}
+          initialTitle={isAutoStartLive ? "Goal Achieved Live! 🎉" : undefined}
         />
       )}
 
@@ -2815,6 +2819,10 @@ const App: React.FC = () => {
                   members: roomData.members || 1
                 };
                 setSelectedGroupRoom(formattedRoom);
+                // Auto trigger live setup
+                setIsStartLiveModalOpen(true);
+                setIsAutoStartLive(true);
+                setLiveType('private_group'); // Or specific type
               }
             }
           }}

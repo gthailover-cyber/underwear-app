@@ -18,6 +18,7 @@ interface GroupChatRoomProps {
   onUseCoins: (amount: number) => Promise<void>;
   onOpenWallet: () => void;
   onUserClick: (userId: string) => void;
+  onStartLive?: () => void;
 }
 
 // Simple gift list for chat room
@@ -37,7 +38,8 @@ const GroupChatRoom: React.FC<GroupChatRoomProps> = ({
   walletBalance,
   onUseCoins,
   onOpenWallet,
-  onUserClick
+  onUserClick,
+  onStartLive
 }) => {
   const t = TRANSLATIONS[language];
   const { showAlert } = useAlert();
