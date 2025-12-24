@@ -452,22 +452,6 @@ const GroupChatRoom: React.FC<GroupChatRoomProps> = ({
         const { data: model } = await supabase.from('profiles').select('*').eq('id', goal.model_id).single();
         if (model) setGoalModel(model);
 
-        // Timer logic (10 mins from created_at)
-        const created = new Date(goal.created_at).getTime();
-        const expiry = created + (10 * 60 * 1000);
-
-        const updateGoalTimer = () => {
-          const now = new Date().getTime();
-          const diff = Math.max(0, Math.floor((expiry - now) / 1000));
-          setGoalTimeLeft(diff);
-          if (diff <= 0 && isHost) {
-            finalizeGoal(goal);
-          }
-        };
-        updateGoalTimer();
-        const interval = setInterval(updateGoalTimer, 1000);
-        return () => clearInterval(interval);
-
       } else {
         setActiveGoal(null);
         setGoalModel(null);
@@ -476,6 +460,32 @@ const GroupChatRoom: React.FC<GroupChatRoomProps> = ({
       console.error('Error fetching goal:', err);
     }
   };
+
+  // Timer Effect for Active Goal
+  useEffect(() => {
+    if (!activeGoal) return;
+
+    const created = new Date(activeGoal.created_at).getTime();
+    const expiry = created + (10 * 60 * 1000);
+
+    const updateGoalTimer = () => {
+      const now = new Date().getTime();
+      const diff = Math.max(0, Math.floor((expiry - now) / 1000));
+      setGoalTimeLeft(diff);
+
+      if (diff <= 0 && isHost) {
+        // Prevent multiple finalize calls if already 0
+        if (activeGoal.status === 'active') { // Check status locally to reduce calls
+          finalizeGoal(activeGoal);
+        }
+      }
+    };
+
+    updateGoalTimer(); // Initial call
+    const interval = setInterval(updateGoalTimer, 1000);
+
+    return () => clearInterval(interval);
+  }, [activeGoal?.id, activeGoal?.created_at, activeGoal?.status]);
 
   const finalizeGoal = async (goal: any) => {
     if (!goal) return;
