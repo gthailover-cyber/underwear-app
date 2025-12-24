@@ -5,7 +5,7 @@ ALTER TABLE public.room_invites ADD COLUMN IF NOT EXISTS type TEXT DEFAULT 'live
 CREATE TABLE IF NOT EXISTS public.room_goal_donations (
     id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
     goal_id UUID REFERENCES public.room_donation_goals(id),
-    user_id UUID REFERENCES public.users(id),
+    user_id UUID REFERENCES auth.users(id),
     amount INTEGER NOT NULL,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now())
 );

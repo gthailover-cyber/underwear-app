@@ -39,9 +39,9 @@ const LiveConfirmationModal: React.FC<LiveConfirmationModalProps> = ({ notificat
 
             showAlert({ message: 'Refund initiated successfully', type: 'info' });
             onClose();
-        } catch (error) {
-            console.error('Error rejecting live:', error);
-            showAlert({ message: 'Error processing refund', type: 'error' });
+        } catch (error: any) {
+            console.error('Error rejecting live & refunding:', error, error.message, error.details, error.hint);
+            showAlert({ message: `Error processing refund: ${error.message || 'Unknown error'}`, type: 'error' });
         }
     };
 
