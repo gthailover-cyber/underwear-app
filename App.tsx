@@ -450,9 +450,19 @@ const App: React.FC = () => {
         )
         .subscribe();
 
-      // Listener for profile updates (to see others go online/offline)
+      // Listener for profile updates (to see others go online/offline) & OWN WALLET BALANCE
       profilesChannel = supabase
         .channel('public:profiles_status')
+        .on(
+          'postgres_changes',
+          { event: 'UPDATE', schema: 'public', table: 'profiles', filter: `id=eq.${session.user.id}` },
+          (payload) => {
+            console.log('My Profile Updated:', payload);
+            if (payload.new && typeof payload.new.wallet_balance === 'number') {
+              setWalletBalance(payload.new.wallet_balance);
+            }
+          }
+        )
         .on(
           'postgres_changes',
           { event: 'UPDATE', schema: 'public', table: 'profiles' },
