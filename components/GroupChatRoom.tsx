@@ -465,6 +465,12 @@ const GroupChatRoom: React.FC<GroupChatRoomProps> = ({
   useEffect(() => {
     if (!activeGoal) return;
 
+    // Check if goal is already reached amount
+    if (activeGoal.current_amount >= activeGoal.target_amount && isHost && activeGoal.status === 'active') {
+      finalizeGoal(activeGoal);
+      return;
+    }
+
     const created = new Date(activeGoal.created_at).getTime();
     const expiry = created + (10 * 60 * 1000);
 
@@ -485,7 +491,7 @@ const GroupChatRoom: React.FC<GroupChatRoomProps> = ({
     const interval = setInterval(updateGoalTimer, 1000);
 
     return () => clearInterval(interval);
-  }, [activeGoal?.id, activeGoal?.created_at, activeGoal?.status]);
+  }, [activeGoal?.id, activeGoal?.created_at, activeGoal?.status, activeGoal?.current_amount, isHost]);
 
   const finalizeGoal = async (goal: any) => {
     if (!goal) return;

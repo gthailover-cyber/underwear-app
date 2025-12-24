@@ -38,6 +38,7 @@ import UpdatePasswordModal from './components/UpdatePasswordModal';
 import CustomerOrders from './components/CustomerOrders';
 import Stories from './components/Stories';
 import InviteModal from './components/InviteModal';
+import LiveConfirmationModal from './components/LiveConfirmationModal';
 import { TRANSLATIONS, MOCK_USER_PROFILE, DEFAULT_IMAGES } from './constants';
 import { Streamer, Language, CartItem, UserProfile, MessagePreview, Product, Person, ChatRoom, ReceivedGift, AppNotification } from './types';
 import { useAlert } from './context/AlertContext';
@@ -135,6 +136,7 @@ const App: React.FC = () => {
     return diff < (10 * 60 * 1000); // 10 minutes threshold for better reliability
   };
   const [activeInvite, setActiveInvite] = useState<any>(null);
+  const [activeGoalConfirmation, setActiveGoalConfirmation] = useState<any>(null);
 
   const fetchFollowing = async (userId: string) => {
     try {
@@ -426,6 +428,9 @@ const App: React.FC = () => {
               // Show Invite Modal if it's a room invite
               if (data.type === 'room_invite') {
                 setActiveInvite(data);
+              } else if (data.type === 'system' && data.metadata?.result === 'success' && data.metadata?.goal_id) {
+                // Goal Reached
+                setActiveGoalConfirmation(data);
               }
             }
           }
@@ -2763,6 +2768,45 @@ const App: React.FC = () => {
             }
             setActiveInvite(null);
             showAlert({ message: 'Invitation declined', type: 'info' });
+          }}
+        />
+      )}
+
+      {/* Live Confirmation Modal */}
+      {activeGoalConfirmation && (
+        <LiveConfirmationModal
+          notification={activeGoalConfirmation}
+          onClose={() => setActiveGoalConfirmation(null)}
+          onConfirm={async () => {
+            // Here we should probably trigger the "Start Live" flow or navigate to the room as a Host
+            // For now, let's just close and show success.
+            // Ideally, we redirect to 'LIVE' tab or open 'StartLiveModal' pre-filled?
+            // The user requirement says: "If yes, enter live"
+
+            // Assuming we just close this and user initiates live, OR we auto-navigate.
+            setActiveGoalConfirmation(null);
+            showAlert({ message: 'Live Confirmed! setting up...', type: 'success' });
+
+            // Navigate to the room to start live stream
+            const roomId = activeGoalConfirmation.metadata?.room_id;
+            if (roomId) {
+              const { data: roomData } = await supabase.from('chat_rooms').select('*').eq('id', roomId).single();
+              if (roomData) {
+                // If user is hosting, they might need to go to specific live screen
+                // For simplicity, select the room which will open GroupChatRoom
+                // GroupChatRoom usually has "Start Live" button for host.
+                const formattedRoom: ChatRoom = {
+                  id: roomData.id,
+                  name: roomData.name,
+                  image: roomData.image || DEFAULT_IMAGES.COVER,
+                  type: roomData.type,
+                  hostId: roomData.host_id,
+                  hostName: '',
+                  members: roomData.members || 1
+                };
+                setSelectedGroupRoom(formattedRoom);
+              }
+            }
           }}
         />
       )}
