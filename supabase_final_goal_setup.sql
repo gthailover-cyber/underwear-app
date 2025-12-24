@@ -45,7 +45,7 @@ BEGIN
         -- Refund amount to user wallet in profiles table
         -- Assumes profiles table handles coins
         UPDATE public.profiles 
-        SET coins = coins + donation.amount 
+        SET wallet_balance = wallet_balance + donation.amount 
         WHERE id = donation.user_id;
     END LOOP;
 
