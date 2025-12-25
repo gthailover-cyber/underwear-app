@@ -52,7 +52,17 @@ const GroupChatRoom: React.FC<GroupChatRoomProps> = ({
   const { showAlert } = useAlert();
   const [activeTab, setActiveTab] = useState<'chat' | 'members'>('chat');
   const isHost = currentUserId === room.hostId;
-  const effectiveLiveStream = activeStreamer || streamers.find(s => s.id === room.id);
+  const foundStream = activeStreamer || streamers.find(s => s.id === room.id);
+  const [effectiveLiveStream, setEffectiveLiveStream] = useState<Streamer | undefined>(foundStream);
+
+  useEffect(() => {
+    if (foundStream) {
+      setEffectiveLiveStream(foundStream);
+    } else if (effectiveLiveStream?.id !== room.id) {
+      setEffectiveLiveStream(undefined);
+    }
+  }, [foundStream, room.id, effectiveLiveStream?.id]);
+
   const isLiveMode = !!effectiveLiveStream;
   const isStreamer = effectiveLiveStream?.hostId === currentUserId;
   const [isMicEnabled, setIsMicEnabled] = useState(true);
