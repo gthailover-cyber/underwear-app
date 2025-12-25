@@ -1026,7 +1026,7 @@ const App: React.FC = () => {
               current_bid: isAuction ? auctionStartingPrice : 0,
               product_ids: liveSelectedProducts.map(p => p.id),
               created_at: new Date().toISOString()
-            }).select(); // Select to confirm return
+            }, { onConflict: 'id' }).select(); // Select to confirm return
 
             if (error) {
               console.error("❌ Error creating room in DB:", error.message, error.details, error.hint);
