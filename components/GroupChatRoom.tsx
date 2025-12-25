@@ -1,6 +1,6 @@
 
 import React, { useState, useRef, useEffect } from 'react';
-import { ArrowLeft, MoreVertical, Send, Plus, Smile, Users, Lock, Globe, Gift, Coins, X, Check, Crown, BicepsFlexed, Ban, VolumeX, Volume2, Clock } from 'lucide-react';
+import { ArrowLeft, MoreVertical, Send, Plus, Smile, Users, Lock, Globe, Gift, Coins, X, Check, Crown, BicepsFlexed, Ban, VolumeX, Volume2, Clock, MessageSquare, MessageSquareOff } from 'lucide-react';
 import { ChatRoom, ChatMessage, Language, Streamer } from '../types';
 import { TRANSLATIONS } from '../constants';
 import { supabase } from '../lib/supabaseClient';
@@ -56,6 +56,7 @@ const GroupChatRoom: React.FC<GroupChatRoomProps> = ({
   const isLiveMode = !!effectiveLiveStream;
   const isStreamer = effectiveLiveStream?.hostId === currentUserId;
   const [isMicEnabled, setIsMicEnabled] = useState(true);
+  const [isChatVisible, setIsChatVisible] = useState(true);
   const [showGifts, setShowGifts] = useState(false);
   const [giftAnimation, setGiftAnimation] = useState<{ id: number; icon: string; name: string; sender: string } | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -1033,14 +1034,22 @@ const GroupChatRoom: React.FC<GroupChatRoomProps> = ({
             </button>
           </div>
         ) : (
-          <button className="text-gray-400 hover:text-white transition-colors p-2">
-            <MoreVertical size={20} />
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setIsChatVisible(!isChatVisible)}
+              className={`p-2 rounded-lg transition-colors ${!isChatVisible ? 'bg-red-500/80 text-white' : 'text-gray-300 hover:text-white hover:bg-white/10'}`}
+            >
+              {isChatVisible ? <MessageSquare size={20} /> : <MessageSquareOff size={20} />}
+            </button>
+            <button className="text-gray-400 hover:text-white transition-colors p-2">
+              <MoreVertical size={20} />
+            </button>
+          </div>
         )}
       </div>
 
       {/* Tabs */}
-      <div className={`px-4 py-2 border-b border-gray-800 relative z-10 ${isLiveMode ? 'bg-gray-900/60 backdrop-blur-sm' : 'bg-gray-900'}`}>
+      <div className={`px-4 py-2 border-b border-gray-800 relative z-10 ${isLiveMode ? 'bg-gray-900/60 backdrop-blur-sm' : 'bg-gray-900'} ${!isChatVisible && isLiveMode ? 'hidden' : ''}`}>
         <div className="flex bg-gray-800 p-1 rounded-lg">
           <button
             onClick={() => setActiveTab('chat')}
@@ -1060,7 +1069,7 @@ const GroupChatRoom: React.FC<GroupChatRoomProps> = ({
       </div>
 
       {/* Content Area */}
-      <div className={`flex-1 overflow-y-auto no-scrollbar relative z-10 ${isLiveMode ? 'bg-transparent' : 'bg-black'}`}>
+      <div className={`flex-1 overflow-y-auto no-scrollbar relative z-10 ${isLiveMode ? 'bg-transparent' : 'bg-black'} ${!isChatVisible && isLiveMode ? 'hidden' : ''}`}>
 
         {/* --- Chat View --- */}
         {activeTab === 'chat' && (
@@ -1423,7 +1432,7 @@ const GroupChatRoom: React.FC<GroupChatRoomProps> = ({
 
       {/* Input Area (Only visible in Chat Tab) */}
       {activeTab === 'chat' && (
-        <div className="p-3 bg-gray-900/90 backdrop-blur border-t border-gray-800 flex items-end gap-2 sticky bottom-0 z-30 pb-safe">
+        <div className={`p-3 bg-gray-900/90 backdrop-blur border-t border-gray-800 flex items-end gap-2 sticky bottom-0 z-30 pb-safe ${!isChatVisible && isLiveMode ? 'hidden' : ''}`}>
           <button
             onClick={() => {
               if (isHost) {
