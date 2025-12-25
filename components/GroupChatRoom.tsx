@@ -931,8 +931,6 @@ const GroupChatRoom: React.FC<GroupChatRoomProps> = ({
             className=""
             isMicrophoneEnabled={isMicEnabled}
           />
-          {/* Gradient Overlay for Text Readability */}
-          <div className="absolute inset-0 bg-gradient-to-t from-black via-black/20 to-black/60 pointer-events-none"></div>
         </div>
       )}
 
