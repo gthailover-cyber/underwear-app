@@ -2803,33 +2803,42 @@ const App: React.FC = () => {
             // The user requirement says: "If yes, enter live"
 
             // Assuming we just close this and user initiates live, OR we auto-navigate.
-            setActiveGoalConfirmation(null);
             showAlert({ message: 'Live Confirmed! setting up...', type: 'success' });
 
             // Navigate to the room to start live stream
             const roomId = activeGoalConfirmation.metadata?.room_id;
             if (roomId) {
-              const { data: roomData } = await supabase.from('chat_rooms').select('*').eq('id', roomId).single();
-              if (roomData) {
-                // If user is hosting, they might need to go to specific live screen
-                // For simplicity, select the room which will open GroupChatRoom
-                // GroupChatRoom usually has "Start Live" button for host.
-                const formattedRoom: ChatRoom = {
-                  id: roomData.id,
-                  name: roomData.name,
-                  image: roomData.image || DEFAULT_IMAGES.COVER,
-                  type: roomData.type,
-                  hostId: roomData.host_id,
-                  hostName: '',
-                  members: roomData.members || 1
-                };
-                setSelectedGroupRoom(formattedRoom);
+              // Try to find in local state first (faster)
+              let roomToEnter = chatRooms.find(r => r.id === roomId);
+
+              if (!roomToEnter) {
+                // Fallback to DB
+                const { data: roomData } = await supabase.from('chat_rooms').select('*').eq('id', roomId).single();
+                if (roomData) {
+                  roomToEnter = {
+                    id: roomData.id,
+                    name: roomData.name,
+                    image: roomData.image || DEFAULT_IMAGES.COVER,
+                    type: roomData.type,
+                    hostId: roomData.host_id,
+                    hostName: '',
+                    members: roomData.members || 1
+                  };
+                }
+              }
+
+              if (roomToEnter) {
+                setSelectedGroupRoom(roomToEnter);
                 // Auto trigger live setup
                 setIsStartLiveModalOpen(true);
                 setIsAutoStartLive(true);
-                setLiveType('private_group'); // Or specific type
+                setLiveType('private_group');
+              } else {
+                console.error("Could not find room to enter:", roomId);
+                showAlert({ message: "Error finding room", type: 'error' });
               }
             }
+            setActiveGoalConfirmation(null);
           }}
         />
       )}
