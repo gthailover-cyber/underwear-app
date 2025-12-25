@@ -66,6 +66,7 @@ const GroupChatRoom: React.FC<GroupChatRoomProps> = ({
   // Timer State
   const [liveEndTime, setLiveEndTime] = useState<number | null>(null);
   const [liveTimerLeft, setLiveTimerLeft] = useState<number>(0);
+  const [showEndLiveConfirm, setShowEndLiveConfirm] = useState(false);
 
   // 1. Calculate End Time
   useEffect(() => {
@@ -639,6 +640,48 @@ const GroupChatRoom: React.FC<GroupChatRoomProps> = ({
     }
   };
 
+  const handleManualEndLive = async () => {
+    setShowEndLiveConfirm(false);
+
+    // If ending early (timer still running), process refunds
+    if (liveTimerLeft > 0) {
+      showAlert({ message: "Ending early. Processing refunds...", type: 'info' });
+
+      try {
+        // Find the related goal (most recent completed)
+        const { data: recentGoal } = await supabase
+          .from('room_donation_goals')
+          .select('id')
+          .eq('room_id', room.id)
+          .eq('status', 'completed') // It was completed to start the live
+          .order('updated_at', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+
+        if (recentGoal) {
+          const { error: refundError } = await supabase.rpc('refund_goal_donations', { p_goal_id: recentGoal.id });
+          if (refundError) throw refundError;
+
+          // Notify chat
+          await supabase.from('room_messages').insert({
+            room_id: room.id,
+            sender_id: currentUserId,
+            content: '⚠️ Live ended early. All donations from the goal have been refunded.'
+          });
+
+          showAlert({ message: "Refunds processed successfully.", type: 'success' });
+        } else {
+          console.warn("No recent goal found to refund.");
+        }
+      } catch (err: any) {
+        console.error("Error refunding:", err);
+        showAlert({ message: "Error processing refund: " + err.message, type: 'error' });
+      }
+    }
+
+    if (onEndLive) onEndLive();
+  };
+
   const handleVote = async (modelId: string) => {
     if (userVote) {
       showAlert({ message: 'You have already voted!', type: 'info' });
@@ -968,9 +1011,18 @@ const GroupChatRoom: React.FC<GroupChatRoomProps> = ({
           </div>
         </div>
 
-        <button className="text-gray-400 hover:text-white transition-colors p-2">
-          <MoreVertical size={20} />
-        </button>
+        {isHost && isLiveMode ? (
+          <button
+            onClick={() => setShowEndLiveConfirm(true)}
+            className="bg-red-600 hover:bg-red-500 text-white px-3 py-1.5 rounded-lg text-xs font-bold transition-all shadow-lg shadow-red-900/20 active:scale-95 border border-red-500/50"
+          >
+            End Live
+          </button>
+        ) : (
+          <button className="text-gray-400 hover:text-white transition-colors p-2">
+            <MoreVertical size={20} />
+          </button>
+        )}
       </div>
 
       {/* Tabs */}
@@ -1748,6 +1800,45 @@ const GroupChatRoom: React.FC<GroupChatRoomProps> = ({
                   </span>
                 </button>
               ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* End Live Confirmation Modal */}
+      {showEndLiveConfirm && (
+        <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fade-in">
+          <div className="w-full max-w-sm bg-gray-900 rounded-3xl p-6 border border-red-500/30 shadow-2xl shadow-red-900/20">
+            <div className="text-center mb-6">
+              <div className="w-16 h-16 rounded-full bg-red-500/10 flex items-center justify-center mx-auto mb-4 text-red-500 animate-pulse">
+                <Clock size={32} />
+              </div>
+              <h3 className="text-white font-black text-xl mb-2">End Live Session?</h3>
+              <p className="text-gray-400 text-sm">
+                {liveTimerLeft > 0
+                  ? "Ending early requires refunding ALL donations to supporters. Proceed?"
+                  : "Are you sure you want to end the live session?"}
+              </p>
+              {liveTimerLeft > 0 && (
+                <div className="mt-3 bg-red-500/10 border border-red-500/20 text-red-400 text-xs p-2 rounded-lg font-bold">
+                  ⚠️ Refunds will be issued automatically.
+                </div>
+              )}
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <button
+                onClick={() => setShowEndLiveConfirm(false)}
+                className="py-3 rounded-xl font-bold bg-gray-800 text-gray-300 hover:bg-gray-700 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleManualEndLive}
+                className="py-3 rounded-xl font-black bg-red-600 text-white hover:bg-red-500 shadow-lg shadow-red-900/20 transition-all active:scale-95"
+              >
+                {liveTimerLeft > 0 ? "Refund & End" : "End Live"}
+              </button>
             </div>
           </div>
         </div>
