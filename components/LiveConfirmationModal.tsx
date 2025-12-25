@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { X, Check, Activity, Coins, HeartHandshake, AlertTriangle } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
 import { useAlert } from '../context/AlertContext';
@@ -13,6 +13,17 @@ const LiveConfirmationModal: React.FC<LiveConfirmationModalProps> = ({ notificat
     const { showAlert } = useAlert();
     const { room_id, goal_id } = notification.metadata || {};
     const [step, setStep] = useState<'initial' | 'warning'>('initial');
+    const [roomName, setRoomName] = useState<string>('Group Chat');
+
+    useEffect(() => {
+        const fetchRoomName = async () => {
+            if (room_id) {
+                const { data } = await supabase.from('chat_rooms').select('name').eq('id', room_id).single();
+                if (data) setRoomName(data.name);
+            }
+        };
+        fetchRoomName();
+    }, [room_id]);
 
     const handleConfirm = async () => {
         if (step === 'initial') {
@@ -104,7 +115,7 @@ const LiveConfirmationModal: React.FC<LiveConfirmationModalProps> = ({ notificat
                                 Important!
                             </h2>
                             <p className="text-gray-300 text-sm mb-8 px-2 leading-relaxed">
-                                กรุณาเข้าไปที่ห้องแชทกลุ่มและเริ่ม Live ภายใน <span className="text-yellow-400 font-bold text-lg">1 นาที</span>
+                                กรุณาเข้าไปที่ห้อง <span className="text-white font-bold">"{roomName}"</span> และเริ่ม Live ภายใน <span className="text-yellow-400 font-bold text-lg">1 นาที</span>
                                 <br />
                                 <span className="text-red-400 text-xs mt-2 block">หากไม่ทัน ระบบจะยกเลิกและคืนเงินผู้บริจาคโดยอัตโนมัติ</span>
                             </p>
@@ -113,7 +124,7 @@ const LiveConfirmationModal: React.FC<LiveConfirmationModalProps> = ({ notificat
                                 onClick={handleConfirm}
                                 className="w-full flex items-center justify-center gap-2 bg-white text-black hover:bg-gray-200 py-3 rounded-xl font-black text-lg transition-all active:scale-95"
                             >
-                                ตกลง (OK)
+                                ตกลง และ ไปที่ห้องทันที
                             </button>
                         </>
                     )}
