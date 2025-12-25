@@ -2555,7 +2555,7 @@ const App: React.FC = () => {
       )}
 
       {/* Overlays / Modals */}
-      {currentStreamer && (
+      {currentStreamer && (!selectedGroupRoom || selectedGroupRoom.id !== currentStreamer.id) && (
         <LiveRoom
           streamer={currentStreamer}
           isHost={currentStreamer.hostId === session?.user?.id}
