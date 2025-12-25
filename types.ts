@@ -67,6 +67,7 @@ export interface Streamer {
   hostId?: string; // Added: ID of the host user
   role?: UserRole; // Added for badges
   createdAt?: string; // ISO timestamp for start time tracking
+  type?: string; // 'private_group', etc.
 }
 
 export interface UserProfile {

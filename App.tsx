@@ -583,7 +583,6 @@ const App: React.FC = () => {
           `)
         .or(`last_active_at.gt.${twoMinutesAgo},last_active_at.is.null`)
         .neq('host_id', userId)
-        .neq('type', 'private_group')
         .order('created_at', { ascending: false });
 
       if (!error && data) {
@@ -639,6 +638,7 @@ const App: React.FC = () => {
             topBidder: room.top_bidder_name,
             useLiveKit: !room.video_url && !room.youtube_id,
             createdAt: room.created_at,
+            type: room.type,
           };
         });
         setStreamers(dbStreamers);
@@ -1863,7 +1863,7 @@ const App: React.FC = () => {
               </h2>
             </div>
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 px-2">
-              {streamers.map((streamer, index) => (
+              {streamers.filter(s => s.type !== 'private_group').map((streamer, index) => (
                 <StreamCard
                   key={`${streamer.id}-${index}`}
                   streamer={streamer}
@@ -1905,7 +1905,7 @@ const App: React.FC = () => {
             <div className="pt-16 pb-6 animate-fade-in">
               {homeTab === 'live' && (
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 px-2">
-                  {streamers.length > 0 ? streamers.map(streamer => (
+                  {streamers.filter(s => s.type !== 'private_group').length > 0 ? streamers.filter(s => s.type !== 'private_group').map(streamer => (
                     <StreamCard
                       key={streamer.id}
                       streamer={streamer}
