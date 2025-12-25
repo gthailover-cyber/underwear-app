@@ -252,6 +252,24 @@ const GroupChatRoom: React.FC<GroupChatRoomProps> = ({
               read: true
             };
             setMessages(prev => [...prev, newMsg]);
+
+            // TRIGGER GIFT ANIMATION FOR OTHERS
+            if (data.content.startsWith('🎁 ส่งของขวัญ') && data.sender_id !== currentUserId) {
+              const id = Date.now();
+              // Format: "🎁 ส่งของขวัญ [Name] [Icon] ให้ผู้จัด"
+              const cleanContent = data.content.replace('🎁 ส่งของขวัญ ', '').replace(' ให้ผู้จัด', '');
+              const parts = cleanContent.split(' ');
+              const icon = parts.length > 1 ? parts.pop() : '🎁';
+              const name = parts.join(' ');
+
+              setGiftAnimation({
+                id,
+                icon: icon || '🎁',
+                name: name || 'Gift',
+                sender: newMsg.senderName
+              });
+              setTimeout(() => setGiftAnimation(null), 3000);
+            }
           }
         }
       )
