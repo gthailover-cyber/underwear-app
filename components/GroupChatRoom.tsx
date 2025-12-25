@@ -54,6 +54,7 @@ const GroupChatRoom: React.FC<GroupChatRoomProps> = ({
   const isHost = currentUserId === room.hostId;
   const effectiveLiveStream = activeStreamer || streamers.find(s => s.id === room.id);
   const isLiveMode = !!effectiveLiveStream;
+  const isStreamer = effectiveLiveStream?.hostId === currentUserId;
   const [showGifts, setShowGifts] = useState(false);
   const [giftAnimation, setGiftAnimation] = useState<{ id: number; icon: string; name: string; sender: string } | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -92,7 +93,7 @@ const GroupChatRoom: React.FC<GroupChatRoomProps> = ({
     const initialRemaining = Math.max(0, liveEndTime - now);
     setLiveTimerLeft(initialRemaining);
 
-    if (initialRemaining <= 0 && isHost) {
+    if (initialRemaining <= 0 && isStreamer) {
       // Check immediately only if explicitly loaded late? 
       // Better to let interval run at least once or handle immediate expiry.
       // But if we just loaded and it's expired, we should close it.
@@ -110,7 +111,7 @@ const GroupChatRoom: React.FC<GroupChatRoomProps> = ({
 
       if (remaining <= 0) {
         clearInterval(timer);
-        if (isHost && onEndLive) {
+        if (isStreamer && onEndLive) {
           onEndLive();
           // Force cleanup local state just in case
           setLiveEndTime(null);
@@ -120,7 +121,7 @@ const GroupChatRoom: React.FC<GroupChatRoomProps> = ({
     }, 1000);
 
     return () => clearInterval(timer);
-  }, [liveEndTime, isLiveMode, isHost, onEndLive]);
+  }, [liveEndTime, isLiveMode, isStreamer, onEndLive]);
   const [isBanned, setIsBanned] = useState(false);
   const [currentUserIdState, setCurrentUserIdState] = useState<string | null>(null);
   const [showAvailableModels, setShowAvailableModels] = useState(false);
@@ -1011,7 +1012,7 @@ const GroupChatRoom: React.FC<GroupChatRoomProps> = ({
           </div>
         </div>
 
-        {isHost && isLiveMode ? (
+        {isStreamer && isLiveMode ? (
           <button
             onClick={() => setShowEndLiveConfirm(true)}
             className="bg-red-600 hover:bg-red-500 text-white px-3 py-1.5 rounded-lg text-xs font-bold transition-all shadow-lg shadow-red-900/20 active:scale-95 border border-red-500/50"
