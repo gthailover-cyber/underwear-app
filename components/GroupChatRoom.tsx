@@ -1,12 +1,13 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { ArrowLeft, MoreVertical, Send, Plus, Smile, Users, Lock, Globe, Gift, Coins, X, Check, Crown, BicepsFlexed, Ban, VolumeX, Volume2, Clock } from 'lucide-react';
-import { ChatRoom, ChatMessage, Language } from '../types';
+import { ChatRoom, ChatMessage, Language, Streamer } from '../types';
 import { TRANSLATIONS } from '../constants';
 import { supabase } from '../lib/supabaseClient';
 import { useAlert } from '../context/AlertContext';
 import { DEFAULT_IMAGES } from '../constants';
 import UserBadge from './UserBadge';
+import LiveKitVideo from './LiveKitVideo';
 
 interface GroupChatRoomProps {
   room: ChatRoom;
@@ -19,6 +20,8 @@ interface GroupChatRoomProps {
   onOpenWallet: () => void;
   onUserClick: (userId: string) => void;
   onStartLive?: () => void;
+  streamers?: Streamer[];
+  activeStreamer?: Streamer;
 }
 
 // Simple gift list for chat room
@@ -39,7 +42,9 @@ const GroupChatRoom: React.FC<GroupChatRoomProps> = ({
   onUseCoins,
   onOpenWallet,
   onUserClick,
-  onStartLive
+  onStartLive,
+  streamers = [],
+  activeStreamer
 }) => {
   const t = TRANSLATIONS[language];
   const { showAlert } = useAlert();
@@ -802,9 +807,26 @@ const GroupChatRoom: React.FC<GroupChatRoomProps> = ({
       showAlert({ message: 'Failed to update ban status', type: 'error' });
     }
   };
+  const effectiveLiveStream = activeStreamer || streamers.find(s => s.id === room.id);
+  const isLiveMode = !!effectiveLiveStream;
 
   return (
-    <div className="flex flex-col h-screen bg-black animate-slide-in relative overflow-hidden">
+    <div className={`flex flex-col h-screen ${isLiveMode ? 'bg-black/30' : 'bg-black'} animate-slide-in relative overflow-hidden`}>
+      {/* Live Video Background */}
+      {isLiveMode && effectiveLiveStream && (
+        <div className="absolute inset-0 z-0">
+          <LiveKitVideo
+            roomName={effectiveLiveStream.id}
+            isHost={effectiveLiveStream.hostId === currentUserId}
+            participantName={currentUser}
+            onError={(e) => console.error("LiveKit Error:", e)}
+            className=""
+          />
+          {/* Gradient Overlay for Text Readability */}
+          <div className="absolute inset-0 bg-gradient-to-t from-black via-black/20 to-black/60 pointer-events-none"></div>
+        </div>
+      )}
+
       {/* Animation Overlay */}
       {isBanned && (
         <div className="absolute inset-0 z-[200] bg-black/95 flex flex-col items-center justify-center p-8 text-center animate-fade-in backdrop-blur-xl">
@@ -884,7 +906,7 @@ const GroupChatRoom: React.FC<GroupChatRoomProps> = ({
       </div>
 
       {/* Tabs */}
-      <div className="px-4 py-2 bg-gray-900 border-b border-gray-800">
+      <div className={`px-4 py-2 border-b border-gray-800 relative z-10 ${isLiveMode ? 'bg-gray-900/60 backdrop-blur-sm' : 'bg-gray-900'}`}>
         <div className="flex bg-gray-800 p-1 rounded-lg">
           <button
             onClick={() => setActiveTab('chat')}
@@ -904,7 +926,7 @@ const GroupChatRoom: React.FC<GroupChatRoomProps> = ({
       </div>
 
       {/* Content Area */}
-      <div className="flex-1 overflow-y-auto no-scrollbar bg-black relative">
+      <div className={`flex-1 overflow-y-auto no-scrollbar relative z-10 ${isLiveMode ? 'bg-transparent' : 'bg-black'}`}>
 
         {/* --- Chat View --- */}
         {activeTab === 'chat' && (

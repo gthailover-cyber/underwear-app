@@ -977,8 +977,11 @@ const App: React.FC = () => {
         clearInterval(timer);
         setIsCountdownActive(false);
 
-        // Generate a valid UUID for the room ID (Required by Supabase 'uuid' column type)
-        const roomId = crypto.randomUUID();
+        // Generate a valid UUID for the room ID
+        // If this is a private group live, we MUST use the Group Room ID to link them
+        const roomId = (liveType === 'private_group' && selectedGroupRoom)
+          ? selectedGroupRoom.id
+          : crypto.randomUUID();
 
         // Construct Final Stream Object
         const isAuction = liveType === 'auction';
@@ -1528,6 +1531,8 @@ const App: React.FC = () => {
             onOpenWallet={() => setIsWalletOpen(true)}
             onUserClick={handleOpenProfileById}
             onStartLive={() => setIsStartLiveModalOpen(true)}
+            streamers={streamers}
+            activeStreamer={currentStreamer?.id === selectedGroupRoom.id ? currentStreamer : undefined}
           />
         );
       }
