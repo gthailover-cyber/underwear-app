@@ -11,6 +11,7 @@ interface LiveKitVideoProps {
     onConnected?: () => void;
     onDisconnected?: () => void;
     className?: string;
+    isMicrophoneEnabled?: boolean;
 }
 
 const LiveKitVideo: React.FC<LiveKitVideoProps> = ({
@@ -20,7 +21,8 @@ const LiveKitVideo: React.FC<LiveKitVideoProps> = ({
     onError,
     onConnected,
     onDisconnected,
-    className = ''
+    className = '',
+    isMicrophoneEnabled = true
 }) => {
     const videoRef = useRef<HTMLVideoElement>(null);
     const [isConnecting, setIsConnecting] = useState(true);
@@ -77,7 +79,7 @@ const LiveKitVideo: React.FC<LiveKitVideoProps> = ({
                 // --- HOST LOGIC ---
                 if (isHost) {
                     await liveKitService.enableCamera(true);
-                    await liveKitService.enableMicrophone(true);
+                    await liveKitService.enableMicrophone(isMicrophoneEnabled);
 
                     setTimeout(() => {
                         if (!connectedRoom.localParticipant) return;
@@ -168,6 +170,13 @@ const LiveKitVideo: React.FC<LiveKitVideoProps> = ({
             });
         };
     }, [roomName, isHost, participantName]);
+
+    // Handle Microphone Toggle dynamically
+    useEffect(() => {
+        if (isHost && !isConnecting) {
+            liveKitService.enableMicrophone(isMicrophoneEnabled).catch(err => console.error("Mic toggle failed:", err));
+        }
+    }, [isMicrophoneEnabled, isHost, isConnecting]);
 
     // Handle tap to unmute
     const handleVideoClick = () => {

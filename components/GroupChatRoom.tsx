@@ -55,6 +55,7 @@ const GroupChatRoom: React.FC<GroupChatRoomProps> = ({
   const effectiveLiveStream = activeStreamer || streamers.find(s => s.id === room.id);
   const isLiveMode = !!effectiveLiveStream;
   const isStreamer = effectiveLiveStream?.hostId === currentUserId;
+  const [isMicEnabled, setIsMicEnabled] = useState(true);
   const [showGifts, setShowGifts] = useState(false);
   const [giftAnimation, setGiftAnimation] = useState<{ id: number; icon: string; name: string; sender: string } | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -927,6 +928,7 @@ const GroupChatRoom: React.FC<GroupChatRoomProps> = ({
             participantName={currentUser}
             onError={(e) => console.error("LiveKit Error:", e)}
             className=""
+            isMicrophoneEnabled={isMicEnabled}
           />
           {/* Gradient Overlay for Text Readability */}
           <div className="absolute inset-0 bg-gradient-to-t from-black via-black/20 to-black/60 pointer-events-none"></div>
@@ -1015,12 +1017,21 @@ const GroupChatRoom: React.FC<GroupChatRoomProps> = ({
         </div>
 
         {isStreamer && isLiveMode ? (
-          <button
-            onClick={() => setShowEndLiveConfirm(true)}
-            className="bg-red-600 hover:bg-red-500 text-white px-3 py-1.5 rounded-lg text-xs font-bold transition-all shadow-lg shadow-red-900/20 active:scale-95 border border-red-500/50"
-          >
-            End Live
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setIsMicEnabled(!isMicEnabled)}
+              className={`p-1.5 rounded-lg transition-all border ${isMicEnabled ? 'bg-gray-800/80 border-gray-700 text-white hover:bg-gray-700' : 'bg-red-500/80 border-red-400 text-white hover:bg-red-600'}`}
+            >
+              {isMicEnabled ? <Volume2 size={18} /> : <VolumeX size={18} />}
+            </button>
+
+            <button
+              onClick={() => setShowEndLiveConfirm(true)}
+              className="bg-red-600 hover:bg-red-500 text-white px-3 py-1.5 rounded-lg text-xs font-bold transition-all shadow-lg shadow-red-900/20 active:scale-95 border border-red-500/50"
+            >
+              End Live
+            </button>
+          </div>
         ) : (
           <button className="text-gray-400 hover:text-white transition-colors p-2">
             <MoreVertical size={20} />
