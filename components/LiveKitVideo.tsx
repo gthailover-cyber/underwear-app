@@ -65,6 +65,10 @@ const LiveKitVideo: React.FC<LiveKitVideoProps> = ({
                         }
                         videoRef.current.play().catch(e => {
                             console.warn("Autoplay failed (will wait for user interaction):", e);
+                            if (videoRef.current) {
+                                videoRef.current.muted = true;
+                                videoRef.current.play().catch(console.error);
+                            }
                         });
                     } else if (track.kind === Track.Kind.Audio && !isHost) {
                         // Check if already attached to prevent echo/duplicates
@@ -125,8 +129,19 @@ const LiveKitVideo: React.FC<LiveKitVideoProps> = ({
                 const pollInterval = setInterval(() => {
                     if (!videoRef.current || !connectedRoom) return;
 
-                    // Check Video Playback
-                    if (videoRef.current.paused && !videoRef.current.srcObject) {
+                    // 1. Check Playback: If attached but paused, force play
+                    if (videoRef.current.srcObject && videoRef.current.paused && !videoRef.current.ended) {
+                        videoRef.current.play().catch(() => {
+                            // If unmuted play fails, try mute
+                            if (videoRef.current && !videoRef.current.muted) {
+                                videoRef.current.muted = true;
+                                videoRef.current.play().catch(() => { });
+                            }
+                        });
+                    }
+
+                    // 2. Check Attachment: If NO srcObject, try to find and attach
+                    if (!videoRef.current.srcObject) {
                         if (isHost) {
                             const pub = Array.from(connectedRoom.localParticipant.videoTrackPublications.values()).find(p => p.kind === 'video');
                             if (pub?.track) tryAttach(pub.track);
