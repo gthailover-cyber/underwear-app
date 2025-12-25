@@ -655,11 +655,12 @@ const GroupChatRoom: React.FC<GroupChatRoomProps> = ({
           .select('id')
           .eq('room_id', room.id)
           .eq('status', 'completed') // It was completed to start the live
-          .order('updated_at', { ascending: false })
+          .order('created_at', { ascending: false }) // Use created_at to be safe
           .limit(1)
           .maybeSingle();
 
         if (recentGoal) {
+          console.log("Found goal to refund:", recentGoal.id);
           const { error: refundError } = await supabase.rpc('refund_goal_donations', { p_goal_id: recentGoal.id });
           if (refundError) throw refundError;
 
@@ -673,6 +674,7 @@ const GroupChatRoom: React.FC<GroupChatRoomProps> = ({
           showAlert({ message: "Refunds processed successfully.", type: 'success' });
         } else {
           console.warn("No recent goal found to refund.");
+          showAlert({ message: "System could not find the donation goal to refund.", type: 'error' });
         }
       } catch (err: any) {
         console.error("Error refunding:", err);
