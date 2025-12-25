@@ -583,6 +583,7 @@ const App: React.FC = () => {
           `)
         .or(`last_active_at.gt.${twoMinutesAgo},last_active_at.is.null`)
         .neq('host_id', userId)
+        .neq('type', 'private_group')
         .order('created_at', { ascending: false });
 
       if (!error && data) {
@@ -1027,7 +1028,8 @@ const App: React.FC = () => {
               auction_starting_price: isAuction ? auctionStartingPrice : 0,
               current_bid: isAuction ? auctionStartingPrice : 0,
               product_ids: liveSelectedProducts.map(p => p.id),
-              created_at: new Date().toISOString()
+              created_at: new Date().toISOString(),
+              type: liveType
             }, { onConflict: 'id' }).select(); // Select to confirm return
 
             if (error) {
