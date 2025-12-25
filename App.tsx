@@ -1012,7 +1012,7 @@ const App: React.FC = () => {
           });
 
           try {
-            const { data, error } = await supabase.from('rooms').insert({
+            const { data, error } = await supabase.from('rooms').upsert({
               id: roomId,
               host_id: session?.user?.id,
               title: streamConfig.title || 'Untitled Live',
