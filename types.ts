@@ -66,6 +66,7 @@ export interface Streamer {
   topBidder?: string; // Added: Username of the current top bidder
   hostId?: string; // Added: ID of the host user
   role?: UserRole; // Added for badges
+  createdAt?: string; // ISO timestamp for start time tracking
 }
 
 export interface UserProfile {

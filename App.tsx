@@ -637,6 +637,7 @@ const App: React.FC = () => {
             currentBid: room.current_bid,
             topBidder: room.top_bidder_name,
             useLiveKit: !room.video_url && !room.youtube_id,
+            createdAt: room.created_at,
           };
         });
         setStreamers(dbStreamers);
@@ -999,6 +1000,7 @@ const App: React.FC = () => {
           auctionStartingPrice: isAuction ? auctionStartingPrice : undefined,
           currentBid: isAuction ? auctionStartingPrice : 0,
           hostId: session?.user?.id, // Explicitly enforce session ID
+          createdAt: new Date().toISOString(), // Start time
         };
 
         setCurrentStreamer(myStream);
@@ -1533,6 +1535,7 @@ const App: React.FC = () => {
             onStartLive={() => setIsStartLiveModalOpen(true)}
             streamers={streamers}
             activeStreamer={currentStreamer?.id === selectedGroupRoom.id ? currentStreamer : undefined}
+            onEndLive={() => handleCloseStream()}
           />
         );
       }

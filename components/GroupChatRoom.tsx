@@ -22,6 +22,7 @@ interface GroupChatRoomProps {
   onStartLive?: () => void;
   streamers?: Streamer[];
   activeStreamer?: Streamer;
+  onEndLive?: () => void;
 }
 
 // Simple gift list for chat room
@@ -44,12 +45,15 @@ const GroupChatRoom: React.FC<GroupChatRoomProps> = ({
   onUserClick,
   onStartLive,
   streamers = [],
-  activeStreamer
+  activeStreamer,
+  onEndLive
 }) => {
   const t = TRANSLATIONS[language];
   const { showAlert } = useAlert();
   const [activeTab, setActiveTab] = useState<'chat' | 'members'>('chat');
   const isHost = currentUserId === room.hostId;
+  const effectiveLiveStream = activeStreamer || streamers.find(s => s.id === room.id);
+  const isLiveMode = !!effectiveLiveStream;
   const [showGifts, setShowGifts] = useState(false);
   const [giftAnimation, setGiftAnimation] = useState<{ id: number; icon: string; name: string; sender: string } | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -58,6 +62,64 @@ const GroupChatRoom: React.FC<GroupChatRoomProps> = ({
   const [inputText, setInputText] = useState('');
   const [isMember, setIsMember] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
+
+  // Timer State
+  const [liveEndTime, setLiveEndTime] = useState<number | null>(null);
+  const [liveTimerLeft, setLiveTimerLeft] = useState<number>(0);
+
+  // 1. Calculate End Time
+  useEffect(() => {
+    if (effectiveLiveStream?.createdAt) {
+      // 1 hour after creation
+      const end = new Date(effectiveLiveStream.createdAt).getTime() + 60 * 60 * 1000;
+      setLiveEndTime(end);
+    } else if (effectiveLiveStream && !effectiveLiveStream.createdAt) {
+      // If no createdAt available (legacy), maybe default to now + 1hr? Or disable timer.
+      // For now, assume null means no timer or not tracked.
+      setLiveEndTime(null);
+    } else {
+      setLiveEndTime(null);
+    }
+  }, [effectiveLiveStream]);
+
+  // 2. Countdown Effect
+  useEffect(() => {
+    if (!liveEndTime || !isLiveMode) return;
+
+    // Initial check
+    const now = Date.now();
+    const initialRemaining = Math.max(0, liveEndTime - now);
+    setLiveTimerLeft(initialRemaining);
+
+    if (initialRemaining <= 0 && isHost) {
+      // Check immediately only if explicitly loaded late? 
+      // Better to let interval run at least once or handle immediate expiry.
+      // But if we just loaded and it's expired, we should close it.
+      if (onEndLive) {
+        onEndLive();
+        showAlert({ message: "Live session expired", type: 'warning' });
+        return;
+      }
+    }
+
+    const timer = setInterval(() => {
+      const now = Date.now();
+      const remaining = Math.max(0, liveEndTime - now);
+      setLiveTimerLeft(remaining);
+
+      if (remaining <= 0) {
+        clearInterval(timer);
+        if (isHost && onEndLive) {
+          onEndLive();
+          // Force cleanup local state just in case
+          setLiveEndTime(null);
+          showAlert({ message: "Time's up! Live session ended automatically.", type: 'warning' });
+        }
+      }
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, [liveEndTime, isLiveMode, isHost, onEndLive]);
   const [isBanned, setIsBanned] = useState(false);
   const [currentUserIdState, setCurrentUserIdState] = useState<string | null>(null);
   const [showAvailableModels, setShowAvailableModels] = useState(false);
@@ -807,8 +869,6 @@ const GroupChatRoom: React.FC<GroupChatRoomProps> = ({
       showAlert({ message: 'Failed to update ban status', type: 'error' });
     }
   };
-  const effectiveLiveStream = activeStreamer || streamers.find(s => s.id === room.id);
-  const isLiveMode = !!effectiveLiveStream;
 
   return (
     <div className={`flex flex-col h-screen ${isLiveMode ? 'bg-black/30' : 'bg-black'} animate-slide-in relative overflow-hidden`}>
@@ -894,9 +954,17 @@ const GroupChatRoom: React.FC<GroupChatRoomProps> = ({
 
           <div className="flex flex-col">
             <span className="text-white font-bold text-base leading-tight truncate max-w-[150px]">{room.name}</span>
-            <span className="text-[10px] text-gray-400 font-medium flex items-center gap-1">
-              <Users size={10} /> {room.members.toLocaleString()} {t.members}
-            </span>
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] text-gray-400 font-medium flex items-center gap-1">
+                <Users size={10} /> {room.members.toLocaleString()} {t.members}
+              </span>
+              {isLiveMode && liveEndTime && (
+                <span className="text-[10px] text-red-400 font-bold flex items-center gap-1 bg-red-900/30 px-1.5 py-0.5 rounded border border-red-500/20">
+                  <Clock size={8} className="animate-pulse" />
+                  {Math.floor(liveTimerLeft / 1000 / 3600)}:{String(Math.floor((liveTimerLeft / 1000 / 60) % 60)).padStart(2, '0')}:{String(Math.floor((liveTimerLeft / 1000) % 60)).padStart(2, '0')}
+                </span>
+              )}
+            </div>
           </div>
         </div>
 
