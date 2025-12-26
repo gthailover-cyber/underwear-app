@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { ArrowLeft, Search, CheckCheck, BadgeCheck, Users, Lock, Globe, Plus } from 'lucide-react';
-import { Language, MessagePreview, ChatRoom, UserProfile } from '../types';
+import { Language, MessagePreview, ChatRoom, UserProfile, Streamer } from '../types';
 import { TRANSLATIONS, DEFAULT_IMAGES } from '../constants';
 import { supabase } from '../lib/supabaseClient';
 import UserBadge from './UserBadge';
@@ -17,6 +17,7 @@ interface MessagesProps {
   userProfile: UserProfile;
   onCreateRoom: () => void;
   currentUserId?: string;
+  streamers: Streamer[];
 }
 
 const Messages: React.FC<MessagesProps> = ({
@@ -29,7 +30,8 @@ const Messages: React.FC<MessagesProps> = ({
   roomUnreadCounts,
   userProfile,
   onCreateRoom,
-  currentUserId
+  currentUserId,
+  streamers
 }) => {
   const t = TRANSLATIONS[language];
   const [activeTab, setActiveTab] = useState<'chats' | 'groups'>('chats');
@@ -231,6 +233,11 @@ const Messages: React.FC<MessagesProps> = ({
                     <div className="w-14 h-14 rounded-xl bg-gray-800 overflow-hidden border border-gray-700 group-hover:border-gray-500 transition-colors">
                       <img src={room.image} className="w-full h-full object-cover" />
                     </div>
+                    {streamers.some(s => s.id === room.id) && (
+                      <div className="absolute -top-1.5 -right-1.5 bg-red-600 text-[8px] font-black text-white px-2 py-0.5 rounded-full border-2 border-black shadow-lg shadow-red-900/40 animate-pulse z-10">
+                        LIVE
+                      </div>
+                    )}
                     <div className="absolute -bottom-1 -right-1 bg-gray-900 rounded-full p-0.5 border border-gray-700">
                       {room.type === 'private' ? <Lock size={12} className="text-yellow-500" /> : <Globe size={12} className="text-blue-500" />}
                     </div>

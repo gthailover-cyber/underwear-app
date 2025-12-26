@@ -797,26 +797,39 @@ const App: React.FC = () => {
     setCurrentStreamer(streamer);
   };
 
-  const handleCloseStream = React.useCallback(async () => {
-    console.log("handleCloseStream Triggered");
+  const handleCloseStream = React.useCallback(async (roomId?: string) => {
+    console.log("handleCloseStream Triggered", roomId);
+
+    const targetRoomId = roomId || currentStreamer?.id;
+    if (!targetRoomId) {
+      setCurrentStreamer(null);
+      return;
+    }
 
     // Check if I am the host
-    if (session?.user && currentStreamer) {
-      if (currentStreamer.hostId === session.user.id) {
-        try {
-          const { error } = await supabase.from('rooms').delete().eq('id', currentStreamer.id);
-          if (error) {
-            console.error("❌ Error deleting room from DB:", error.message);
-          }
-        } catch (err) {
-          console.error("❌ Error running delete command:", err);
+    if (session?.user) {
+      try {
+        const { error } = await supabase
+          .from('rooms')
+          .delete()
+          .eq('id', targetRoomId)
+          .eq('host_id', session.user.id);
+
+        if (error) {
+          console.error("❌ Error deleting room from DB:", error.message);
+        } else {
+          console.log("✅ Room deleted successfully:", targetRoomId);
         }
+      } catch (err) {
+        console.error("❌ Error running delete command:", err);
       }
     }
 
     // Always clear local state to close the modal
-    setCurrentStreamer(null);
-  }, [session?.user, currentStreamer?.id, currentStreamer?.hostId]);
+    if (!roomId || (currentStreamer && currentStreamer.id === roomId)) {
+      setCurrentStreamer(null);
+    }
+  }, [session?.user, currentStreamer?.id]);
 
   const handleTopUp = async (amount: number) => {
     setWalletBalance(prev => prev + amount);
@@ -1537,7 +1550,7 @@ const App: React.FC = () => {
             onStartLive={() => setIsStartLiveModalOpen(true)}
             streamers={streamers}
             activeStreamer={currentStreamer?.id === selectedGroupRoom.id ? currentStreamer : undefined}
-            onEndLive={() => handleCloseStream()}
+            onEndLive={() => handleCloseStream(selectedGroupRoom.id)}
           />
         );
       }
@@ -1553,6 +1566,7 @@ const App: React.FC = () => {
           userProfile={userProfile}
           onCreateRoom={() => setIsCreateRoomOpen(true)}
           currentUserId={session?.user?.id}
+          streamers={streamers}
         />
       );
     }
