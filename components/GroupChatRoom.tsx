@@ -58,10 +58,11 @@ const GroupChatRoom: React.FC<GroupChatRoomProps> = ({
   useEffect(() => {
     if (foundStream) {
       setEffectiveLiveStream(foundStream);
-    } else if (effectiveLiveStream?.id !== room.id) {
+    } else {
+      // If it's gone from both activeStreamer prop and streamers list, it's ended.
       setEffectiveLiveStream(undefined);
     }
-  }, [foundStream, room.id, effectiveLiveStream?.id]);
+  }, [foundStream]);
 
   const isLiveMode = !!effectiveLiveStream;
   const isStreamer = effectiveLiveStream?.hostId === currentUserId;
@@ -712,6 +713,8 @@ const GroupChatRoom: React.FC<GroupChatRoomProps> = ({
       }
     }
 
+    // Force clear state locally so the screen cuts immediately for the host
+    setEffectiveLiveStream(undefined);
     if (onEndLive) onEndLive();
   };
 

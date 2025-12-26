@@ -582,7 +582,6 @@ const App: React.FC = () => {
             profiles:host_id (username, avatar, last_seen_at, role)
           `)
         .or(`last_active_at.gt.${twoMinutesAgo},last_active_at.is.null`)
-        .neq('host_id', userId)
         .order('created_at', { ascending: false });
 
       if (!error && data) {
