@@ -544,9 +544,7 @@ const GroupChatRoom: React.FC<GroupChatRoomProps> = ({
         .from('room_donation_goals')
         .select('*')
         .eq('room_id', room.id)
-        .or('status.eq.active,status.eq.completed')
-        .order('created_at', { ascending: false })
-        .limit(1)
+        .eq('status', 'active')
         .maybeSingle();
 
       if (goal) {
@@ -636,7 +634,8 @@ const GroupChatRoom: React.FC<GroupChatRoomProps> = ({
           is_read: false,
           metadata: { room_id: room.id, goal_id: goal.id, result: 'success' }
         });
-        // DO NOT clear activeGoal locally if success, let UI stay with status='completed'
+        // Clear activeGoal locally since it's now completed
+        setActiveGoal(null);
       }
     } catch (err) {
       console.error('Error finalizing goal:', err);
@@ -1107,7 +1106,7 @@ const GroupChatRoom: React.FC<GroupChatRoomProps> = ({
           <div className="flex flex-col h-full">
             {/* Active Poll Banner */}
             {/* Active Donation Goal */}
-            {activeGoal && goalModel && (
+            {activeGoal && activeGoal.status === 'active' && goalModel && (
               <div className="mx-4 mt-4 bg-gradient-to-br from-gray-800 to-black rounded-3xl p-4 border border-amber-500/30 shadow-2xl shadow-amber-900/10 relative overflow-hidden animate-slide-down">
                 {/* Decorative Glow */}
                 <div className="absolute top-0 right-0 w-32 h-32 bg-amber-500/10 rounded-full blur-3xl -mr-10 -mt-10"></div>
@@ -1166,17 +1165,13 @@ const GroupChatRoom: React.FC<GroupChatRoomProps> = ({
                     </span>
                   </div>
 
-                  {activeGoal.status === 'active' ? (
+                  {activeGoal.status === 'active' && (
                     <button
                       onClick={handleDonateToGoal}
                       className="bg-amber-500 hover:bg-amber-400 text-black font-black text-xs px-4 py-2 rounded-xl transition-all active:scale-95 shadow-lg shadow-amber-500/20 flex items-center gap-1.5"
                     >
                       <Gift size={12} /> DONATE
                     </button>
-                  ) : (
-                    <div className="bg-green-600 text-white font-black text-[10px] px-3 py-1.5 rounded-lg flex items-center gap-1.5 shadow-lg shadow-green-900/20 uppercase">
-                      <Check size={12} /> Goal Hit!
-                    </div>
                   )}
                 </div>
               </div>
@@ -1488,12 +1483,14 @@ const GroupChatRoom: React.FC<GroupChatRoomProps> = ({
                 <Plus size={22} />
               </button>
             )}
-            <button
-              onClick={() => setShowGifts(true)}
-              className="p-2.5 text-yellow-500 hover:text-yellow-400 bg-gray-800 border border-yellow-500/30 rounded-full transition-colors flex-shrink-0"
-            >
-              <Gift size={22} />
-            </button>
+            {!isHost && (
+              <button
+                onClick={() => setShowGifts(true)}
+                className="p-2.5 text-yellow-500 hover:text-yellow-400 bg-gray-800 border border-yellow-500/30 rounded-full transition-colors flex-shrink-0"
+              >
+                <Gift size={22} />
+              </button>
+            )}
           </div>
 
           <form
