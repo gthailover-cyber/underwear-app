@@ -68,6 +68,7 @@ export interface Streamer {
   role?: UserRole; // Added for badges
   createdAt?: string; // ISO timestamp for start time tracking
   type?: string; // 'private_group', etc.
+  room_id?: string; // Added: ID of the group room this live is occurring in
 }
 
 export interface UserProfile {

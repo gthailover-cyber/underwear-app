@@ -638,6 +638,7 @@ const App: React.FC = () => {
             useLiveKit: !room.video_url && !room.youtube_id,
             createdAt: room.created_at,
             type: room.type,
+            room_id: room.room_id,
           };
         });
         setStreamers(dbStreamers);
@@ -1876,7 +1877,7 @@ const App: React.FC = () => {
               </h2>
             </div>
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 px-2">
-              {streamers.filter(s => s.type !== 'private_group').map((streamer, index) => (
+              {streamers.filter(s => s.type !== 'private_group' && !s.room_id).map((streamer, index) => (
                 <StreamCard
                   key={`${streamer.id}-${index}`}
                   streamer={streamer}
@@ -1918,7 +1919,7 @@ const App: React.FC = () => {
             <div className="pt-16 pb-6 animate-fade-in">
               {homeTab === 'live' && (
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 px-2">
-                  {streamers.filter(s => s.type !== 'private_group').length > 0 ? streamers.filter(s => s.type !== 'private_group').map(streamer => (
+                  {streamers.filter(s => s.type !== 'private_group' && !s.room_id).length > 0 ? streamers.filter(s => s.type !== 'private_group' && !s.room_id).map(streamer => (
                     <StreamCard
                       key={streamer.id}
                       streamer={streamer}
@@ -1945,6 +1946,11 @@ const App: React.FC = () => {
                         <div className="w-14 h-14 rounded-xl bg-gray-800 overflow-hidden border border-gray-700">
                           <img src={room.image} className="w-full h-full object-cover" />
                         </div>
+                        {streamers.some(s => s.room_id === room.id) && (
+                          <div className="absolute -top-1.5 -right-1.5 bg-red-600 text-[8px] font-black text-white px-2 py-0.5 rounded-full border-2 border-black shadow-lg shadow-red-900/40 animate-pulse z-10">
+                            LIVE
+                          </div>
+                        )}
                         <div className="absolute -bottom-1 -right-1 bg-gray-900 rounded-full p-0.5 border border-gray-700">
                           {room.type === 'private' ? <Shield size={12} className="text-yellow-500" /> : <Globe size={12} className="text-blue-500" />}
                         </div>
