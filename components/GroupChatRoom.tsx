@@ -544,7 +544,9 @@ const GroupChatRoom: React.FC<GroupChatRoomProps> = ({
         .from('room_donation_goals')
         .select('*')
         .eq('room_id', room.id)
-        .eq('status', 'active')
+        .or('status.eq.active,status.eq.completed')
+        .order('created_at', { ascending: false })
+        .limit(1)
         .maybeSingle();
 
       if (goal) {
@@ -624,6 +626,7 @@ const GroupChatRoom: React.FC<GroupChatRoomProps> = ({
             metadata: { room_id: room.id, goal_id: goal.id, result: 'failed' }
           });
         if (notifError) console.error('Failed to send failure notification', notifError);
+        setActiveGoal(null); // Clear if expired
       } else {
         await supabase.from('notifications').insert({
           user_id: goal.model_id,
@@ -633,9 +636,8 @@ const GroupChatRoom: React.FC<GroupChatRoomProps> = ({
           is_read: false,
           metadata: { room_id: room.id, goal_id: goal.id, result: 'success' }
         });
+        // DO NOT clear activeGoal locally if success, let UI stay with status='completed'
       }
-
-      setActiveGoal(null);
     } catch (err) {
       console.error('Error finalizing goal:', err);
     }
@@ -1124,8 +1126,11 @@ const GroupChatRoom: React.FC<GroupChatRoomProps> = ({
                   <div className="flex-1">
                     <h3 className="text-white font-bold text-sm flex items-center gap-2">
                       <span>Support {goalModel.username}</span>
-                      <span className="text-[10px] bg-amber-500/20 text-amber-500 px-2 py-0.5 rounded-full border border-amber-500/30">
-                        Goal
+                      <span className={`text-[10px] px-2 py-0.5 rounded-full border ${activeGoal.status === 'completed'
+                        ? 'bg-green-500/20 text-green-400 border-green-500/30'
+                        : 'bg-amber-500/20 text-amber-500 border-amber-500/30'
+                        }`}>
+                        {activeGoal.status === 'completed' ? 'Reached!' : 'Goal'}
                       </span>
                     </h3>
 
@@ -1152,18 +1157,27 @@ const GroupChatRoom: React.FC<GroupChatRoomProps> = ({
                 {/* Timer & Action */}
                 <div className="flex items-center justify-between mt-4 pt-3 border-t border-white/5 relative z-10">
                   <div className="text-xs font-mono text-gray-400 flex items-center gap-1.5">
-                    <Clock size={12} className="text-amber-500/80" />
-                    <span className={goalTimeLeft < 60 ? 'text-red-500 animate-pulse font-bold' : ''}>
-                      {Math.floor(goalTimeLeft / 60)}:{(goalTimeLeft % 60).toString().padStart(2, '0')}
+                    <Clock size={12} className={activeGoal.status === 'completed' ? 'text-green-500' : 'text-amber-500/80'} />
+                    <span className={activeGoal.status === 'completed' ? 'text-green-500 font-bold' : (goalTimeLeft < 60 ? 'text-red-500 animate-pulse font-bold' : '')}>
+                      {activeGoal.status === 'completed'
+                        ? 'COMPLETED'
+                        : `${Math.floor(goalTimeLeft / 60)}:${(goalTimeLeft % 60).toString().padStart(2, '0')}`
+                      }
                     </span>
                   </div>
 
-                  <button
-                    onClick={handleDonateToGoal}
-                    className="bg-amber-500 hover:bg-amber-400 text-black font-black text-xs px-4 py-2 rounded-xl transition-all active:scale-95 shadow-lg shadow-amber-500/20 flex items-center gap-1.5"
-                  >
-                    <Gift size={12} /> DONATE
-                  </button>
+                  {activeGoal.status === 'active' ? (
+                    <button
+                      onClick={handleDonateToGoal}
+                      className="bg-amber-500 hover:bg-amber-400 text-black font-black text-xs px-4 py-2 rounded-xl transition-all active:scale-95 shadow-lg shadow-amber-500/20 flex items-center gap-1.5"
+                    >
+                      <Gift size={12} /> DONATE
+                    </button>
+                  ) : (
+                    <div className="bg-green-600 text-white font-black text-[10px] px-3 py-1.5 rounded-lg flex items-center gap-1.5 shadow-lg shadow-green-900/20 uppercase">
+                      <Check size={12} /> Goal Hit!
+                    </div>
+                  )}
                 </div>
               </div>
             )}
@@ -1462,19 +1476,25 @@ const GroupChatRoom: React.FC<GroupChatRoomProps> = ({
       {/* Input Area (Only visible in Chat Tab) */}
       {activeTab === 'chat' && (
         <div className={`p-3 bg-gray-900/90 backdrop-blur border-t border-gray-800 flex items-end gap-2 sticky bottom-0 z-30 pb-safe ${!isChatVisible && isLiveMode ? 'hidden' : ''}`}>
-          <button
-            onClick={() => {
-              if (isHost) {
-                fetchAvailableModels();
-                setShowAvailableModels(true);
-              } else {
-                setShowGifts(true);
-              }
-            }}
-            className="p-2.5 text-yellow-500 hover:text-yellow-400 bg-gray-800 border border-yellow-500/30 rounded-full transition-colors flex-shrink-0"
-          >
-            {isHost ? <Plus size={22} /> : <Gift size={22} />}
-          </button>
+          <div className="flex gap-1.5">
+            {isHost && (
+              <button
+                onClick={() => {
+                  fetchAvailableModels();
+                  setShowAvailableModels(true);
+                }}
+                className="p-2.5 text-red-500 hover:text-red-400 bg-gray-800 border border-red-500/30 rounded-full transition-colors flex-shrink-0"
+              >
+                <Plus size={22} />
+              </button>
+            )}
+            <button
+              onClick={() => setShowGifts(true)}
+              className="p-2.5 text-yellow-500 hover:text-yellow-400 bg-gray-800 border border-yellow-500/30 rounded-full transition-colors flex-shrink-0"
+            >
+              <Gift size={22} />
+            </button>
+          </div>
 
           <form
             onSubmit={handleSend}
