@@ -1543,11 +1543,15 @@ const App: React.FC = () => {
             onBack={handleCloseGroup}
             currentUser={userProfile.username}
             currentUserId={session?.user?.id}
+            userRole={userProfile.role}
             walletBalance={walletBalance}
             onUseCoins={handleUseCoins}
             onOpenWallet={() => setIsWalletOpen(true)}
             onUserClick={handleOpenProfileById}
-            onStartLive={() => setIsStartLiveModalOpen(true)}
+            onStartLive={() => {
+              setLiveType('private_group');
+              setIsStartLiveModalOpen(true);
+            }}
             streamers={streamers}
             activeStreamer={currentStreamer?.id === selectedGroupRoom.id ? currentStreamer : undefined}
             onEndLive={() => handleCloseStream(selectedGroupRoom.id)}
@@ -2852,7 +2856,9 @@ const App: React.FC = () => {
               }
 
               if (roomToEnter) {
+                setReturnTab(activeTab);
                 setSelectedGroupRoom(roomToEnter);
+                setActiveTab('messages');
                 // Auto trigger live setup
                 setIsStartLiveModalOpen(true);
                 setIsAutoStartLive(true);

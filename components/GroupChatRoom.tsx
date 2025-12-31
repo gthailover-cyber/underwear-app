@@ -1,7 +1,7 @@
 
 import React, { useState, useRef, useEffect } from 'react';
-import { ArrowLeft, MoreVertical, Send, Plus, Smile, Users, Lock, Globe, Gift, Coins, X, Check, Crown, BicepsFlexed, Ban, VolumeX, Volume2, Clock, MessageSquare, MessageSquareOff } from 'lucide-react';
-import { ChatRoom, ChatMessage, Language, Streamer } from '../types';
+import { ArrowLeft, MoreVertical, Send, Plus, Smile, Users, Video, Lock, Globe, Gift, Coins, X, Check, Crown, BicepsFlexed, Ban, VolumeX, Volume2, Clock, MessageSquare, MessageSquareOff } from 'lucide-react';
+import { ChatRoom, ChatMessage, Language, Streamer, UserRole } from '../types';
 import { TRANSLATIONS } from '../constants';
 import { supabase } from '../lib/supabaseClient';
 import { useAlert } from '../context/AlertContext';
@@ -20,6 +20,7 @@ interface GroupChatRoomProps {
   onOpenWallet: () => void;
   onUserClick: (userId: string) => void;
   onStartLive?: () => void;
+  userRole?: UserRole;
   streamers?: Streamer[];
   activeStreamer?: Streamer;
   onEndLive?: () => void;
@@ -44,6 +45,7 @@ const GroupChatRoom: React.FC<GroupChatRoomProps> = ({
   onOpenWallet,
   onUserClick,
   onStartLive,
+  userRole,
   streamers = [],
   activeStreamer,
   onEndLive
@@ -1484,12 +1486,23 @@ const GroupChatRoom: React.FC<GroupChatRoomProps> = ({
               </button>
             )}
             {!isHost && (
-              <button
-                onClick={() => setShowGifts(true)}
-                className="p-2.5 text-yellow-500 hover:text-yellow-400 bg-gray-800 border border-yellow-500/30 rounded-full transition-colors flex-shrink-0"
-              >
-                <Gift size={22} />
-              </button>
+              <div className="flex gap-1.5">
+                {!isLiveMode && userRole === 'model' && (
+                  <button
+                    onClick={onStartLive}
+                    className="p-2.5 text-red-500 hover:text-red-400 bg-gray-800 border border-red-500/30 rounded-full transition-colors flex-shrink-0 animate-pulse shadow-lg shadow-red-900/20"
+                    title="Start Live"
+                  >
+                    <Video size={22} />
+                  </button>
+                )}
+                <button
+                  onClick={() => setShowGifts(true)}
+                  className="p-2.5 text-yellow-500 hover:text-yellow-400 bg-gray-800 border border-yellow-500/30 rounded-full transition-colors flex-shrink-0"
+                >
+                  <Gift size={22} />
+                </button>
+              </div>
             )}
           </div>
 
