@@ -69,6 +69,7 @@ export interface Streamer {
   createdAt?: string; // ISO timestamp for start time tracking
   type?: string; // 'private_group', etc.
   room_id?: string; // Added: ID of the group room this live is occurring in
+  goal_id?: string; // Added: ID of the donation goal that triggered this live
 }
 
 export interface UserProfile {

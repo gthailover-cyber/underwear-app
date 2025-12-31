@@ -138,6 +138,7 @@ const App: React.FC = () => {
   };
   const [activeInvite, setActiveInvite] = useState<any>(null);
   const [activeGoalConfirmation, setActiveGoalConfirmation] = useState<any>(null);
+  const [selectedGoalId, setSelectedGoalId] = useState<string | null>(null);
 
   const fetchFollowing = async (userId: string) => {
     try {
@@ -639,6 +640,7 @@ const App: React.FC = () => {
             createdAt: room.created_at,
             type: room.type,
             room_id: room.room_id,
+            goal_id: room.goal_id,
           };
         });
         setStreamers(dbStreamers);
@@ -1042,7 +1044,8 @@ const App: React.FC = () => {
               current_bid: isAuction ? auctionStartingPrice : 0,
               product_ids: liveSelectedProducts.map(p => p.id),
               created_at: new Date().toISOString(),
-              type: liveType
+              type: liveType,
+              goal_id: selectedGoalId
             }, { onConflict: 'id' }).select(); // Select to confirm return
 
             if (error) {
@@ -1548,8 +1551,9 @@ const App: React.FC = () => {
             onUseCoins={handleUseCoins}
             onOpenWallet={() => setIsWalletOpen(true)}
             onUserClick={handleOpenProfileById}
-            onStartLive={() => {
+            onStartLive={(goalId) => {
               setLiveType('private_group');
+              setSelectedGoalId(goalId || null);
               setIsStartLiveModalOpen(true);
             }}
             streamers={streamers}
@@ -2863,6 +2867,7 @@ const App: React.FC = () => {
                 setIsStartLiveModalOpen(true);
                 setIsAutoStartLive(true);
                 setLiveType('private_group');
+                setSelectedGoalId(activeGoalConfirmation.metadata?.goal_id || null);
               } else {
                 console.error("Could not find room to enter:", roomId);
                 showAlert({ message: "Error finding room", type: 'error' });

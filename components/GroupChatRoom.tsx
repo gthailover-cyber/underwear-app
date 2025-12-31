@@ -19,7 +19,7 @@ interface GroupChatRoomProps {
   onUseCoins: (amount: number) => Promise<void>;
   onOpenWallet: () => void;
   onUserClick: (userId: string) => void;
-  onStartLive?: () => void;
+  onStartLive?: (goalId?: string) => void;
   userRole?: UserRole;
   streamers?: Streamer[];
   activeStreamer?: Streamer;
@@ -127,6 +127,17 @@ const GroupChatRoom: React.FC<GroupChatRoomProps> = ({
       if (remaining <= 0) {
         clearInterval(timer);
         if (isStreamer && onEndLive) {
+          // Time is up! Trigger Payout
+          if (effectiveLiveStream?.goal_id && effectiveLiveStream?.type === 'private_group') {
+            supabase.rpc('payout_goal_donations', {
+              p_goal_id: effectiveLiveStream.goal_id,
+              p_model_id: currentUserId
+            }).then(({ error }) => {
+              if (error) console.error("Payout error:", error);
+              else showAlert({ message: "Live completed! Coins paid out to your wallet. 🎉", type: 'success' });
+            });
+          }
+
           onEndLive();
           // Force cleanup local state just in case
           setLiveEndTime(null);
@@ -680,22 +691,13 @@ const GroupChatRoom: React.FC<GroupChatRoomProps> = ({
 
     // If ending early (timer still running), process refunds
     if (liveTimerLeft > 0) {
-      showAlert({ message: "Ending early. Processing refunds...", type: 'info' });
+      const goalId = effectiveLiveStream?.goal_id;
 
-      try {
-        // Find the related goal (most recent completed)
-        const { data: recentGoal } = await supabase
-          .from('room_donation_goals')
-          .select('id')
-          .eq('room_id', room.id)
-          .eq('status', 'completed') // It was completed to start the live
-          .order('created_at', { ascending: false }) // Use created_at to be safe
-          .limit(1)
-          .maybeSingle();
+      if (goalId && effectiveLiveStream?.type === 'private_group') {
+        showAlert({ message: "Ending early. Processing refunds...", type: 'info' });
 
-        if (recentGoal) {
-          console.log("Found goal to refund:", recentGoal.id);
-          const { error: refundError } = await supabase.rpc('refund_goal_donations', { p_goal_id: recentGoal.id });
+        try {
+          const { error: refundError } = await supabase.rpc('refund_goal_donations', { p_goal_id: goalId });
           if (refundError) throw refundError;
 
           // Notify chat
@@ -706,13 +708,10 @@ const GroupChatRoom: React.FC<GroupChatRoomProps> = ({
           });
 
           showAlert({ message: "Refunds processed successfully.", type: 'success' });
-        } else {
-          console.warn("No recent goal found to refund.");
-          showAlert({ message: "System could not find the donation goal to refund.", type: 'error' });
+        } catch (err: any) {
+          console.error("Error refunding:", err);
+          showAlert({ message: "Error processing refund: " + err.message, type: 'error' });
         }
-      } catch (err: any) {
-        console.error("Error refunding:", err);
-        showAlert({ message: "Error processing refund: " + err.message, type: 'error' });
       }
     }
 
@@ -1489,7 +1488,7 @@ const GroupChatRoom: React.FC<GroupChatRoomProps> = ({
               <div className="flex gap-1.5">
                 {!isLiveMode && userRole === 'model' && (
                   <button
-                    onClick={onStartLive}
+                    onClick={() => onStartLive?.(activeGoal?.id)}
                     className="p-2.5 text-red-500 hover:text-red-400 bg-gray-800 border border-red-500/30 rounded-full transition-colors flex-shrink-0 animate-pulse shadow-lg shadow-red-900/20"
                     title="Start Live"
                   >
