@@ -1017,6 +1017,9 @@ const App: React.FC = () => {
           currentBid: isAuction ? auctionStartingPrice : 0,
           hostId: session?.user?.id, // Explicitly enforce session ID
           createdAt: new Date().toISOString(), // Start time
+          type: liveType,
+          room_id: (liveType === 'private_group' && selectedGroupRoom) ? selectedGroupRoom.id : undefined,
+          goal_id: selectedGoalId || undefined
         };
 
         setCurrentStreamer(myStream);
